@@ -43,7 +43,7 @@ class GitHubOAuthHandler(RequestHandler):
         if self.get_argument("code", False):
             
             code = self.get_argument("code")
-            self.write("<pre>OAuth Code: {}</pre>".format(code))
+            #self.write("<pre>OAuth Code: {}</pre>".format(code))
             
             # TODO: Configure the curl_httpclient for tornado
             http_client = AsyncHTTPClient()
@@ -72,7 +72,8 @@ class GitHubOAuthHandler(RequestHandler):
             resp_json = json.loads(resp.body)
             
             access_token = resp_json['access_token']
-            self.write("<pre>Access Token: {}</pre>".format(access_token))
+            #self.write("<pre>Access Token: {}</pre>".format(access_token))
+            # The cookie and the access_token should be paired in the database
             
             
             # Determine who the logged in user is
@@ -88,7 +89,10 @@ class GitHubOAuthHandler(RequestHandler):
             resp_json = json.loads(resp.body)
             
             user = resp_json["login"]
-            self.write("<pre>User: {}</pre>".format(user))
+            self.write("<pre>Welcome, {}</pre>".format(user))
+            
+            # Redirection should happen after this.
+            # If the user reloads this page with an old code, we currently error
             
         else:
             # TODO: Raise a 4xx of some kind
