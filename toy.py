@@ -1,11 +1,19 @@
 import tornado
 import os
 
+import json
+
 import tornado.options
 from tornado.log import app_log
 from tornado.web import RequestHandler
 from tornado.auth import OAuth2Mixin
 from tornado import gen, web
+
+from tornado.httputil import url_concat
+
+import tornado.httpclient
+
+from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 class RootHandler(RequestHandler):
     @web.authenticated
@@ -19,28 +27,75 @@ class GitHubMixin(OAuth2Mixin):
 class GitHubLoginHandler(RequestHandler, GitHubMixin):
     @gen.coroutine
     def get(self):
-        if self.get_argument("code", False):
-            code = self.get_argument("code")
-            self.write(code)            
-        else:
-            yield self.authorize_redirect(
-                    redirect_uri='http://127.0.0.1:8777/oauth',
-                    client_id=self.settings['github_client_id'],
-                    scope=[],
-                    response_type='code',
-                    extra_params={})
+        yield self.authorize_redirect(
+            redirect_uri='http://127.0.0.1:8777/oauth',
+            client_id=self.settings['github_client_id'],
+            scope=[], # 
+            response_type='code')
 
+class GitHubOAuthHandler(RequestHandler):
+    @web.asynchronous
+    def get(self):
+        
+        # TODO: Check the state argument
+        
+        if self.get_argument("code", False):
+            
+            code = self.get_argument("code")
+            self.write("<pre>" + code + u"</pre>\n")
+            
+            # TODO: Configure the curl_httpclient for tornado
+            http_client = tornado.httpclient.AsyncHTTPClient()
+            
+            # Exchange the OAuth code for a GitHub Access Token
+            #
+            # POST https://github.com/login/oauth/access_token
+            
+            # client_id	string	Required. The client ID you received from GitHub when you registered.
+            # client_secret	string	Required. The client secret you received from GitHub when you registered.
+            # code	string	Required. The code you received as a response to Step 1.
+            # redirect_uri	string	The URL in your app where users will be sent after authorization.
+            
+            # GitHub specifies a POST request yet requires URL parameters
+            params = dict(
+                    client_id=self.settings['github_client_id'],
+                    client_secret=self.settings['github_client_secret'],
+                    code=code
+            )
+            
+            url = url_concat("https://github.com/login/oauth/access_token",
+                             params)
+            
+            req = HTTPRequest(url,
+                              method="POST",
+                              headers={"Accept": "application/json"},
+                              body='' # Required body
+                              )
+            http_client.fetch(req, callback=self.on_access)
+            
+        else:
+            # Using web.asynchoronous, must explicitly finish
+            # This should be a 40x
+            self.finish()
+    
+    @web.asynchronous
+    def on_access(self, response):
+        self.write(response.body)
+        
+        # Use the Access Token to get the username and email address of the user
+        self.finish()
 
 def main():
     tornado.options.parse_command_line()
     handlers = [
         (r"/", RootHandler),
-        (r"/oauth", GitHubLoginHandler),
+        (r"/login", GitHubLoginHandler),
+        (r"/oauth", GitHubOAuthHandler)
     ]
 
     settings = dict(
         cookie_secret="supersecret",
-        login_url="/oauth",
+        login_url="/login",
         xsrf_cookies=True,
         github_client_id=os.environ["GITHUB_CLIENT_ID"],
         github_client_secret=os.environ["GITHUB_CLIENT_SECRET"],
