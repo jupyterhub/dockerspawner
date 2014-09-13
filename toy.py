@@ -34,7 +34,7 @@ class GitHubLoginHandler(RequestHandler, GitHubMixin):
             response_type='code')
 
 class GitHubOAuthHandler(RequestHandler):
-    @web.asynchronous
+    @gen.coroutine
     def get(self):
         
         # TODO: Check the state argument
@@ -42,7 +42,7 @@ class GitHubOAuthHandler(RequestHandler):
         if self.get_argument("code", False):
             
             code = self.get_argument("code")
-            self.write("<pre>" + code + u"</pre>\n")
+            self.write("<pre>OAuth Code: {}</pre>".format(code))
             
             # TODO: Configure the curl_httpclient for tornado
             http_client = tornado.httpclient.AsyncHTTPClient()
@@ -71,12 +71,14 @@ class GitHubOAuthHandler(RequestHandler):
                               headers={"Accept": "application/json"},
                               body='' # Required body
                               )
-            http_client.fetch(req, callback=self.on_access)
+            resp = yield http_client.fetch(req)
+            resp_json = json.loads(resp.body)
+            
+            access_token = resp_json['access_token']
+            self.write("<pre>Access Token: {}</pre>".format(access_token))
             
         else:
-            # Using web.asynchoronous, must explicitly finish
-            # This should be a 40x
-            self.finish()
+            pass
     
     @web.asynchronous
     def on_access(self, response):
