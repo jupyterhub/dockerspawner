@@ -74,6 +74,8 @@ class GitHubOAuthHandler(RequestHandler):
             access_token = resp_json['access_token']
             self.write("<pre>Access Token: {}</pre>".format(access_token))
             
+            
+            # Determine who the logged in user is
             headers={"Accept": "application/json",
                      "User-Agent": "JupyterHub",
                      "Authorization": "token {}".format(access_token)
