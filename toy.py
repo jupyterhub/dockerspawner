@@ -37,8 +37,8 @@ class GitHubOAuthHandler(RequestHandler):
     @gen.coroutine
     def get(self):
         
-        # TODO: Check the state argument
-        
+        # TODO: Check if state argument needs to be checked
+                
         if self.get_argument("code", False):
             
             code = self.get_argument("code")
@@ -49,12 +49,7 @@ class GitHubOAuthHandler(RequestHandler):
             
             # Exchange the OAuth code for a GitHub Access Token
             #
-            # POST https://github.com/login/oauth/access_token
-            
-            # client_id	string	Required. The client ID you received from GitHub when you registered.
-            # client_secret	string	Required. The client secret you received from GitHub when you registered.
-            # code	string	Required. The code you received as a response to Step 1.
-            # redirect_uri	string	The URL in your app where users will be sent after authorization.
+            # See: https://developer.github.com/v3/oauth/
             
             # GitHub specifies a POST request yet requires URL parameters
             params = dict(
@@ -69,7 +64,7 @@ class GitHubOAuthHandler(RequestHandler):
             req = HTTPRequest(url,
                               method="POST",
                               headers={"Accept": "application/json"},
-                              body='' # Required body
+                              body='' # Body is required for a POST...
                               )
             resp = yield http_client.fetch(req)
             resp_json = json.loads(resp.body)
