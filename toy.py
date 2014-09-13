@@ -1,7 +1,11 @@
-import tornado
-import os
+'''
+
+'''
 
 import json
+import os
+
+import tornado
 
 import tornado.options
 from tornado.log import app_log
@@ -10,9 +14,6 @@ from tornado.auth import OAuth2Mixin
 from tornado import gen, web
 
 from tornado.httputil import url_concat
-
-import tornado.httpclient
-
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
 class RootHandler(RequestHandler):
@@ -45,7 +46,7 @@ class GitHubOAuthHandler(RequestHandler):
             self.write("<pre>OAuth Code: {}</pre>".format(code))
             
             # TODO: Configure the curl_httpclient for tornado
-            http_client = tornado.httpclient.AsyncHTTPClient()
+            http_client = AsyncHTTPClient()
             
             # Exchange the OAuth code for a GitHub Access Token
             #
@@ -66,6 +67,7 @@ class GitHubOAuthHandler(RequestHandler):
                               headers={"Accept": "application/json"},
                               body='' # Body is required for a POST...
                               )
+            
             resp = yield http_client.fetch(req)
             resp_json = json.loads(resp.body)
             
