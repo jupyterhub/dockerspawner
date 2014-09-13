@@ -73,14 +73,8 @@ class GitHubOAuthHandler(RequestHandler):
             self.write("<pre>Access Token: {}</pre>".format(access_token))
             
         else:
+            # TODO: Raise a 4xx of some kind
             pass
-    
-    @web.asynchronous
-    def on_access(self, response):
-        self.write(response.body)
-        
-        # Use the Access Token to get the username and email address of the user
-        self.finish()
 
 def main():
     tornado.options.parse_command_line()
