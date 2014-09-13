@@ -1,5 +1,5 @@
 '''
-
+GitHub OAuth Handlers for Tornado (using coroutines)
 '''
 
 import json
@@ -73,6 +73,20 @@ class GitHubOAuthHandler(RequestHandler):
             
             access_token = resp_json['access_token']
             self.write("<pre>Access Token: {}</pre>".format(access_token))
+            
+            headers={"Accept": "application/json",
+                     "User-Agent": "JupyterHub",
+                     "Authorization": "token {}".format(access_token)
+            }
+            req = HTTPRequest("https://api.github.com/user",
+                              method="GET",
+                              headers=headers
+                              )
+            resp = yield http_client.fetch(req)
+            resp_json = json.loads(resp.body)
+            
+            user = resp_json["login"]
+            self.write("<pre>User: {}</pre>".format(user))
             
         else:
             # TODO: Raise a 4xx of some kind
