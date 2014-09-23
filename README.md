@@ -1,28 +1,52 @@
-gitorn
-======
+# OAuthenticator
 
-Tornado + GitHub OAuth Toy
+GitHub OAuth + JuptyerHub Authenticator = OAuthenticator
 
-Simple Demo of setting up GitHub OAuth with Tornado
+Example of running [JupyterHub]() with [GitHub OAuth]() for authentication.
 
-### Installation
+## setup
 
-```
-pip install tornado
-```
+Make a file called `userlist` with one GitHub user name per line.
+If that user should be an admin (you!), add `admin` after a space.
 
-### Development
-
-You'll need a client ID and client secret from GitHub, which you can get from:
-
-https://github.com/settings/applications/new
-
-or, if using an organization:
-
-https://github.com/organizations/<your_org>/settings/applications/
-
-Then fire up `toy.py` with environment variables for client id and client secret set.
+For example:
 
 ```
-GITHUB_CLIENT_ID=<client_id> GITHUB_CLIENT_SECRET=<client_secret>  python toy.py
+mal admin
+zoe admin
+wash
+inara admin
+kaylee
+jayne
+simon
+river
 ```
+
+
+Create a [GitHub oauth application](https://github.com/settings/applications/new).
+Make sure the callback URL is:
+
+    http[s]://[your-host]/hub/oauth_callback
+
+Where `[your-host]` is where your server will be running. Such as `example.com:8000`.
+
+## build
+
+Build the container with:
+
+    docker build -t jupyter/oauthenticator .
+
+## run
+
+Once you have built the container, you can run it with:
+
+    docker run -it -p 9000:8000 -E GITHUB_CLIENT_ID=$GITHUB_CLIENT_ID \
+      -E GITHUB_CLIENT_SECRET=$GITHUB_CLIENT_SECRET \
+      -E OAUTH_CALLBACK_URL=$OAUTH_CALLBACK_URL \
+      jupyter/oauthenticator
+
+Which will run the Jupyter server.
+
+If you want to avoid all the `-E` arguments,
+you can add the relevant exports to `run.sh` before you build the container.
+
