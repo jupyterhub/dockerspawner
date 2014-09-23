@@ -36,17 +36,16 @@ Build the container with:
 
     docker build -t jupyter/oauthenticator .
 
+### ssl
+
+To run the server on HTTPS, put your ssl key and cert in ssl/ssl.key and ssl/ssl.cert.
+
 ## run
 
+Add your oauth client id, client secret, and callback URL to the `env file`.
 Once you have built the container, you can run it with:
 
-    docker run -it -p 9000:8000 -E GITHUB_CLIENT_ID=$GITHUB_CLIENT_ID \
-      -E GITHUB_CLIENT_SECRET=$GITHUB_CLIENT_SECRET \
-      -E OAUTH_CALLBACK_URL=$OAUTH_CALLBACK_URL \
-      jupyter/oauthenticator
+    docker run -it -p 9000:8000 --env-file=env jupyter/oauthenticator
 
 Which will run the Jupyter server.
-
-If you want to avoid all the `-E` arguments,
-you can add the relevant exports to `run.sh` before you build the container.
 

@@ -53,6 +53,8 @@ EXPOSE 8000
 
 # Should these be ONBUILD?
 ADD userlist /srv/oauthenticator/userlist
+ADD ssl /srv/oauthenticator/ssl
+RUN chmod 700 /srv/oauthenticator
 RUN ["sh", "/srv/oauthenticator/onbuild.sh"]
 
 ADD run.sh /srv/oauthenticator/run.sh

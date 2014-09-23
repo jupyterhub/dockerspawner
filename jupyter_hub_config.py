@@ -9,8 +9,9 @@ c.JupyterHubApp.admin_users = admin = set()
 
 import os
 
+join = os.path.join
 here = os.path.dirname(__file__)
-with open(os.path.join(here, 'userlist')) as f:
+with open(join(here, 'userlist')) as f:
     for line in f:
         if not line:
             continue
@@ -21,3 +22,12 @@ with open(os.path.join(here, 'userlist')) as f:
             admin.add(name)
 
 c.GitHubOAuthenticator.oauth_callback_url = os.environ['OAUTH_CALLBACK_URL']
+
+# ssl config
+ssl = join(here, 'ssl')
+keyfile = join(ssl, 'ssl.key')
+certfile = join(ssl, 'ssl.cert')
+if os.path.exists(keyfile):
+    c.JupyterHubApp.ssl_key = keyfile
+if os.path.exists(certfile):
+    c.JupyterHubApp.ssl_cert = certfile
