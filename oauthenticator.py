@@ -27,15 +27,17 @@ class GitHubMixin(OAuth2Mixin):
 
 class GitHubLoginHandler(BaseHandler, GitHubMixin):
     def get(self):
-        redirect_uri='{proto}://{host}{path}'.format(
+        guess_uri = '{proto}://{host}{path}'.format(
             proto=self.request.protocol,
             host=self.request.host,
             path=url_path_join(
                 self.hub.server.base_url,
                 'oauth_callback'
-            ),
+            )
         )
-        self.log.warn('oauth redirect: %r', redirect_uri)
+        
+        redirect_uri = self.authenticator.oauth_callback_url or guess_uri
+        self.log.info('oauth redirect: %r', redirect_uri)
         
         self.authorize_redirect(
             redirect_uri=redirect_uri,
@@ -60,6 +62,7 @@ class GitHubOAuthHandler(BaseHandler):
 
 class GitHubOAuthenticator(Authenticator):
     
+    oauth_callback_url = Unicode('', config=True)
     github_client_id = Unicode(os.environ.get('GITHUB_CLIENT_ID', ''),
         config=True)
     github_client_secret = Unicode(os.environ.get('GITHUB_CLIENT_SECRET', ''),
