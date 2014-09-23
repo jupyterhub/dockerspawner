@@ -2,7 +2,8 @@
 
 GitHub OAuth + JuptyerHub Authenticator = OAuthenticator
 
-Example of running [JupyterHub]() with [GitHub OAuth]() for authentication.
+Example of running [JupyterHub](https://github.com/jupyter/jupyterhub)
+with [GitHub OAuth](https://developer.github.com/v3/oauth/) for authentication.
 
 ## setup
 
