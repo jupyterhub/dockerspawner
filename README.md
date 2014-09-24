@@ -50,3 +50,16 @@ Once you have built the container, you can run it with:
 
 Which will run the Jupyter server.
 
+
+# User servers in docker containers
+
+This repo also contains config for launching the user's servers in separate docker containers.
+It uses the same GitHub auth, so follow the same setup as above. Build the single-user container:
+
+    docker build -t jupyter/singleuser singleuser
+
+Then put your GitHub OAuth config in `env`.
+
+Start the server with `sh run_docker_users.sh`
+
+  
