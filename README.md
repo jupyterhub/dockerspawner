@@ -1,11 +1,20 @@
-# OAuthenticator
+# DockerSpawner
 
-GitHub OAuth + JuptyerHub Authenticator = OAuthenticator
+This is an example of using a custom Spawner and Authenticator with JuptyerHub.
 
-Example of running [JupyterHub](https://github.com/jupyter/jupyterhub)
-with [GitHub OAuth](https://developer.github.com/v3/oauth/) for authentication.
+GitHub OAuth + JuptyerHub = [OAuthenticator](https://github.com/jupyter/oauthenticator).
+
+Add docker, and you have something pretty nifty.
+
+This is an example of running [JupyterHub](https://github.com/jupyter/jupyterhub)
+with [GitHub OAuth](https://developer.github.com/v3/oauth/) for authentication,
+spinning up a [docker](https://www.docker.com/) container for each user.
 
 ## setup
+
+Install dependencies:
+
+    pip install -r requirements.txt
 
 Make a file called `userlist` with one GitHub user name per line.
 If that user should be an admin (you!), add `admin` after a space.
@@ -13,14 +22,10 @@ If that user should be an admin (you!), add `admin` after a space.
 For example:
 
 ```
-mal admin
-zoe admin
-wash
-inara admin
-kaylee
-jayne
-simon
-river
+echo admin
+alpha
+sierra
+victor
 ```
 
 
@@ -35,7 +40,7 @@ Where `[your-host]` is where your server will be running. Such as `example.com:8
 
 Build the container with:
 
-    docker build -t jupyter/oauthenticator .
+    docker build -t jupyter/singleuser singleuser
 
 ### ssl
 
@@ -44,22 +49,8 @@ To run the server on HTTPS, put your ssl key and cert in ssl/ssl.key and ssl/ssl
 ## run
 
 Add your oauth client id, client secret, and callback URL to the `env file`.
-Once you have built the container, you can run it with:
+Once you have built the container, you can run the server with:
 
-    docker run -it -p 9000:8000 --env-file=env jupyter/oauthenticator
+    sh run.sh
 
-Which will run the Jupyter server.
-
-
-# User servers in docker containers
-
-This repo also contains config for launching the user's servers in separate docker containers.
-It uses the same GitHub auth, so follow the same setup as above. Build the single-user container:
-
-    docker build -t jupyter/singleuser singleuser
-
-Then put your GitHub OAuth config in `env`.
-
-Start the server with `sh run_docker_users.sh`
-
-  
+Which will run the JupyterHub server. When users login, a container will be created for them.

@@ -57,3 +57,5 @@ userlist
 ssl/ssl.cert
 ssl/ssl.key
 env
+oauthenticator.py
+jupyterhub.sqlite
