@@ -36,7 +36,7 @@ class DockerSpawner(Spawner):
     
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
-        self.container_id = state['container_id']
+        self.container_id = state.get('container_id', '')
     
     def get_state(self):
         state = super(DockerSpawner, self).get_state()
@@ -76,7 +76,7 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def poll(self):
         """Check for my id in `docker ps`"""
-        if self.container_id is None:
+        if not self.container_id:
             raise gen.Return(0)
         
         # if my id is running, return None
@@ -84,7 +84,7 @@ class DockerSpawner(Spawner):
         if any(c['Id'] == self.container_id for c in containers):
             raise gen.Return(None)
         
-        self.container_id = None
+        self.container_id = ''
         raise gen.Return(0)
     
     @gen.coroutine
