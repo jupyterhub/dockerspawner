@@ -32,7 +32,7 @@ class DockerSpawner(Spawner):
         return cls._client
     
     container_id = Unicode()
-    container_ip = Unicode('0.0.0.0', config=True)
+    container_ip = Unicode('127.0.0.1', config=True)
     
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
