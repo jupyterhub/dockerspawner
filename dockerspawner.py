@@ -80,7 +80,7 @@ class DockerSpawner(Spawner):
             raise gen.Return(0)
         
         # if my id is running, return None
-        containers = self.client.containers()
+        containers = yield self.docker('containers')
         if any(c['Id'] == self.container_id for c in containers):
             raise gen.Return(None)
         
@@ -90,13 +90,16 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def start(self):
         """start the single-user server in a docker container"""
-        resp = self.client.create_container(image="jupyter/singleuser",
-                                              environment=self.env)
+        resp = yield self.docker('create_container',
+            image="jupyter/singleuser",
+            environment=self.env,
+        )
         self.container_id = container_id = resp['Id']
         self.log.info("Created container {}".format(container_id))
 
-        self.client.start(container_id, port_bindings={8888: (self.container_ip,)})
-        self.user.server.port = self.client.port(container_id, 8888)[0]['HostPort']
+        yield self.docker('start', container_id, port_bindings={8888: (self.container_ip,)})
+        resp = yield self.docker('port', container_id, 8888)
+        self.user.server.port = resp[0]['HostPort']
     
     @gen.coroutine
     def stop(self, now=False):
@@ -104,6 +107,7 @@ class DockerSpawner(Spawner):
         
         Could pause?
         """
-        self.client.kill(self.container_id)
-        self.client.remove_container(self.container_id)
+        yield self.docker('kill', self.container_id)
+        yield self.docker('remove_container', self.container_id)
+        self.container_id = ''
         
