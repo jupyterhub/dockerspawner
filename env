@@ -1,5 +1,0 @@
-# add your github oauth config to this file,
-# and run the container with `docker run -it -p 9000:8000 --env-file=env jupyter/oauthenticator`
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-OAUTH_CALLBACK_URL=

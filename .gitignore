@@ -54,8 +54,9 @@ docs/_build/
 target/
 
 userlist
-ssl/ssl.cert
-ssl/ssl.key
+ssl.cert
+ssl.key
 env
 oauthenticator.py
 jupyterhub.sqlite
+src

@@ -1,0 +1,5 @@
+# add your github oauth config to this file
+# and launch the server with `sh run.sh`
+export GITHUB_CLIENT_ID=
+export GITHUB_CLIENT_SECRET=
+export OAUTH_CALLBACK_URL=
