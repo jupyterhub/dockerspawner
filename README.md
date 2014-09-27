@@ -1,4 +1,5 @@
 # DockerSpawner
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/jupyter/dockerspawner?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 Enables [JupyterHub](https://github.com/jupyter/jupyterhub) to spawn
 user servers in docker containers.
