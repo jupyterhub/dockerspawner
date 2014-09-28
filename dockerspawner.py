@@ -33,6 +33,7 @@ class DockerSpawner(Spawner):
     
     container_id = Unicode()
     container_ip = Unicode('127.0.0.1', config=True)
+    container_image = Unicode("jupyter/singleuser", config=True)
     
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
@@ -88,10 +89,12 @@ class DockerSpawner(Spawner):
         raise gen.Return(0)
     
     @gen.coroutine
-    def start(self):
+    def start(self, image=None):
         """start the single-user server in a docker container"""
+        if image is None:
+            image = self.container_image
         resp = yield self.docker('create_container',
-            image="jupyter/singleuser",
+            image=image,
             environment=self.env,
         )
         self.container_id = container_id = resp['Id']
