@@ -89,8 +89,10 @@ class DockerSpawner(Spawner):
         raise gen.Return(0)
     
     @gen.coroutine
-    def start(self, image=self.default_image):
+    def start(self, image=None):
         """start the single-user server in a docker container"""
+        if image is None:
+            image = self.default_image
         resp = yield self.docker('create_container',
             image=image,
             environment=self.env,
