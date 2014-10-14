@@ -41,7 +41,8 @@ class DockerSpawner(Spawner):
     
     def get_state(self):
         state = super(DockerSpawner, self).get_state()
-        state['container_id'] = self.container_id
+        if self.container_id:
+            state['container_id'] = self.container_id
         return state
     
     def _env_keep_default(self):
@@ -77,40 +78,68 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def poll(self):
         """Check for my id in `docker ps`"""
-        if not self.container_id:
+        container = yield self.get_container()
+        if not container:
+            self.log.warn("container not found")
             raise gen.Return(0)
-        
-        # if my id is running, return None
-        containers = yield self.docker('containers')
-        if any(c['Id'] == self.container_id for c in containers):
+        status = container['Status']
+        self.log.debug("Container %s status: %s", self.container_id, status)
+        parts = status.split()
+        # status examples:
+        # 'Exited (127) 12 days ago'
+        # 'Up 4 days'
+        # 'Up 4 days (Paused)' <- TODO: this isn't handled
+        # e.g.
+        if parts[0] == 'Up':
             raise gen.Return(None)
-        
+        elif parts[0] == 'Exited':
+            raise gen.Return(int(parts[1][1:-1]))
+        else:
+            raise ValueError("Unhandled status: '%s'" % status)
+
+    @gen.coroutine
+    def get_container(self):
+        if not self.container_id:
+            return
+        self.log.debug("Getting container %s", self.container_id)
+        containers = yield self.docker('containers', all=True)
+        for c in containers:
+            if c['Id'] == self.container_id:
+                raise gen.Return(c)
+        self.log.info("Container %s is gone", self.container_id)
+        # my container is gone, forget my id
         self.container_id = ''
-        raise gen.Return(0)
     
     @gen.coroutine
     def start(self, image=None):
         """start the single-user server in a docker container"""
-        if image is None:
-            image = self.container_image
-        resp = yield self.docker('create_container',
-            image=image,
-            environment=self.env,
-        )
-        self.container_id = container_id = resp['Id']
-        self.log.info("Created container {}".format(container_id))
+        container = yield self.get_container()
+        if container is None:
+            image = image or self.container_image
+            resp = yield self.docker('create_container',
+                image=image or self.container_image,
+                environment=self.env,
+            )
+            self.container_id = resp['Id']
+            self.log.info("Created container %s (%s)", self.container_id, image)
+        else:
+            self.log.info("Found existing container %s", self.container_id)
 
-        yield self.docker('start', container_id, port_bindings={8888: (self.container_ip,)})
-        resp = yield self.docker('port', container_id, 8888)
+        # TODO: handle unpause
+        self.log.info("Starting container %s", self.container_id)
+        yield self.docker('start',
+            self.container_id,
+            port_bindings={8888: (self.container_ip,)},
+        )
+        resp = yield self.docker('port', self.container_id, 8888)
         self.user.server.port = resp[0]['HostPort']
     
     @gen.coroutine
     def stop(self, now=False):
-        """Kill and remove the container
+        """Stop the container
         
-        Could pause?
+        Consider using pause/unpause when docker-py adds support
         """
-        yield self.docker('kill', self.container_id)
-        yield self.docker('remove_container', self.container_id)
-        self.container_id = ''
-        
+        self.log.info("Stopping container %s", self.container_id)
+        yield self.docker('stop', self.container_id)
+        self.clear_state()
