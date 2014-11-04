@@ -6,7 +6,7 @@ FROM ipython/scipystack
 MAINTAINER IPython Project <ipython-dev@scipy.org>
 
 # fetch juptyerhub-singleuser entrypoint
-ADD https://raw.githubusercontent.com/jupyter/jupyterhub/master/jupyterhub/singleuserapp.py /usr/local/bin/jupyterhub-singleuser
+ADD https://raw.githubusercontent.com/jupyter/jupyterhub/master/jupyterhub/singleuser.py /usr/local/bin/jupyterhub-singleuser
 RUN chmod 755 /usr/local/bin/jupyterhub-singleuser
 
 # jupyter is our user
