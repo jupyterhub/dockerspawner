@@ -1,6 +1,7 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
+import itertools
 import os
 from concurrent.futures import ThreadPoolExecutor
 
@@ -8,7 +9,10 @@ import docker
 from tornado import gen
 
 from jupyterhub.spawner import Spawner
-from IPython.utils.traitlets import Unicode
+from IPython.utils.traitlets import (
+    Dict,
+    Unicode,
+)
 
 class DockerSpawner(Spawner):
     
@@ -34,7 +38,55 @@ class DockerSpawner(Spawner):
     container_id = Unicode()
     container_ip = Unicode('127.0.0.1', config=True)
     container_image = Unicode("jupyter/singleuser", config=True)
-    
+
+    volumes = Dict(
+        config=True,
+        help="Map from host file/directory to container file/directory."
+    )
+    read_only_volumes = Dict(
+        config=True,
+        help="Map from host file/directory to container file/directory."
+    )
+
+    @property
+    def volume_mount_points(self):
+        """
+        Volumes are declared in docker-py in two stages.  First, you declare
+        all the locations where you're going to mount volumes when you call
+        create_container.
+
+        Returns a list of all the values in self.volumes or
+        self.read_only_volumes.
+        """
+        return list(
+            itertools.chain(
+                self.volumes.values(),
+                self.read_only_volumes.values(),
+            )
+        )
+
+    @property
+    def volume_binds(self):
+        """
+        The second half of declaring a volume with docker-py happens when you
+        actually call start().  The required format is a dict of dicts that
+        looks like:
+
+        {
+            host_location: {'bind': container_location, 'ro': True}
+        }
+        """
+        rw_volumes = {
+            key: {'bind': value, 'ro': False}
+            for key, value in self.volumes.items()
+        }
+        ro_volumes = {
+            key: {'bind': value, 'ro': True}
+            for key, value in self.read_only_volumes.items()
+        }
+        rw_volumes.update(ro_volumes)
+        return rw_volumes
+
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
         self.container_id = state.get('container_id', '')
@@ -116,9 +168,11 @@ class DockerSpawner(Spawner):
         container = yield self.get_container()
         if container is None:
             image = image or self.container_image
-            resp = yield self.docker('create_container',
+            resp = yield self.docker(
+                'create_container',
                 image=image or self.container_image,
                 environment=self.env,
+                volumes=self.volume_mount_points,
             )
             self.container_id = resp['Id']
             self.log.info("Created container %s (%s)", self.container_id[:7], image)
@@ -127,8 +181,10 @@ class DockerSpawner(Spawner):
 
         # TODO: handle unpause
         self.log.info("Starting container %s", self.container_id[:7])
-        yield self.docker('start',
+        yield self.docker(
+            'start',
             self.container_id,
+            binds=self.volume_binds,
             port_bindings={8888: (self.container_ip,)},
         )
         resp = yield self.docker('port', self.container_id, 8888)
