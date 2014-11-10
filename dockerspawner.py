@@ -3,6 +3,7 @@ A Spawner for JupyterHub that runs each user's server in a separate docker conta
 """
 import itertools
 import os
+from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor
 
 import docker
@@ -41,11 +42,21 @@ class DockerSpawner(Spawner):
 
     volumes = Dict(
         config=True,
-        help="Map from host file/directory to container file/directory."
+        help=dedent(
+            """
+            Map from host file/directory to container file/directory.
+            Volumes specified here will be read/write in the container.
+            """
+        )
     )
     read_only_volumes = Dict(
         config=True,
-        help="Map from host file/directory to container file/directory."
+        help=dedent(
+            """
+            Map from host file/directory to container file/directory.
+            Volumes specified here will be read-only in the container.
+            """
+        )
     )
 
     @property
@@ -76,7 +87,7 @@ class DockerSpawner(Spawner):
             host_location: {'bind': container_location, 'ro': True}
         }
         """
-        rw_volumes = {
+        volumes = {
             key: {'bind': value, 'ro': False}
             for key, value in self.volumes.items()
         }
@@ -84,8 +95,8 @@ class DockerSpawner(Spawner):
             key: {'bind': value, 'ro': True}
             for key, value in self.read_only_volumes.items()
         }
-        rw_volumes.update(ro_volumes)
-        return rw_volumes
+        volumes.update(ro_volumes)
+        return volumes
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
