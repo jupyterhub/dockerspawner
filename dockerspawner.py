@@ -64,6 +64,16 @@ class DockerSpawner(Spawner):
             """
         )
     )
+    user_ids = Dict(
+        config=True,
+        help=dedent(
+            """
+            If system users are being used, then we need to know their user id
+            in order to mount the home directory. User ids should be specified
+            in this dictionary.
+            """
+        )
+    )
 
     volumes = Dict(
         config=True,
@@ -177,6 +187,7 @@ class DockerSpawner(Spawner):
         if self.system_users:
             env.update(dict(
                 USER=self.user.name,
+                USER_ID=self.user_ids[self.user.name],
                 HOME=self.homedir
             ))
 
