@@ -237,14 +237,22 @@ class DockerSpawner(Spawner):
         """start the single-user server in a docker container"""
         container = yield self.get_container()
         if container is None:
+            if self.system_users:
+                extra_kwargs = dict(
+                    user=self.user.name,
+                    working_dir=self.homedir,
+                    name=self.user.name
+                )
+            else:
+                extra_kwargs = {}
+
             image = image or self.container_image
             resp = yield self.docker(
                 'create_container',
-                image=image or self.container_image,
+                image=image,
                 environment=self.env,
                 volumes=self.volume_mount_points,
-                user=self.user.name,
-                working_dir=self.homedir
+                **extra_kwargs
             )
             self.container_id = resp['Id']
             self.log.info("Created container %s (%s)", self.container_id[:7], image)
