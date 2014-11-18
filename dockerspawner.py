@@ -42,7 +42,8 @@ class DockerSpawner(Spawner):
     container_image = Unicode("jupyter/singleuser", config=True)
 
     system_users = Bool(
-        config=False,
+        False,
+        config=True,
         help=dedent(
             """
             Users correspond to system users, and as such, their home directory
