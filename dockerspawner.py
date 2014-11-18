@@ -11,6 +11,7 @@ from tornado import gen
 
 from jupyterhub.spawner import Spawner
 from IPython.utils.traitlets import (
+    Bool,
     Dict,
     Unicode,
 )
