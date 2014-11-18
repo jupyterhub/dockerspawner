@@ -9,19 +9,13 @@ MAINTAINER IPython Project <ipython-dev@scipy.org>
 ADD https://raw.githubusercontent.com/jupyter/jupyterhub/master/jupyterhub/singleuser.py /usr/local/bin/jupyterhub-singleuser
 RUN chmod 755 /usr/local/bin/jupyterhub-singleuser
 
-# set the shell
+# jupyter is our (initial) user
+RUN useradd -m -s /bin/bash jupyter
+
+USER jupyter
 ENV SHELL /bin/bash
 
 EXPOSE 8888
 
-WORKDIR /srv/singleuser
-
-# When the image is built, we want to add the user to the system. So, this looks
-# for a file called `user` which contains one line of the format username:userid
-# (e.g. jupyter:1005)
-ADD adduser.sh /srv/singleuser/adduser.sh
-ONBUILD ADD user /srv/singleuser/user
-ONBUILD RUN ["sh", "/srv/singleuser/adduser.sh"]
-
-ADD singleuser.sh /srv/singleuser/singleuser.sh
-CMD ["sh", "/srv/singleuser/singleuser.sh"]
+ADD systemuser.sh /srv/singleuser/systemuser.sh
+CMD ["sh", "/srv/singleuser/systemuser.sh"]
