@@ -52,15 +52,15 @@ class DockerSpawner(Spawner):
             """
         )
     )
-    homedir_format_string = Unicode(
+    host_homedir_format_string = Unicode(
         "/home/{username}",
         config=True,
         help=dedent(
             """
-            Format string for the path to the user's home directory. This is
-            only used if `system_users` is set to True. The format string should
-            include a `username` variable, which will be formatted with the
-            user's username.
+            Format string for the path to the user's home directory on the host.
+            This is only used if `system_users` is set to True. The format
+            string should include a `username` variable, which will be formatted
+            with the user's username.
             """
         )
     )
@@ -85,12 +85,19 @@ class DockerSpawner(Spawner):
     )
 
     @property
+    def host_homedir(self):
+        """
+        Path to the volume containing the user's home directory on the host. 
+        This is only relevant if `self.system_users` is set to True.
+        """
+        return self.host_homedir_format_string.format(username=self.user.name)
+
+    @property
     def homedir(self):
         """
-        Path to the user's home directory. This is only relevant if
-        `self.system_users` is set to True.
+        Path to the user's home directory in the docker image.
         """
-        return self.homedir_format_string.format(username=self.user.name)
+        return "/home/{username}".format(username=self.user.name)
 
     @property
     def volume_mount_points(self):
@@ -136,7 +143,7 @@ class DockerSpawner(Spawner):
         volumes.update(ro_volumes)
 
         if self.system_users:
-            volumes[self.homedir] = {
+            volumes[self.host_homedir] = {
                 'bind': self.homedir,
                 'ro': False
             }
