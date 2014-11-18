@@ -14,6 +14,8 @@ ENV SHELL /bin/bash
 
 EXPOSE 8888
 
+WORKDIR /srv/singleuser
+
 # When the image is built, we want to add the user to the system. So, this looks
 # for a file called `user` which contains one line of the format username:userid
 # (e.g. jupyter:1005)
