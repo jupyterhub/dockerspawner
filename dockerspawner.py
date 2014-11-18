@@ -40,6 +40,29 @@ class DockerSpawner(Spawner):
     container_ip = Unicode('127.0.0.1', config=True)
     container_image = Unicode("jupyter/singleuser", config=True)
 
+    system_users = Bool(
+        config=False,
+        help=dedent(
+            """
+            Users correspond to system users, and as such, their home directory
+            will be mounted in the docker container, and the container will be
+            run as that user.
+            """
+        )
+    )
+    homedir_format_string = Unicode(
+        "/home/{username}",
+        config=True,
+        help=dedent(
+            """
+            Format string for the path to the user's home directory. This is
+            only used if `system_users` is set to True. The format string should
+            include a `username` variable, which will be formatted with the
+            user's username.
+            """
+        )
+    )
+
     volumes = Dict(
         config=True,
         help=dedent(
@@ -60,6 +83,14 @@ class DockerSpawner(Spawner):
     )
 
     @property
+    def homedir(self):
+        """
+        Path to the user's home directory. This is only relevant if
+        `self.system_users` is set to True.
+        """
+        return self.homedir_format_string.format(username=self.user.name)
+
+    @property
     def volume_mount_points(self):
         """
         Volumes are declared in docker-py in two stages.  First, you declare
@@ -69,12 +100,17 @@ class DockerSpawner(Spawner):
         Returns a list of all the values in self.volumes or
         self.read_only_volumes.
         """
-        return list(
+        mount_points = list(
             itertools.chain(
                 self.volumes.values(),
                 self.read_only_volumes.values(),
             )
         )
+
+        if self.system_users:
+            mount_points.append(self.homedir)
+
+        return mount_points
 
     @property
     def volume_binds(self):
@@ -96,6 +132,13 @@ class DockerSpawner(Spawner):
             for key, value in self.read_only_volumes.items()
         }
         volumes.update(ro_volumes)
+
+        if self.system_users:
+            volumes[self.homedir] = {
+                'bind': self.homedir,
+                'ro': False
+            }
+
         return volumes
 
     def load_state(self, state):
@@ -121,6 +164,13 @@ class DockerSpawner(Spawner):
             JPY_HUB_PREFIX=self.hub.server.base_url,
             JPY_HUB_API_URL=self.hub.api_url,
         ))
+
+        if self.system_users:
+            env.update(dict(
+                USER=self.user.name,
+                HOME=self.homedir
+            ))
+
         return env
 
     def _docker(self, method, *args, **kwargs):
@@ -184,6 +234,8 @@ class DockerSpawner(Spawner):
                 image=image or self.container_image,
                 environment=self.env,
                 volumes=self.volume_mount_points,
+                user=self.user.name,
+                working_dir=self.homedir
             )
             self.container_id = resp['Id']
             self.log.info("Created container %s (%s)", self.container_id[:7], image)
