@@ -1,13 +1,13 @@
-# Build as jupyter/jupyterhub-systemuser
+# Build as jupyter/systemuser
 # Run with the DockerSpawner in JupyterHub
 
 FROM ipython/scipystack
 
 MAINTAINER IPython Project <ipython-dev@scipy.org>
 
-# fetch juptyerhub-systemuser entrypoint
-ADD https://raw.githubusercontent.com/jupyter/jupyterhub/master/jupyterhub/systemuser.py /usr/local/bin/jupyterhub-systemuser
-RUN chmod 755 /usr/local/bin/jupyterhub-systemuser
+# fetch juptyerhub-singleuser entrypoint
+ADD https://raw.githubusercontent.com/jupyter/jupyterhub/master/jupyterhub/singleuser.py /usr/local/bin/jupyterhub-singleuser
+RUN chmod 755 /usr/local/bin/jupyterhub-singleuser
 
 # set the shell
 ENV SHELL /bin/bash
