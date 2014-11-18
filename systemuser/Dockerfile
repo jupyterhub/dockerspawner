@@ -10,7 +10,7 @@ ADD https://raw.githubusercontent.com/jupyter/jupyterhub/master/jupyterhub/singl
 RUN chmod 755 /usr/local/bin/jupyterhub-singleuser
 
 # jupyter is our (initial) user
-RUN useradd -m -s /bin/bash jupyter
+RUN useradd -s /bin/bash jupyter
 
 USER jupyter
 ENV SHELL /bin/bash

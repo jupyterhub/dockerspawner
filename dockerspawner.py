@@ -239,7 +239,6 @@ class DockerSpawner(Spawner):
         if container is None:
             if self.system_users:
                 extra_kwargs = dict(
-                    user=self.user.name,
                     working_dir=self.homedir,
                     name=self.user.name
                 )
