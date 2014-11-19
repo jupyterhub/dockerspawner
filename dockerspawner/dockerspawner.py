@@ -39,6 +39,16 @@ class DockerSpawner(Spawner):
     container_id = Unicode()
     container_ip = Unicode('127.0.0.1', config=True)
     container_image = Unicode("jupyter/singleuser", config=True)
+    container_prefix = Unicode(
+        "jupyter",
+        config=True,
+        help=dedent(
+            """
+            Prefix for container names. The full container name for a particular
+            user will be <prefix>-<username>.
+            """
+        )
+    )
 
     volumes = Dict(
         config=True,
@@ -97,6 +107,10 @@ class DockerSpawner(Spawner):
         }
         volumes.update(ro_volumes)
         return volumes
+
+    @property
+    def container_name(self):
+        return "{}-{}".format(self.container_prefix, self.user.name)
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
@@ -162,41 +176,56 @@ class DockerSpawner(Spawner):
 
     @gen.coroutine
     def get_container(self):
-        if not self.container_id:
-            return
-        self.log.debug("Getting container %s", self.container_id[:7])
+        self.log.debug("Getting container '%s'", self.container_name)
         containers = yield self.docker('containers', all=True)
         for c in containers:
-            if c['Id'] == self.container_id:
+            if "/{}".format(self.container_name) in c['Names']:
+                self.container_id = c['Id']
                 raise gen.Return(c)
-        self.log.info("Container %s is gone", self.container_id[:7])
+        self.log.info("Container '%s' is gone", self.container_name)
         # my container is gone, forget my id
         self.container_id = ''
     
     @gen.coroutine
-    def start(self, image=None):
-        """start the single-user server in a docker container"""
+    def start(self, image=None, **extra_create_kwargs):
+        """Start the single-user server in a docker container. You can override
+        the default parameters passed to `create_container` through the
+        `extra_create_kwargs` dictionary.
+
+        """
         container = yield self.get_container()
         if container is None:
             image = image or self.container_image
-            resp = yield self.docker(
-                'create_container',
-                image=image or self.container_image,
+
+            # build the dictionary of keyword arguments for create_container
+            create_kwargs = dict(
+                image=image,
                 environment=self.env,
                 volumes=self.volume_mount_points,
-            )
+                name=self.container_name)
+            create_kwargs.update(extra_create_kwargs)
+
+            # create the container
+            resp = yield self.docker('create_container', **create_kwargs)
             self.container_id = resp['Id']
-            self.log.info("Created container %s (%s)", self.container_id[:7], image)
+            self.log.info(
+                "Created container '%s' (id: %s) from image %s",
+                self.container_name, self.container_id[:7], image)
+
         else:
-            self.log.info("Found existing container %s", self.container_id[:7])
+            self.log.info(
+                "Found existing container '%s' (id: %s)",
+                self.container_name, self.container_id[:7])
 
         # TODO: handle unpause
-        self.log.info("Starting container %s", self.container_id[:7])
+        self.log.info(
+            "Starting container '%s' (id: %s)",
+            self.container_name, self.container_id[:7])
         yield self.docker(
             'start',
             self.container_id,
             binds=self.volume_binds,
-            port_bindings={8888: (self.container_ip,)},
+            port_bindings={8888: (self.container_ip,)}
         )
         resp = yield self.docker('port', self.container_id, 8888)
         self.user.server.port = resp[0]['HostPort']
@@ -207,6 +236,8 @@ class DockerSpawner(Spawner):
         
         Consider using pause/unpause when docker-py adds support
         """
-        self.log.info("Stopping container %s", self.container_id[:7])
+        self.log.info(
+            "Stopping container %s' (id: %s)",
+            self.container_name, self.container_id[:7])
         yield self.docker('stop', self.container_id)
         self.clear_state()
