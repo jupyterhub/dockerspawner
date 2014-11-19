@@ -38,7 +38,7 @@ with open(pjoin(here, 'version.py')) as f:
 
 setup_args = dict(
     name                = 'dockerspawner',
-    py_modules          = ['dockerspawner'],
+    packages            = ['dockerspawner'],
     version             = version_ns['__version__'],
     description         = """Dockerspawner: A custom spawner for Jupyterhub.""",
     long_description    = "",
