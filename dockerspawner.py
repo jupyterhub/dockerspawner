@@ -11,7 +11,6 @@ from tornado import gen
 
 from jupyterhub.spawner import Spawner
 from IPython.utils.traitlets import (
-    Bool,
     Dict,
     Unicode,
 )
@@ -41,40 +40,6 @@ class DockerSpawner(Spawner):
     container_ip = Unicode('127.0.0.1', config=True)
     container_image = Unicode("jupyter/singleuser", config=True)
 
-    system_users = Bool(
-        False,
-        config=True,
-        help=dedent(
-            """
-            Users correspond to system users, and as such, their home directory
-            will be mounted in the docker container, and the container will be
-            run as that user.
-            """
-        )
-    )
-    host_homedir_format_string = Unicode(
-        "/home/{username}",
-        config=True,
-        help=dedent(
-            """
-            Format string for the path to the user's home directory on the host.
-            This is only used if `system_users` is set to True. The format
-            string should include a `username` variable, which will be formatted
-            with the user's username.
-            """
-        )
-    )
-    user_ids = Dict(
-        config=True,
-        help=dedent(
-            """
-            If system users are being used, then we need to know their user id
-            in order to mount the home directory. User ids should be specified
-            in this dictionary.
-            """
-        )
-    )
-
     volumes = Dict(
         config=True,
         help=dedent(
@@ -95,21 +60,6 @@ class DockerSpawner(Spawner):
     )
 
     @property
-    def host_homedir(self):
-        """
-        Path to the volume containing the user's home directory on the host. 
-        This is only relevant if `self.system_users` is set to True.
-        """
-        return self.host_homedir_format_string.format(username=self.user.name)
-
-    @property
-    def homedir(self):
-        """
-        Path to the user's home directory in the docker image.
-        """
-        return "/home/{username}".format(username=self.user.name)
-
-    @property
     def volume_mount_points(self):
         """
         Volumes are declared in docker-py in two stages.  First, you declare
@@ -119,17 +69,12 @@ class DockerSpawner(Spawner):
         Returns a list of all the values in self.volumes or
         self.read_only_volumes.
         """
-        mount_points = list(
+        return list(
             itertools.chain(
                 self.volumes.values(),
                 self.read_only_volumes.values(),
             )
         )
-
-        if self.system_users:
-            mount_points.append(self.homedir)
-
-        return mount_points
 
     @property
     def volume_binds(self):
@@ -151,13 +96,6 @@ class DockerSpawner(Spawner):
             for key, value in self.read_only_volumes.items()
         }
         volumes.update(ro_volumes)
-
-        if self.system_users:
-            volumes[self.host_homedir] = {
-                'bind': self.homedir,
-                'ro': False
-            }
-
         return volumes
 
     def load_state(self, state):
@@ -183,14 +121,6 @@ class DockerSpawner(Spawner):
             JPY_HUB_PREFIX=self.hub.server.base_url,
             JPY_HUB_API_URL=self.hub.api_url,
         ))
-
-        if self.system_users:
-            env.update(dict(
-                USER=self.user.name,
-                USER_ID=self.user_ids[self.user.name],
-                HOME=self.homedir
-            ))
-
         return env
 
     def _docker(self, method, *args, **kwargs):
@@ -248,21 +178,12 @@ class DockerSpawner(Spawner):
         """start the single-user server in a docker container"""
         container = yield self.get_container()
         if container is None:
-            if self.system_users:
-                extra_kwargs = dict(
-                    working_dir=self.homedir,
-                    name=self.user.name
-                )
-            else:
-                extra_kwargs = {}
-
             image = image or self.container_image
             resp = yield self.docker(
                 'create_container',
-                image=image,
+                image=image or self.container_image,
                 environment=self.env,
                 volumes=self.volume_mount_points,
-                **extra_kwargs
             )
             self.container_id = resp['Id']
             self.log.info("Created container %s (%s)", self.container_id[:7], image)
