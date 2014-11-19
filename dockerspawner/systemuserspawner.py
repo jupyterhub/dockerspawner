@@ -9,6 +9,8 @@ from tornado import gen
 
 class SystemUserSpawner(DockerSpawner):
 
+    container_image = Unicode("jupyter/systemuser", config=True)
+
     host_homedir_format_string = Unicode(
         "/home/{username}",
         config=True,
