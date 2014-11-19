@@ -88,22 +88,9 @@ class SystemUserSpawner(DockerSpawner):
         return env
 
     @gen.coroutine
-    def get_container(self):
-        self.log.debug("Getting container for user '%s'", self.user.name)
-        containers = yield self.docker('containers', all=True)
-        for c in containers:
-            if "/{}".format(self.user.name) in c['Names']:
-                self.container_id = c['Id']
-                raise gen.Return(c)
-        self.log.info("Container for user '%s' is gone", self.user.name)
-        # my container is gone, forget my id
-        self.container_id = ''
-
-    @gen.coroutine
     def start(self, image=None):
         """start the single-user server in a docker container"""
         yield super(SystemUserSpawner, self).start(
             image=image,
-            working_dir=self.homedir,
-            name=self.user.name
+            working_dir=self.homedir
         )
