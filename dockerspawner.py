@@ -39,6 +39,16 @@ class DockerSpawner(Spawner):
     container_id = Unicode()
     container_ip = Unicode('127.0.0.1', config=True)
     container_image = Unicode("jupyter/singleuser", config=True)
+    container_prefix = Unicode(
+        "jupyter",
+        config=True,
+        help=dedent(
+            """
+            Prefix for container names. The full container name for a particular
+            user will be <prefix>-<username>.
+            """
+        )
+    )
 
     volumes = Dict(
         config=True,
@@ -97,6 +107,10 @@ class DockerSpawner(Spawner):
         }
         volumes.update(ro_volumes)
         return volumes
+
+    @property
+    def container_name(self):
+        return "{}-{}".format(self.container_prefix, self.user.name)
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
@@ -162,13 +176,13 @@ class DockerSpawner(Spawner):
 
     @gen.coroutine
     def get_container(self):
-        self.log.debug("Getting container for user '%s'", self.user.name)
+        self.log.debug("Getting container '%s'", self.container_name)
         containers = yield self.docker('containers', all=True)
         for c in containers:
-            if "/{}".format(self.user.name) in c['Names']:
+            if "/{}".format(self.container_name) in c['Names']:
                 self.container_id = c['Id']
                 raise gen.Return(c)
-        self.log.info("Container for user '%s' is gone", self.user.name)
+        self.log.info("Container '%s' is gone", self.container_name)
         # my container is gone, forget my id
         self.container_id = ''
     
@@ -188,25 +202,25 @@ class DockerSpawner(Spawner):
                 image=image,
                 environment=self.env,
                 volumes=self.volume_mount_points,
-                name=self.user.name)
+                name=self.container_name)
             create_kwargs.update(extra_create_kwargs)
 
             # create the container
             resp = yield self.docker('create_container', **create_kwargs)
             self.container_id = resp['Id']
             self.log.info(
-                "Created container for user '%s' (%s) from image %s",
-                self.user.name, self.container_id[:7], image)
+                "Created container '%s' (id: %s) from image %s",
+                self.container_name, self.container_id[:7], image)
 
         else:
             self.log.info(
-                "Found existing container for user '%s' (%s)",
-                self.user.name, self.container_id[:7])
+                "Found existing container '%s' (id: %s)",
+                self.container_name, self.container_id[:7])
 
         # TODO: handle unpause
         self.log.info(
-            "Starting container for user '%s' (%s)",
-            self.user.name, self.container_id[:7])
+            "Starting container '%s' (id: %s)",
+            self.container_name, self.container_id[:7])
         yield self.docker(
             'start',
             self.container_id,
@@ -223,7 +237,7 @@ class DockerSpawner(Spawner):
         Consider using pause/unpause when docker-py adds support
         """
         self.log.info(
-            "Stopping container for user '%s' (%s)",
-            self.user.name, self.container_id[:7])
+            "Stopping container %s' (id: %s)",
+            self.container_name, self.container_id[:7])
         yield self.docker('stop', self.container_id)
         self.clear_state()
