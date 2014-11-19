@@ -102,52 +102,8 @@ class SystemUserSpawner(DockerSpawner):
     @gen.coroutine
     def start(self, image=None):
         """start the single-user server in a docker container"""
-        container = yield self.get_container()
-        if container is None:
-            image = image or self.container_image
-            resp = yield self.docker(
-                'create_container',
-                image=image,
-                environment=self.env,
-                volumes=self.volume_mount_points,
-                working_dir=self.homedir,
-                name=self.user.name
-            )
-            self.container_id = resp['Id']
-            self.log.info(
-                "Created container for user '%s' (%s) from image %s",
-                self.user.name, self.container_id[:7], image)
-        else:
-            self.log.info(
-                "Found existing container for user '%s' (%s)", 
-                self.user.name, self.container_id[:7])
-
-        self.log.info(
-            "Starting container for user '%s' (%s)",
-            self.user.name, self.container_id[:7])
-        yield self.docker(
-            'start',
-            self.container_id,
-            binds=self.volume_binds,
-            port_bindings={8888: (self.container_ip,)},
+        yield super(SystemUserSpawner, self).start(
+            image=image,
+            working_dir=self.homedir,
+            name=self.user.name
         )
-        resp = yield self.docker('port', self.container_id, 8888)
-        self.user.server.port = resp[0]['HostPort']
-    
-    @gen.coroutine
-    def stop(self, now=False):
-        """Stop the container
-        
-        Consider using pause/unpause when docker-py adds support
-        """
-        self.log.info(
-            "Stopping container for user '%s' (%s)",
-            self.user.name, self.container_id[:7])
-        yield self.docker('stop', self.container_id)
-
-        self.log.info(
-            "Removing container for user '%s' (%s)", 
-            self.user.name, self.container_id[:7])
-        yield self.docker('remove_container', self.container_id)
-
-        self.clear_state()

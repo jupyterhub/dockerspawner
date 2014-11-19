@@ -174,19 +174,29 @@ class DockerSpawner(Spawner):
         self.container_id = ''
     
     @gen.coroutine
-    def start(self, image=None):
-        """start the single-user server in a docker container"""
+    def start(self, image=None, **extra_create_kwargs):
+        """Start the single-user server in a docker container. You can override
+        the default parameters passed to `create_container` through the
+        `extra_create_kwargs` dictionary.
+
+        """
         container = yield self.get_container()
         if container is None:
             image = image or self.container_image
-            resp = yield self.docker(
-                'create_container',
-                image=image or self.container_image,
+
+            # build the dictionary of keyword arguments for create_container
+            create_kwargs = dict(
+                image=image,
                 environment=self.env,
-                volumes=self.volume_mount_points,
-            )
+                volumes=self.volume_mount_points)
+            create_kwargs.update(extra_create_kwargs)
+
+            # create the container
+            resp = yield self.docker('create_container', **create_kwargs)
             self.container_id = resp['Id']
-            self.log.info("Created container %s (%s)", self.container_id[:7], image)
+            self.log.info(
+                "Created container %s (%s)", self.container_id[:7], image)
+
         else:
             self.log.info("Found existing container %s", self.container_id[:7])
 
@@ -196,7 +206,7 @@ class DockerSpawner(Spawner):
             'start',
             self.container_id,
             binds=self.volume_binds,
-            port_bindings={8888: (self.container_ip,)},
+            port_bindings={8888: (self.container_ip,)}
         )
         resp = yield self.docker('port', self.container_id, 8888)
         self.user.server.port = resp[0]['HostPort']
