@@ -3,17 +3,17 @@
 c = get_config()
 
 # spawn with Docker
-c.JupyterHubApp.spawner_class = 'dockerspawner.DockerSpawner'
+c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
 
 # The docker instances need access to the Hub, so the default loopback port doesn't work:
 from IPython.utils.localinterfaces import public_ips
-c.JupyterHubApp.hub_ip = public_ips()[0]
+c.JupyterHub.hub_ip = public_ips()[0]
 
 # OAuth with GitHub
-c.JupyterHubApp.authenticator_class = 'oauthenticator.GitHubOAuthenticator'
+c.JupyterHub.authenticator_class = 'oauthenticator.GitHubOAuthenticator'
 
 c.Authenticator.whitelist = whitelist = set()
-c.JupyterHubApp.admin_users = admin = set()
+c.JupyterHub.admin_users = admin = set()
 
 import os
 
@@ -36,6 +36,6 @@ ssl = join(here, 'ssl')
 keyfile = join(ssl, 'ssl.key')
 certfile = join(ssl, 'ssl.cert')
 if os.path.exists(keyfile):
-    c.JupyterHubApp.ssl_key = keyfile
+    c.JupyterHub.ssl_key = keyfile
 if os.path.exists(certfile):
-    c.JupyterHubApp.ssl_cert = certfile
+    c.JupyterHub.ssl_cert = certfile
