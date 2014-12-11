@@ -18,7 +18,7 @@ Install to the system:
 For basic, temporary notebook servers, tell JupyterHub to use DockerSpawner by
 adding the following to your `jupyterhub_config.py`:
 
-    c.JupyterHubApp.spawner_class = 'dockerspawner.DockerSpawner'
+    c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
 
 There is a complete example in [examples/oauth](examples/oauth) for
 using GitHub OAuth to authenticate users, and spawn containers with docker.
@@ -29,7 +29,7 @@ If you want to spawn notebook servers for users that correspond to system users,
 you can use the SystemUserSpawner instead. Add the following to your
 `jupyterhub_config.py`:
 
-    c.JupyterHubApp.spawner_class = 'dockerspawner.SystemUserSpawner'
+    c.JupyterHub.spawner_class = 'dockerspawner.SystemUserSpawner'
 
 Additionally, you will need to specify what the user ids are for the system
 users. For example, if you had users `foo` and `bar`:
