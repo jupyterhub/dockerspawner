@@ -31,16 +31,6 @@ you can use the SystemUserSpawner instead. Add the following to your
 
     c.JupyterHub.spawner_class = 'dockerspawner.SystemUserSpawner'
 
-Additionally, you will need to specify what the user ids are for the system
-users. For example, if you had users `foo` and `bar`:
-
-    c.SystemUserSpawner.user_ids = dict(
-        foo=1001,
-        bar=1002
-    )
-
-(You can find out what id a user is by running the command `id -u <username>`).
-
 The SystemUserSpawner will also need to know where the user home directories
 are on the host. By default, it expects them to be in `/home/<username>`, but if
 you want to change this, you'll need to further modify the

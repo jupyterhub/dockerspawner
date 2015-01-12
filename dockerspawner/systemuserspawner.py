@@ -1,7 +1,9 @@
+import pwd
+
 from dockerspawner import DockerSpawner
 from textwrap import dedent
 from IPython.utils.traitlets import (
-    Dict,
+    Integer,
     Unicode,
 )
 from tornado import gen
@@ -23,13 +25,16 @@ class SystemUserSpawner(DockerSpawner):
         )
     )
 
-    user_ids = Dict(
-        config=True,
+    user_id = Integer(-1,
         help=dedent(
             """
             If system users are being used, then we need to know their user id
-            in order to mount the home directory. User ids should be specified
-            in this dictionary.
+            in order to mount the home directory.
+
+            User IDs are looked up in two ways:
+
+            1. stored in the state dict (authenticator can write here)
+            2. lookup via pwd
             """
         )
     )
@@ -84,10 +89,31 @@ class SystemUserSpawner(DockerSpawner):
         env = super(SystemUserSpawner, self)._env_default()
         env.update(dict(
             USER=self.user.name,
-            USER_ID=self.user_ids[self.user.name],
+            USER_ID=self.user_id,
             HOME=self.homedir
         ))
         return env
+    
+    def _user_id_default(self):
+        """
+        Get user_id from pwd lookup by name
+        
+        If the authenticator stores user_id in the user state dict,
+        this will never be called, which is necessary if
+        the system users are not on the Hub system (i.e. Hub itself is in a container).
+        """
+        return pwd.getpwnam(self.user.name).pw_uid
+
+    def load_state(self, state):
+        super().load_state(state)
+        if 'user_id' in state:
+            self.user_id = state['user_id']
+
+    def get_state(self):
+        state = super().get_state()
+        if self.user_id >= 0:
+            state['user_id'] = self.user_id
+        return state
 
     @gen.coroutine
     def start(self, image=None):
