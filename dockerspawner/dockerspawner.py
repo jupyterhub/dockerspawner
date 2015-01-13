@@ -237,7 +237,7 @@ class DockerSpawner(Spawner):
         Consider using pause/unpause when docker-py adds support
         """
         self.log.info(
-            "Stopping container %s' (id: %s)",
+            "Stopping container %s (id: %s)",
             self.container_name, self.container_id[:7])
         yield self.docker('stop', self.container_id)
         self.clear_state()
