@@ -32,10 +32,40 @@ class DockerSpawner(Spawner):
         """single global client instance"""
         cls = self.__class__
         if cls._client is None:
+            if os.environ.get('DOCKER_TLS'):
+                tls_config = True
+                self.log.debug("Using --tls")
+            else:
+                tls_verify = os.environ.get('DOCKER_TLS_VERIFY', None)
+                if tls_verify is not None:
+                    tls_verify = bool(int(tls_verify))
+                self.log.debug("tls_verify: %s", tls_verify)
+
+                # path to CA certificate
+                tls_ca = os.environ.get('DOCKER_TLS_CA', None)
+                self.log.debug("tls_ca: %s", tls_ca)
+
+                # path to client certificate and key
+                tls_cert = os.environ.get('DOCKER_TLS_CERT', None)
+                tls_key = os.environ.get('DOCKER_TLS_KEY', None)
+                if tls_cert and tls_key:
+                    tls_client = (tls_cert, tls_key)
+                else:
+                    tls_client = None
+                self.log.debug("tls_client: %s", tls_client)
+
+                if tls_verify or tls_ca or tls_client:
+                    tls_config = docker.tls.TLSConfig(
+                        client_cert=tls_client,
+                        ca_cert=tls_ca,
+                        verify=tls_verify)
+                else:
+                    tls_config = None
+
             docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
-            cls._client = docker.Client(base_url=docker_host)
+            cls._client = docker.Client(base_url=docker_host, tls=tls_config)
         return cls._client
-    
+
     container_id = Unicode()
     container_ip = Unicode('127.0.0.1', config=True)
     container_image = Unicode("jupyter/singleuser", config=True)
