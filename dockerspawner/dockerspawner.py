@@ -13,6 +13,7 @@ from jupyterhub.spawner import Spawner
 from IPython.utils.traitlets import (
     Dict,
     Unicode,
+    Bool
 )
 
 class DockerSpawner(Spawner):
@@ -32,35 +33,16 @@ class DockerSpawner(Spawner):
         """single global client instance"""
         cls = self.__class__
         if cls._client is None:
-            if os.environ.get('DOCKER_TLS'):
+            if self.tls:
                 tls_config = True
                 self.log.debug("Using --tls")
+            elif self.tls_verify or self.tls_ca or self.tls_client:
+                tls_config = docker.tls.TLSConfig(
+                    client_cert=self.tls_client,
+                    ca_cert=self.tls_ca,
+                    verify=self.tls_verify)
             else:
-                tls_verify = os.environ.get('DOCKER_TLS_VERIFY', None)
-                if tls_verify is not None:
-                    tls_verify = bool(int(tls_verify))
-                self.log.debug("tls_verify: %s", tls_verify)
-
-                # path to CA certificate
-                tls_ca = os.environ.get('DOCKER_TLS_CA', None)
-                self.log.debug("tls_ca: %s", tls_ca)
-
-                # path to client certificate and key
-                tls_cert = os.environ.get('DOCKER_TLS_CERT', None)
-                tls_key = os.environ.get('DOCKER_TLS_KEY', None)
-                if tls_cert and tls_key:
-                    tls_client = (tls_cert, tls_key)
-                else:
-                    tls_client = None
-                self.log.debug("tls_client: %s", tls_client)
-
-                if tls_verify or tls_ca or tls_client:
-                    tls_config = docker.tls.TLSConfig(
-                        client_cert=tls_client,
-                        ca_cert=tls_ca,
-                        verify=tls_verify)
-                else:
-                    tls_config = None
+                tls_config = None
 
             docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
             cls._client = docker.Client(base_url=docker_host, tls=tls_config)
@@ -98,6 +80,18 @@ class DockerSpawner(Spawner):
             """
         )
     )
+
+    tls = Bool(False, config=True, help="If True, use --tls")
+    tls_verify = Bool(False, config=True, help="If True, use --tlsverify")
+    tls_ca = Unicode("", config=True, help="Path to CA certificate")
+    tls_cert = Unicode("", config=True, help="Path to client certificate")
+    tls_key = Unicode("", config=True, help="Path to client key")
+
+    @property
+    def tls_client(self):
+        if self.tls_cert and self.tls_key:
+            return (self.tls_cert, self.tls_key)
+        return None
 
     @property
     def volume_mount_points(self):
