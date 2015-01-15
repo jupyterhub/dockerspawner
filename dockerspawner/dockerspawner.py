@@ -13,6 +13,7 @@ from jupyterhub.spawner import Spawner
 from IPython.utils.traitlets import (
     Dict,
     Unicode,
+    Bool
 )
 
 class DockerSpawner(Spawner):
@@ -32,10 +33,20 @@ class DockerSpawner(Spawner):
         """single global client instance"""
         cls = self.__class__
         if cls._client is None:
+            if self.tls:
+                tls_config = True
+            elif self.tls_verify or self.tls_ca or self.tls_client:
+                tls_config = docker.tls.TLSConfig(
+                    client_cert=self.tls_client,
+                    ca_cert=self.tls_ca,
+                    verify=self.tls_verify)
+            else:
+                tls_config = None
+
             docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
-            cls._client = docker.Client(base_url=docker_host)
+            cls._client = docker.Client(base_url=docker_host, tls=tls_config)
         return cls._client
-    
+
     container_id = Unicode()
     container_ip = Unicode('127.0.0.1', config=True)
     container_image = Unicode("jupyter/singleuser", config=True)
@@ -68,6 +79,22 @@ class DockerSpawner(Spawner):
             """
         )
     )
+
+    tls = Bool(False, config=True, help="If True, connect to docker with --tls")
+    tls_verify = Bool(False, config=True, help="If True, connect to docker with --tlsverify")
+    tls_ca = Unicode("", config=True, help="Path to CA certificate for docker TLS")
+    tls_cert = Unicode("", config=True, help="Path to client certificate for docker TLS")
+    tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
+
+    @property
+    def tls_client(self):
+        """A tuple consisting of the TLS client certificate and key if they
+        have been provided, otherwise None.
+
+        """
+        if self.tls_cert and self.tls_key:
+            return (self.tls_cert, self.tls_key)
+        return None
 
     @property
     def volume_mount_points(self):
