@@ -35,7 +35,6 @@ class DockerSpawner(Spawner):
         if cls._client is None:
             if self.tls:
                 tls_config = True
-                self.log.debug("Using --tls")
             elif self.tls_verify or self.tls_ca or self.tls_client:
                 tls_config = docker.tls.TLSConfig(
                     client_cert=self.tls_client,
