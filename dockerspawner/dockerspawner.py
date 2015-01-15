@@ -81,14 +81,18 @@ class DockerSpawner(Spawner):
         )
     )
 
-    tls = Bool(False, config=True, help="If True, use --tls")
-    tls_verify = Bool(False, config=True, help="If True, use --tlsverify")
-    tls_ca = Unicode("", config=True, help="Path to CA certificate")
-    tls_cert = Unicode("", config=True, help="Path to client certificate")
-    tls_key = Unicode("", config=True, help="Path to client key")
+    tls = Bool(False, config=True, help="If True, connect to docker with --tls")
+    tls_verify = Bool(False, config=True, help="If True, connect to docker with --tlsverify")
+    tls_ca = Unicode("", config=True, help="Path to CA certificate for docker TLS")
+    tls_cert = Unicode("", config=True, help="Path to client certificate for docker TLS")
+    tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
 
     @property
     def tls_client(self):
+        """A tuple consisting of the TLS client certificate and key if they
+        have been provided, otherwise None.
+
+        """
         if self.tls_cert and self.tls_key:
             return (self.tls_cert, self.tls_key)
         return None
