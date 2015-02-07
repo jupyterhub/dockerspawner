@@ -86,6 +86,8 @@ class DockerSpawner(Spawner):
     tls_cert = Unicode("", config=True, help="Path to client certificate for docker TLS")
     tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
 
+    remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
+
     @property
     def tls_client(self):
         """A tuple consisting of the TLS client certificate and key if they
@@ -256,15 +258,22 @@ class DockerSpawner(Spawner):
         )
         resp = yield self.docker('port', self.container_id, 8888)
         self.user.server.port = resp[0]['HostPort']
-    
+
     @gen.coroutine
     def stop(self, now=False):
         """Stop the container
-        
+
         Consider using pause/unpause when docker-py adds support
         """
         self.log.info(
             "Stopping container %s (id: %s)",
             self.container_name, self.container_id[:7])
         yield self.docker('stop', self.container_id)
+
+        if self.remove_containers:
+            self.log.info(
+                "Removing container %s (id: %s)",
+                self.container_name, self.container_id[:7])
+            yield self.docker('remove_container', self.container_id)
+
         self.clear_state()
