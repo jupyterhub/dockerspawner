@@ -274,6 +274,7 @@ class DockerSpawner(Spawner):
             self.log.info(
                 "Removing container %s (id: %s)",
                 self.container_name, self.container_id[:7])
-            yield self.docker('remove_container', self.container_id)
+            # remove the container, as well as any associated volumes
+            yield self.docker('remove_container', self.container_id, v=True)
 
         self.clear_state()
