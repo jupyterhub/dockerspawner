@@ -1,3 +1,4 @@
 -e git+https://github.com/jupyter/jupyterhub.git#egg=jupyterhub
 -e git+https://github.com/ipython/ipython.git#egg=ipython[notebook]
+sqlalchemy
 docker-py
