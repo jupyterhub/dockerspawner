@@ -5,6 +5,7 @@ from IPython.utils.traitlets import (
     Unicode,
 )
 from tornado import gen
+from sqlalchemy import *
 
 
 class SystemUserSpawner(DockerSpawner):
@@ -82,9 +83,17 @@ class SystemUserSpawner(DockerSpawner):
 
     def _env_default(self):
         env = super(SystemUserSpawner, self)._env_default()
+        
+        db = create_engine('mysql+mysqlconnector://root:password@9.26.148.84:3306/jupyterhub')
+        metadata = MetaData(db)
+        users=Table('users', metadata, autoload=True)
+        i = users.select()
+        rs=i.execute()
+        row=rs.fetchone()
+        
         env.update(dict(
-            USER=self.user.name,
-            USER_ID=self.user_ids[self.user.name],
+            USER=row[0],
+            USER_ID=row[1],
             HOME=self.homedir
         ))
         return env
