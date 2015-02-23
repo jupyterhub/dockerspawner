@@ -194,12 +194,12 @@ class DockerSpawner(Spawner):
         # 'Up 4 days'
         # 'Up 4 days (Paused)' <- TODO: this isn't handled
         # e.g.
+        if not parts or parts[0] not in ('Up', 'Exited'):
+            raise ValueError("Unhandled status: '%s'" % status)
         if parts[0] == 'Up':
             raise gen.Return(None)
         elif parts[0] == 'Exited':
             raise gen.Return(int(parts[1][1:-1]))
-        else:
-            raise ValueError("Unhandled status: '%s'" % status)
 
     @gen.coroutine
     def get_container(self):
