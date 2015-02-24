@@ -187,7 +187,7 @@ class DockerSpawner(Spawner):
         container = yield self.get_container()
         if not container:
             self.log.warn("container not found")
-            raise gen.Return(0)
+            return ""
 
         container_state = container['State']
         self.log.debug(
@@ -197,9 +197,9 @@ class DockerSpawner(Spawner):
         )
 
         if container_state["Running"]:
-            raise gen.Return(None)
+            return None
         else:
-            raise gen.Return(
+            return (
                 "ExitCode={ExitCode}, "
                 "Error='{Error}', "
                 "FinishedAt={FinishedAt}".format(**container_state)
@@ -221,7 +221,7 @@ class DockerSpawner(Spawner):
                 self.container_id = ''
             else:
                 raise
-        raise gen.Return(container)
+        return container
 
     @gen.coroutine
     def start(self, image=None, **extra_create_kwargs):
