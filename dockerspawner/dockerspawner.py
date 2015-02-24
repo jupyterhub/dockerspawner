@@ -5,8 +5,10 @@ import itertools
 import os
 from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor
+from pprint import pformat
 
 import docker
+from docker.errors import APIError
 from tornado import gen
 
 from jupyterhub.spawner import Spawner
@@ -186,33 +188,41 @@ class DockerSpawner(Spawner):
         if not container:
             self.log.warn("container not found")
             raise gen.Return(0)
-        status = container['Status']
-        self.log.debug("Container %s status: %s", self.container_id[:7], status)
-        parts = status.split()
-        # status examples:
-        # 'Exited (127) 12 days ago'
-        # 'Up 4 days'
-        # 'Up 4 days (Paused)' <- TODO: this isn't handled
-        # e.g.
-        if not parts or parts[0] not in ('Up', 'Exited'):
-            raise ValueError("Unhandled status: '%s'" % status)
-        if parts[0] == 'Up':
+
+        container_state = container['State']
+        self.log.debug(
+            "Container %s status: %s",
+            self.container_id[:7],
+            pformat(container_state),
+        )
+
+        if container_state["Running"]:
             raise gen.Return(None)
-        elif parts[0] == 'Exited':
-            raise gen.Return(int(parts[1][1:-1]))
+        else:
+            raise gen.Return(
+                "ExitCode={ExitCode}, "
+                "Error='{Error}', "
+                "FinishedAt={FinishedAt}".format(**container_state)
+            )
 
     @gen.coroutine
     def get_container(self):
         self.log.debug("Getting container '%s'", self.container_name)
-        containers = yield self.docker('containers', all=True)
-        for c in containers:
-            if "/{}".format(self.container_name) in c['Names']:
-                self.container_id = c['Id']
-                raise gen.Return(c)
-        self.log.info("Container '%s' is gone", self.container_name)
-        # my container is gone, forget my id
-        self.container_id = ''
-    
+        try:
+            container = yield self.docker(
+                'inspect_container', self.container_name
+            )
+            self.container_id = container['Id']
+        except APIError as e:
+            if e.response.status_code == 404:
+                self.log.info("Container '%s' is gone", self.container_name)
+                container = None
+                # my container is gone, forget my id
+                self.container_id = ''
+            else:
+                raise
+        raise gen.Return(container)
+
     @gen.coroutine
     def start(self, image=None, **extra_create_kwargs):
         """Start the single-user server in a docker container. You can override
