@@ -87,6 +87,8 @@ class DockerSpawner(Spawner):
     tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
 
     remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
+    extra_create_kwargs = Dict({}, config=True, help="Additional args to pass for container create")
+    extra_start_kwargs = Dict({}, config=True, help="Additional args to pass for container start")
 
     @property
     def tls_client(self):
@@ -216,7 +218,7 @@ class DockerSpawner(Spawner):
         self.container_id = ''
     
     @gen.coroutine
-    def start(self, image=None, **extra_create_kwargs):
+    def start(self, image=None):
         """Start the single-user server in a docker container. You can override
         the default parameters passed to `create_container` through the
         `extra_create_kwargs` dictionary.
@@ -232,7 +234,7 @@ class DockerSpawner(Spawner):
                 environment=self.env,
                 volumes=self.volume_mount_points,
                 name=self.container_name)
-            create_kwargs.update(extra_create_kwargs)
+            create_kwargs.update(self.extra_create_kwargs)
 
             # create the container
             resp = yield self.docker('create_container', **create_kwargs)
@@ -250,12 +252,14 @@ class DockerSpawner(Spawner):
         self.log.info(
             "Starting container '%s' (id: %s)",
             self.container_name, self.container_id[:7])
-        yield self.docker(
-            'start',
-            self.container_id,
+
+        start_kwargs = dict(
             binds=self.volume_binds,
-            port_bindings={8888: (self.container_ip,)}
-        )
+            port_bindings={8888: (self.container_ip,)})
+        start_kwargs.update(self.extra_start_kwargs)
+
+        resp = yield self.docker('start', self.container_id, **start_kwargs)
+        self.log.debug("Start Container:", resp)
         resp = yield self.docker('port', self.container_id, 8888)
         self.user.server.port = resp[0]['HostPort']
 
