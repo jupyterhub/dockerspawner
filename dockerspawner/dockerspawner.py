@@ -253,13 +253,16 @@ class DockerSpawner(Spawner):
             "Starting container '%s' (id: %s)",
             self.container_name, self.container_id[:7])
 
+        # build the dictionary of keyword arguments for start
         start_kwargs = dict(
             binds=self.volume_binds,
             port_bindings={8888: (self.container_ip,)})
         start_kwargs.update(self.extra_start_kwargs)
 
+        # start the container
         resp = yield self.docker('start', self.container_id, **start_kwargs)
-        self.log.debug("Start Container:", resp)
+
+        # get the public-facing port
         resp = yield self.docker('port', self.container_id, 8888)
         self.user.server.port = resp[0]['HostPort']
 
