@@ -218,10 +218,14 @@ class DockerSpawner(Spawner):
         self.container_id = ''
     
     @gen.coroutine
-    def start(self, image=None):
+    def start(self, image=None, extra_create_kwargs={}, extra_start_kwargs={}):
         """Start the single-user server in a docker container. You can override
         the default parameters passed to `create_container` through the
-        `extra_create_kwargs` dictionary.
+        `extra_create_kwargs` dictionary and passed to `start` through the
+        `extra_start_kwargs` dictionary.
+
+        Per-instance `extra_create_kwargs` and `extra_start_kwargs` takes
+        precedence over their global counterparts.
 
         """
         container = yield self.get_container()
@@ -235,6 +239,7 @@ class DockerSpawner(Spawner):
                 volumes=self.volume_mount_points,
                 name=self.container_name)
             create_kwargs.update(self.extra_create_kwargs)
+            create_kwargs.update(extra_create_kwargs)
 
             # create the container
             resp = yield self.docker('create_container', **create_kwargs)
@@ -258,6 +263,7 @@ class DockerSpawner(Spawner):
             binds=self.volume_binds,
             port_bindings={8888: (self.container_ip,)})
         start_kwargs.update(self.extra_start_kwargs)
+        start_kwargs.update(extra_start_kwargs)
 
         # start the container
         yield self.docker('start', self.container_id, **start_kwargs)
