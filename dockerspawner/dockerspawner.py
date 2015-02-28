@@ -87,8 +87,8 @@ class DockerSpawner(Spawner):
     tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
 
     remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
-    extra_create_kwargs = Dict({}, config=True, help="Additional args to pass for container create")
-    extra_start_kwargs = Dict({}, config=True, help="Additional args to pass for container start")
+    extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
+    extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
 
     @property
     def tls_client(self):
@@ -218,7 +218,8 @@ class DockerSpawner(Spawner):
         self.container_id = ''
     
     @gen.coroutine
-    def start(self, image=None, extra_create_kwargs={}, extra_start_kwargs={}):
+    def start(self, image=None, extra_create_kwargs=None,
+        extra_start_kwargs=None):
         """Start the single-user server in a docker container. You can override
         the default parameters passed to `create_container` through the
         `extra_create_kwargs` dictionary and passed to `start` through the
@@ -239,7 +240,8 @@ class DockerSpawner(Spawner):
                 volumes=self.volume_mount_points,
                 name=self.container_name)
             create_kwargs.update(self.extra_create_kwargs)
-            create_kwargs.update(extra_create_kwargs)
+            if extra_create_kwargs:
+                create_kwargs.update(extra_create_kwargs)
 
             # create the container
             resp = yield self.docker('create_container', **create_kwargs)
@@ -263,7 +265,8 @@ class DockerSpawner(Spawner):
             binds=self.volume_binds,
             port_bindings={8888: (self.container_ip,)})
         start_kwargs.update(self.extra_start_kwargs)
-        start_kwargs.update(extra_start_kwargs)
+        if extra_start_kwargs:
+            start_kwargs.update(extra_start_kwargs)
 
         # start the container
         yield self.docker('start', self.container_id, **start_kwargs)
