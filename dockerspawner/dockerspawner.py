@@ -5,10 +5,8 @@ import itertools
 import os
 from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor
-from pprint import pformat
 
 import docker
-from docker.errors import APIError
 from tornado import gen
 
 from jupyterhub.spawner import Spawner
@@ -89,8 +87,6 @@ class DockerSpawner(Spawner):
     tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
 
     remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
-    extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
-    extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
 
     @property
     def tls_client(self):
@@ -191,52 +187,39 @@ class DockerSpawner(Spawner):
         container = yield self.get_container()
         if not container:
             self.log.warn("container not found")
-            return ""
-
-        container_state = container['State']
-        self.log.debug(
-            "Container %s status: %s",
-            self.container_id[:7],
-            pformat(container_state),
-        )
-
-        if container_state["Running"]:
-            return None
-        else:
-            return (
-                "ExitCode={ExitCode}, "
-                "Error='{Error}', "
-                "FinishedAt={FinishedAt}".format(**container_state)
-            )
+            raise gen.Return(0)
+        status = container['Status']
+        self.log.debug("Container %s status: %s", self.container_id[:7], status)
+        parts = status.split()
+        # status examples:
+        # 'Exited (127) 12 days ago'
+        # 'Up 4 days'
+        # 'Up 4 days (Paused)' <- TODO: this isn't handled
+        # e.g.
+        if not parts or parts[0] not in ('Up', 'Exited'):
+            raise ValueError("Unhandled status: '%s'" % status)
+        if parts[0] == 'Up':
+            raise gen.Return(None)
+        elif parts[0] == 'Exited':
+            raise gen.Return(int(parts[1][1:-1]))
 
     @gen.coroutine
     def get_container(self):
         self.log.debug("Getting container '%s'", self.container_name)
-        try:
-            container = yield self.docker(
-                'inspect_container', self.container_name
-            )
-            self.container_id = container['Id']
-        except APIError as e:
-            if e.response.status_code == 404:
-                self.log.info("Container '%s' is gone", self.container_name)
-                container = None
-                # my container is gone, forget my id
-                self.container_id = ''
-            else:
-                raise
-        return container
-
+        containers = yield self.docker('containers', all=True)
+        for c in containers:
+            if "/{}".format(self.container_name) in c['Names']:
+                self.container_id = c['Id']
+                raise gen.Return(c)
+        self.log.info("Container '%s' is gone", self.container_name)
+        # my container is gone, forget my id
+        self.container_id = ''
+    
     @gen.coroutine
-    def start(self, image=None, extra_create_kwargs=None,
-        extra_start_kwargs=None):
+    def start(self, image=None, **extra_create_kwargs):
         """Start the single-user server in a docker container. You can override
         the default parameters passed to `create_container` through the
-        `extra_create_kwargs` dictionary and passed to `start` through the
-        `extra_start_kwargs` dictionary.
-
-        Per-instance `extra_create_kwargs` and `extra_start_kwargs` takes
-        precedence over their global counterparts.
+        `extra_create_kwargs` dictionary.
 
         """
         container = yield self.get_container()
@@ -249,9 +232,7 @@ class DockerSpawner(Spawner):
                 environment=self.env,
                 volumes=self.volume_mount_points,
                 name=self.container_name)
-            create_kwargs.update(self.extra_create_kwargs)
-            if extra_create_kwargs:
-                create_kwargs.update(extra_create_kwargs)
+            create_kwargs.update(extra_create_kwargs)
 
             # create the container
             resp = yield self.docker('create_container', **create_kwargs)
@@ -269,19 +250,12 @@ class DockerSpawner(Spawner):
         self.log.info(
             "Starting container '%s' (id: %s)",
             self.container_name, self.container_id[:7])
-
-        # build the dictionary of keyword arguments for start
-        start_kwargs = dict(
+        yield self.docker(
+            'start',
+            self.container_id,
             binds=self.volume_binds,
-            port_bindings={8888: (self.container_ip,)})
-        start_kwargs.update(self.extra_start_kwargs)
-        if extra_start_kwargs:
-            start_kwargs.update(extra_start_kwargs)
-
-        # start the container
-        yield self.docker('start', self.container_id, **start_kwargs)
-
-        # get the public-facing port
+            port_bindings={8888: (self.container_ip,)}
+        )
         resp = yield self.docker('port', self.container_id, 8888)
         self.user.server.port = resp[0]['HostPort']
 
