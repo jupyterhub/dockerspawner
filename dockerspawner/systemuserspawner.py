@@ -120,5 +120,5 @@ class SystemUserSpawner(DockerSpawner):
         """start the single-user server in a docker container"""
         yield super(SystemUserSpawner, self).start(
             image=image,
-            extra_create_kwargs={'working_dir': self.homedir}
+            working_dir=self.homedir
         )
