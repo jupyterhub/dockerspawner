@@ -92,15 +92,15 @@ class DockerSpawner(Spawner):
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
     extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
 
-    hub_api_url = Unicode(
+    hub_ip_connect = Unicode(
         "",
         config=True,
         help=dedent(
             """
             If set, DockerSpawner will configure the containers to use
-            the specified URL instead of 'self.hub.api_url'.  This is
-            useful when the hub_api is bound to listen on all ports or
-            is running inisde of a container.
+            the specified IP to connect the hub api.  This is useful
+            when the hub_api is bound to listen on all ports or is
+            running inisde of a container.
             """
         )
     )
@@ -167,7 +167,16 @@ class DockerSpawner(Spawner):
         if self.container_id:
             state['container_id'] = self.container_id
         return state
-    
+
+    def _public_hub_api_url(self):
+        proto, rest = self.hub.api_url.split('://', 1)
+        ip, rest = path.split(':', 1)
+        return '{proto}://{ip}:{rest}'.format(
+            proto = proto,
+            ip = self.hub_ip_connect,
+            rest = rest
+        )
+
     def _env_keep_default(self):
         """Don't inherit any env from the parent process"""
         return []
@@ -180,8 +189,8 @@ class DockerSpawner(Spawner):
             JPY_BASE_URL=self.user.server.base_url,
             JPY_HUB_PREFIX=self.hub.server.base_url
         ))
-        if self.hub_api_url:
-           env.update(dict(JPY_HUB_API_URL=self.hub_api_url))
+        if self.hub_ip_connect:
+           env.update(dict(JPY_HUB_API_URL=self._public_hub_api_url()))
         else:
            env.update(dict(JPY_HUB_API_URL=self.hub.api_url))
         return env
