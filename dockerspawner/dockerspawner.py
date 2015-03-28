@@ -194,7 +194,7 @@ class DockerSpawner(Spawner):
            hub_api_url = self._public_hub_api_url()
         else:
            hub_api_url = self.hub.api_url
-        env['JPY_HUB_API_URL'] = self.hub.api_url
+        env['JPY_HUB_API_URL'] = hub_api_url
 
         return env
 
