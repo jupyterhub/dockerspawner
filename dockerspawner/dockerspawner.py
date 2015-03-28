@@ -169,7 +169,7 @@ class DockerSpawner(Spawner):
         return state
 
     def _public_hub_api_url(self):
-        proto, rest = self.hub.api_url.split('://', 1)
+        proto, path = self.hub.api_url.split('://', 1)
         ip, rest = path.split(':', 1)
         return '{proto}://{ip}:{rest}'.format(
             proto = proto,
