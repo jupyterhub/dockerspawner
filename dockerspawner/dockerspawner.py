@@ -92,6 +92,19 @@ class DockerSpawner(Spawner):
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
     extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
 
+    hub_ip_connect = Unicode(
+        "",
+        config=True,
+        help=dedent(
+            """
+            If set, DockerSpawner will configure the containers to use
+            the specified IP to connect the hub api.  This is useful
+            when the hub_api is bound to listen on all ports or is
+            running inside of a container.
+            """
+        )
+    )
+
     @property
     def tls_client(self):
         """A tuple consisting of the TLS client certificate and key if they
@@ -154,7 +167,16 @@ class DockerSpawner(Spawner):
         if self.container_id:
             state['container_id'] = self.container_id
         return state
-    
+
+    def _public_hub_api_url(self):
+        proto, path = self.hub.api_url.split('://', 1)
+        ip, rest = path.split(':', 1)
+        return '{proto}://{ip}:{rest}'.format(
+            proto = proto,
+            ip = self.hub_ip_connect,
+            rest = rest
+        )
+
     def _env_keep_default(self):
         """Don't inherit any env from the parent process"""
         return []
@@ -165,9 +187,15 @@ class DockerSpawner(Spawner):
             JPY_USER=self.user.name,
             JPY_COOKIE_NAME=self.user.server.cookie_name,
             JPY_BASE_URL=self.user.server.base_url,
-            JPY_HUB_PREFIX=self.hub.server.base_url,
-            JPY_HUB_API_URL=self.hub.api_url,
+            JPY_HUB_PREFIX=self.hub.server.base_url
         ))
+
+        if self.hub_ip_connect:
+           hub_api_url = self._public_hub_api_url()
+        else:
+           hub_api_url = self.hub.api_url
+        env['JPY_HUB_API_URL'] = hub_api_url
+
         return env
 
     def _docker(self, method, *args, **kwargs):
