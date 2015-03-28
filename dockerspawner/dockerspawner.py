@@ -100,7 +100,7 @@ class DockerSpawner(Spawner):
             If set, DockerSpawner will configure the containers to use
             the specified IP to connect the hub api.  This is useful
             when the hub_api is bound to listen on all ports or is
-            running inisde of a container.
+            running inside of a container.
             """
         )
     )
@@ -189,10 +189,13 @@ class DockerSpawner(Spawner):
             JPY_BASE_URL=self.user.server.base_url,
             JPY_HUB_PREFIX=self.hub.server.base_url
         ))
+
         if self.hub_ip_connect:
-           env.update(dict(JPY_HUB_API_URL=self._public_hub_api_url()))
+           hub_api_url = self._public_hub_api_url()
         else:
-           env.update(dict(JPY_HUB_API_URL=self.hub.api_url))
+           hub_api_url = self.hub.api_url
+        env['JPY_HUB_API_URL'] = self.hub.api_url
+
         return env
 
     def _docker(self, method, *args, **kwargs):
