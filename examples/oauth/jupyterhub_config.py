@@ -13,7 +13,7 @@ c.JupyterHub.hub_ip = public_ips()[0]
 c.JupyterHub.authenticator_class = 'oauthenticator.GitHubOAuthenticator'
 
 c.Authenticator.whitelist = whitelist = set()
-c.JupyterHub.admin_users = admin = set()
+c.Authenticator.admin_users = admin = set()
 
 import os
 
