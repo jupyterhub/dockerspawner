@@ -9,6 +9,7 @@ from pprint import pformat
 
 import docker
 from docker.errors import APIError
+from docker.utils import create_host_config
 from tornado import gen
 
 from jupyterhub.spawner import Spawner
@@ -281,6 +282,18 @@ class DockerSpawner(Spawner):
             if extra_create_kwargs:
                 create_kwargs.update(extra_create_kwargs)
 
+            # build the dictionary of keyword arguments for host_config
+            start_kwargs = dict(
+                binds=self.volume_binds,
+                port_bindings={8888: (self.container_ip,)})
+            start_kwargs.update(self.extra_start_kwargs)
+            if extra_start_kwargs:
+                start_kwargs.update(extra_start_kwargs)
+
+            host_config = create_host_config(**start_kwargs)
+            if host_config:
+                create_kwargs.setdefault('host_config', {}).update(host_config)
+
             # create the container
             resp = yield self.docker('create_container', **create_kwargs)
             self.container_id = resp['Id']
@@ -298,16 +311,8 @@ class DockerSpawner(Spawner):
             "Starting container '%s' (id: %s)",
             self.container_name, self.container_id[:7])
 
-        # build the dictionary of keyword arguments for start
-        start_kwargs = dict(
-            binds=self.volume_binds,
-            port_bindings={8888: (self.container_ip,)})
-        start_kwargs.update(self.extra_start_kwargs)
-        if extra_start_kwargs:
-            start_kwargs.update(extra_start_kwargs)
-
         # start the container
-        yield self.docker('start', self.container_id, **start_kwargs)
+        yield self.docker('start', self.container_id)
 
         # get the public-facing port
         resp = yield self.docker('port', self.container_id, 8888)
