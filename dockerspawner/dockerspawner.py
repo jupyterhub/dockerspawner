@@ -92,6 +92,7 @@ class DockerSpawner(Spawner):
     remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
     extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
+    extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
 
     hub_ip_connect = Unicode(
         "",
@@ -258,14 +259,16 @@ class DockerSpawner(Spawner):
 
     @gen.coroutine
     def start(self, image=None, extra_create_kwargs=None,
-        extra_start_kwargs=None):
+        extra_start_kwargs=None, extra_host_config=None):
         """Start the single-user server in a docker container. You can override
         the default parameters passed to `create_container` through the
         `extra_create_kwargs` dictionary and passed to `start` through the
-        `extra_start_kwargs` dictionary.
+        `extra_start_kwargs` dictionary.  You can also override the
+        'host_config' parameter passed to `create_container` through the
+        `extra_host_config` dictionary.
 
-        Per-instance `extra_create_kwargs` and `extra_start_kwargs` takes
-        precedence over their global counterparts.
+        Per-instance `extra_create_kwargs`, `extra_start_kwargs`, and
+        `extra_host_config` take precedence over their global counterparts.
 
         """
         container = yield self.get_container()
@@ -283,16 +286,15 @@ class DockerSpawner(Spawner):
                 create_kwargs.update(extra_create_kwargs)
 
             # build the dictionary of keyword arguments for host_config
-            start_kwargs = dict(
+            host_config = dict(
                 binds=self.volume_binds,
                 port_bindings={8888: (self.container_ip,)})
-            start_kwargs.update(self.extra_start_kwargs)
-            if extra_start_kwargs:
-                start_kwargs.update(extra_start_kwargs)
+            host_config.update(self.extra_host_config)
+            if extra_host_config:
+                host_config.update(extra_host_config)
 
-            host_config = create_host_config(**start_kwargs)
-            if host_config:
-                create_kwargs.setdefault('host_config', {}).update(host_config)
+            host_config = create_host_config(**host_config)
+            create_kwargs.setdefault('host_config', {}).update(host_config)
 
             # create the container
             resp = yield self.docker('create_container', **create_kwargs)
@@ -311,8 +313,14 @@ class DockerSpawner(Spawner):
             "Starting container '%s' (id: %s)",
             self.container_name, self.container_id[:7])
 
+        # build the dictionary of keyword arguments for start
+        start_kwargs = {}
+        start_kwargs.update(self.extra_start_kwargs)
+        if extra_start_kwargs:
+            start_kwargs.update(extra_start_kwargs)
+
         # start the container
-        yield self.docker('start', self.container_id)
+        yield self.docker('start', self.container_id, **start_kwargs)
 
         # get the public-facing port
         resp = yield self.docker('port', self.container_id, 8888)
