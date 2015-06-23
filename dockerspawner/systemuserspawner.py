@@ -2,7 +2,7 @@ import pwd
 
 from dockerspawner import DockerSpawner
 from textwrap import dedent
-from IPython.utils.traitlets import (
+from traitlets import (
     Integer,
     Unicode,
 )
