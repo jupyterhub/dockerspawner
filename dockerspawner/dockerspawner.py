@@ -13,7 +13,7 @@ from docker.utils import create_host_config
 from tornado import gen
 
 from jupyterhub.spawner import Spawner
-from IPython.utils.traitlets import (
+from traitlets import (
     Dict,
     Unicode,
     Bool
