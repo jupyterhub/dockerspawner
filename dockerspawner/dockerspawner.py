@@ -1,6 +1,7 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
+import codecs
 import itertools
 import os
 from textwrap import dedent
@@ -158,7 +159,10 @@ class DockerSpawner(Spawner):
 
     @property
     def container_name(self):
-        return "{}-{}".format(self.container_prefix, self.user.name)
+        # Only [a-zA-Z0-9][a-zA-Z0-9_.-] are allowed in the container name,
+        # just convert the user name to hex representation to conform:
+        user_name_hex = codecs.encode(self.user.name.encode(), "hex").decode()
+        return "{}-{}".format(self.container_prefix, user_name_hex)
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
