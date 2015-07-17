@@ -3,6 +3,7 @@ A Spawner for JupyterHub that runs each user's server in a separate docker conta
 """
 import itertools
 import os
+import string
 from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor
 from pprint import pformat
@@ -12,6 +13,7 @@ from docker.errors import APIError
 from docker.utils import create_host_config
 from tornado import gen
 
+from escapism import escape
 from jupyterhub.spawner import Spawner
 from traitlets import (
     Dict,
@@ -93,6 +95,9 @@ class DockerSpawner(Spawner):
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
     extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
     extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
+    
+    _container_safe_chars = set(string.ascii_letters + string.digits + '-')
+    _container_escape_char = '_'
 
     hub_ip_connect = Unicode(
         "",
@@ -158,7 +163,12 @@ class DockerSpawner(Spawner):
 
     @property
     def container_name(self):
-        return "{}-{}".format(self.container_prefix, self.user.name)
+        return "{}-{}".format(self.container_prefix,
+            escape(self.user.name,
+                safe=self._container_safe_chars,
+                escape_char=self._container_escape_char,
+            )
+        )
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
