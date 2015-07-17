@@ -161,14 +161,19 @@ class DockerSpawner(Spawner):
         volumes.update(ro_volumes)
         return volumes
 
+    _escaped_name = None
     @property
-    def container_name(self):
-        return "{}-{}".format(self.container_prefix,
-            escape(self.user.name,
+    def escaped_name(self):
+        if self._escaped_name is None:
+            self._escaped_name = escape(self.user.name,
                 safe=self._container_safe_chars,
                 escape_char=self._container_escape_char,
             )
-        )
+        return self._escaped_name
+
+    @property
+    def container_name(self):
+        return "{}-{}".format(self.container_prefix, self.escaped_name)
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
