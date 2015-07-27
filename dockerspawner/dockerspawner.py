@@ -10,7 +10,7 @@ from pprint import pformat
 
 import docker
 from docker.errors import APIError
-from docker.utils import create_host_config
+from docker.utils import create_host_config, kwargs_from_env
 from tornado import gen
 
 from escapism import escape
@@ -38,18 +38,24 @@ class DockerSpawner(Spawner):
         """single global client instance"""
         cls = self.__class__
         if cls._client is None:
-            if self.tls:
-                tls_config = True
-            elif self.tls_verify or self.tls_ca or self.tls_client:
-                tls_config = docker.tls.TLSConfig(
-                    client_cert=self.tls_client,
-                    ca_cert=self.tls_ca,
-                    verify=self.tls_verify)
+            if self.use_docker_client_env:
+                kwargs = kwargs_from_env()
+                kwargs['tls'].assert_hostname = False
+                client = docker.Client(**kwargs)
             else:
-                tls_config = None
+                if self.tls:
+                    tls_config = True
+                elif self.tls_verify or self.tls_ca or self.tls_client:
+                    tls_config = docker.tls.TLSConfig(
+                        client_cert=self.tls_client,
+                        ca_cert=self.tls_ca,
+                        verify=self.tls_verify)
+                else:
+                    tls_config = None
 
-            docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
-            cls._client = docker.Client(base_url=docker_host, tls=tls_config)
+                docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
+                client = docker.Client(base_url=docker_host, tls=tls_config)
+            cls._client = client
         return cls._client
 
     container_id = Unicode()
@@ -85,6 +91,7 @@ class DockerSpawner(Spawner):
         )
     )
 
+    use_docker_client_env = Bool(False, config=True, help="If True, will use Docker client env variable (boot2docker friendly)")
     tls = Bool(False, config=True, help="If True, connect to docker with --tls")
     tls_verify = Bool(False, config=True, help="If True, connect to docker with --tlsverify")
     tls_ca = Unicode("", config=True, help="Path to CA certificate for docker TLS")
