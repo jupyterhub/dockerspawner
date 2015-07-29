@@ -40,7 +40,7 @@ class DockerSpawner(Spawner):
         if cls._client is None:
             if self.use_docker_client_env:
                 kwargs = kwargs_from_env()
-                kwargs['tls'].assert_hostname = False
+                kwargs['tls'].assert_hostname = self.tls_assert_hostname
                 client = docker.Client(**kwargs)
             else:
                 if self.tls:
@@ -49,7 +49,8 @@ class DockerSpawner(Spawner):
                     tls_config = docker.tls.TLSConfig(
                         client_cert=self.tls_client,
                         ca_cert=self.tls_ca,
-                        verify=self.tls_verify)
+                        verify=self.tls_verify,
+                        assert_hostname = self.tls_assert_hostname)
                 else:
                     tls_config = None
 
@@ -97,6 +98,7 @@ class DockerSpawner(Spawner):
     tls_ca = Unicode("", config=True, help="Path to CA certificate for docker TLS")
     tls_cert = Unicode("", config=True, help="Path to client certificate for docker TLS")
     tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
+    tls_assert_hostname =  Bool(None, allow_none=True, config=True, help="If True, will verify hostname of docker daemon")
 
     remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
