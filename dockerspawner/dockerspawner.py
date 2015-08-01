@@ -48,8 +48,13 @@ class DockerSpawner(Spawner):
             else:
                 tls_config = None
 
-            docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
-            cls._client = docker.Client(base_url=docker_host, tls=tls_config)
+            from docker.utils import kwargs_from_env
+
+            #docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
+            #cls._client = docker.Client(base_url=docker_host, tls=tls_config)
+            kwargs = kwargs_from_env(assert_hostname=False)
+            kwargs['version']= '1.18'
+            cls._client = docker.Client(**kwargs)
         return cls._client
 
     container_id = Unicode()
@@ -200,6 +205,7 @@ class DockerSpawner(Spawner):
     
     def _env_default(self):
         env = super(DockerSpawner, self)._env_default()
+
         env.update(dict(
             JPY_USER=self.user.name,
             JPY_COOKIE_NAME=self.user.server.cookie_name,
