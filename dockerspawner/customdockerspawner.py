@@ -1,4 +1,5 @@
 import pwd
+from tempfile import mkdtemp
 
 from dockerspawner import DockerSpawner
 from textwrap import dedent
@@ -7,6 +8,8 @@ from traitlets import (
     Unicode,
 )
 from tornado import gen
+
+from escapism import escape
 
 import git
 
@@ -50,17 +53,32 @@ class CustomDockerSpawner(DockerSpawner):
     @gen.coroutine
     def start(self, image=None):
         """start the single-user server in a docker container"""
-        git_version = yield self.git('version')
-        print('git version' + git_version)
+        tmp_dir = mkdtemp(suffix='everware')
+        yield self.git('clone', _GITHUBURL, tmp_dir)
+        # is this blocking?
+        # use the username, git repo URL and HEAD commit sha to derive
+        # the image name
+        repo = git.Repo(tmp_dir)
+        sha = repo.rev_parse("HEAD")
+
+        trans = str.maketrans(':/-.', "____")
+        escaped_url = _GITHUBURL.translate(trans)
+
+        image_name = "everware/{}-{}-{}".format(self.user.name, escaped_url, sha)
+        self.log.debug("Building image {}".format(image_name))
+        docker_img = yield self.docker('build', path=tmp_dir, tag=image_name)
+        self.log.info("Built docker image {}".format(image_name))
+
+        images = yield self.docker('images', image_name)
+        self.log.debug(images)
+
         yield super(CustomDockerSpawner, self).start(
-            image=image
+            image=image_name
         )
 
     def _env_default(self):
         env = super(CustomDockerSpawner, self)._env_default()
 
-        print("User object stuff")
-        print(self.user)
         env.update({'JPY_GITHUBURL': _GITHUBURL})
 
         return env

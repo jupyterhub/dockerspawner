@@ -1,6 +1,6 @@
 #!/bin/sh
 
-git clone $JPY_GITHUBURL /home/$JPY_USER/analysis
+git clone $JPY_GITHUBURL $HOME/analysis
 
 jupyterhub-singleuser \
   --port=8888 \
