@@ -98,7 +98,7 @@ class DockerSpawner(Spawner):
     tls_ca = Unicode("", config=True, help="Path to CA certificate for docker TLS")
     tls_cert = Unicode("", config=True, help="Path to client certificate for docker TLS")
     tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
-    tls_assert_hostname =  Bool(None, allow_none=True, config=True, help="If True, will verify hostname of docker daemon")
+    tls_assert_hostname = Bool(True, config=True, help="If False, do not verify hostname of docker daemon")
 
     remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
