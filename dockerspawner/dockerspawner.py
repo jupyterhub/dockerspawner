@@ -55,7 +55,7 @@ class DockerSpawner(Spawner):
                     tls_config = None
 
                 docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
-                client = docker.Client(base_url=docker_host, tls=tls_config)
+                client = docker.Client(base_url=docker_host, tls=tls_config, version='auto')
             cls._client = client
         return cls._client
 
