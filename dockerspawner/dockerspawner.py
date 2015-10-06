@@ -41,7 +41,7 @@ class DockerSpawner(Spawner):
             if self.use_docker_client_env:
                 kwargs = kwargs_from_env()
                 kwargs['tls'].assert_hostname = self.tls_assert_hostname
-                client = docker.Client(**kwargs)
+                client = docker.Client(version='auto', **kwargs)
             else:
                 if self.tls:
                     tls_config = True
