@@ -10,7 +10,7 @@ from pprint import pformat
 
 import docker
 from docker.errors import APIError
-from docker.utils import create_host_config, kwargs_from_env
+from docker.utils import kwargs_from_env
 from tornado import gen
 
 from escapism import escape
@@ -331,7 +331,7 @@ class DockerSpawner(Spawner):
             if extra_host_config:
                 host_config.update(extra_host_config)
 
-            host_config = create_host_config(**host_config)
+            host_config = self.client.create_host_config(**host_config)
             create_kwargs.setdefault('host_config', {}).update(host_config)
 
             # create the container
