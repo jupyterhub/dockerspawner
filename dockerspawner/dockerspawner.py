@@ -1,5 +1,6 @@
 """
-A Spawner for JupyterHub that runs each user's server in a separate docker container
+A Spawner for JupyterHub that runs each user's server
+in a separate docker container
 """
 import itertools
 import os
@@ -19,12 +20,12 @@ from traitlets import (
     Dict,
     Unicode,
     Bool,
-    Enum,
 )
 
 
 class UnicodeOrFalse(Unicode):
     info_text = 'a unicode string or False'
+
     def validate(self, obj, value):
         if value is False:
             return value
@@ -32,8 +33,9 @@ class UnicodeOrFalse(Unicode):
 
 
 class DockerSpawner(Spawner):
-    
+
     _executor = None
+
     @property
     def executor(self):
         """single global executor"""
@@ -41,8 +43,9 @@ class DockerSpawner(Spawner):
         if cls._executor is None:
             cls._executor = ThreadPoolExecutor(1)
         return cls._executor
-    
+
     _client = None
+
     @property
     def client(self):
         """single global client instance"""
@@ -61,12 +64,14 @@ class DockerSpawner(Spawner):
                         client_cert=self.tls_client,
                         ca_cert=self.tls_ca,
                         verify=self.tls_verify,
-                        assert_hostname = self.tls_assert_hostname)
+                        assert_hostname=self.tls_assert_hostname)
                 else:
                     tls_config = None
 
-                docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
-                client = docker.Client(base_url=docker_host, tls=tls_config, version='auto')
+                docker_host = os.environ.get(
+                    'DOCKER_HOST', 'unix://var/run/docker.sock')
+                client = docker.Client(
+                    base_url=docker_host, tls=tls_config, version='auto')
             cls._client = client
         return cls._client
 
@@ -78,8 +83,8 @@ class DockerSpawner(Spawner):
         config=True,
         help=dedent(
             """
-            Prefix for container names. The full container name for a particular
-            user will be <prefix>-<username>.
+            Prefix for container names. The full container name for
+            a particular user will be <prefix>-<username>.
             """
         )
     )
@@ -103,22 +108,43 @@ class DockerSpawner(Spawner):
         )
     )
 
-    use_docker_client_env = Bool(False, config=True, help="If True, will use Docker client env variable (boot2docker friendly)")
-    tls = Bool(False, config=True, help="If True, connect to docker with --tls")
-    tls_verify = Bool(False, config=True, help="If True, connect to docker with --tlsverify")
-    tls_ca = Unicode("", config=True, help="Path to CA certificate for docker TLS")
-    tls_cert = Unicode("", config=True, help="Path to client certificate for docker TLS")
-    tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
-    tls_assert_hostname = UnicodeOrFalse(default_value=None, allow_none=True,
-        config=True,
+    use_docker_client_env = Bool(
+        False, config=True,
+        help=dedent(
+            """
+            If True, will use Docker client env variable
+            (boot2docker friendly)
+            """
+        )
+    )
+    tls = Bool(
+        False, config=True, help="If True, connect to docker with --tls")
+    tls_verify = Bool(
+        False, config=True,
+        help="If True, connect to docker with --tlsverify")
+    tls_ca = Unicode(
+        "", config=True, help="Path to CA certificate for docker TLS")
+    tls_cert = Unicode(
+        "", config=True, help="Path to client certificate for docker TLS")
+    tls_key = Unicode(
+        "", config=True, help="Path to client key for docker TLS")
+    tls_assert_hostname = UnicodeOrFalse(
+        default_value=None, allow_none=True, config=True,
         help="If False, do not verify hostname of docker daemon",
     )
 
-    remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
-    extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
-    extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
-    extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
-    
+    remove_containers = Bool(
+        False, config=True,
+        help="If True, delete containers after they are stopped.")
+    extra_create_kwargs = Dict(
+        config=True, help="Additional args to pass for container create")
+    extra_start_kwargs = Dict(
+        config=True, help="Additional args to pass for container start")
+    extra_host_config = Dict(
+        config=True,
+        help="Additional args to create_host_config for container create"
+    )
+
     _container_safe_chars = set(string.ascii_letters + string.digits + '-')
     _container_escape_char = '_'
 
@@ -185,10 +211,12 @@ class DockerSpawner(Spawner):
         return volumes
 
     _escaped_name = None
+
     @property
     def escaped_name(self):
         if self._escaped_name is None:
-            self._escaped_name = escape(self.user.name,
+            self._escaped_name = escape(
+                self.user.name,
                 safe=self._container_safe_chars,
                 escape_char=self._container_escape_char,
             )
@@ -201,7 +229,7 @@ class DockerSpawner(Spawner):
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
         self.container_id = state.get('container_id', '')
-    
+
     def get_state(self):
         state = super(DockerSpawner, self).get_state()
         if self.container_id:
@@ -212,15 +240,15 @@ class DockerSpawner(Spawner):
         proto, path = self.hub.api_url.split('://', 1)
         ip, rest = path.split(':', 1)
         return '{proto}://{ip}:{rest}'.format(
-            proto = proto,
-            ip = self.hub_ip_connect,
-            rest = rest
+            proto=proto,
+            ip=self.hub_ip_connect,
+            rest=rest
         )
 
     def _env_keep_default(self):
         """Don't inherit any env from the parent process"""
         return []
-    
+
     def _env_default(self):
         env = super(DockerSpawner, self)._env_default()
         env.update(dict(
@@ -231,28 +259,26 @@ class DockerSpawner(Spawner):
         ))
 
         if self.hub_ip_connect:
-           hub_api_url = self._public_hub_api_url()
+            hub_api_url = self._public_hub_api_url()
         else:
-           hub_api_url = self.hub.api_url
+            hub_api_url = self.hub.api_url
         env['JPY_HUB_API_URL'] = hub_api_url
 
         return env
 
     def _docker(self, method, *args, **kwargs):
         """wrapper for calling docker methods
-        
         to be passed to ThreadPoolExecutor
         """
         m = getattr(self.client, method)
         return m(*args, **kwargs)
-    
+
     def docker(self, method, *args, **kwargs):
         """Call a docker method in a background thread
-        
         returns a Future
         """
         return self.executor.submit(self._docker, method, *args, **kwargs)
-    
+
     @gen.coroutine
     def poll(self):
         """Check for my id in `docker ps`"""
@@ -297,7 +323,7 @@ class DockerSpawner(Spawner):
 
     @gen.coroutine
     def start(self, image=None, extra_create_kwargs=None,
-        extra_start_kwargs=None, extra_host_config=None):
+              extra_start_kwargs=None, extra_host_config=None):
         """Start the single-user server in a docker container. You can override
         the default parameters passed to `create_container` through the
         `extra_create_kwargs` dictionary and passed to `start` through the
@@ -384,3 +410,53 @@ class DockerSpawner(Spawner):
             yield self.docker('remove_container', self.container_id, v=True)
 
         self.clear_state()
+
+
+class SwarmSpawner(DockerSpawner):
+
+    @gen.coroutine
+    def lookup_node_name(self):
+        """Find the name of the swarm node that
+        the container is running on."""
+        containers = yield self.docker('containers', all=True)
+        for container in containers:
+            if container['Id'] == self.container_id:
+                name, = container['Names']
+                node, container_name = name.lstrip("/").split("/")
+                raise gen.Return(node)
+
+    @gen.coroutine
+    def start(self, image=None, extra_create_kwargs=None,
+              extra_start_kwargs=None, extra_host_config=None):
+        # look up mapping of node names to ip addresses
+        info = yield self.docker('info')
+        num_nodes = int(info['DriverStatus'][3][1])
+        node_info = info['DriverStatus'][4::5]
+        self.node_info = {}
+        for i in range(num_nodes):
+            node, ip_port = node_info[i]
+            self.node_info[node] = ip_port.split(":")[0]
+        self.log.debug("Swarm nodes are: {}".format(self.node_info))
+
+        # specify extra host configuration
+        if extra_host_config is None:
+            extra_host_config = {}
+        if 'mem_limit' not in extra_host_config:
+            extra_host_config['mem_limit'] = '1g'
+
+        # start the container
+        yield super(SwarmSpawner, self).start(
+            image=image,
+            extra_create_kwargs=extra_create_kwargs,
+            extra_start_kwargs=extra_start_kwargs,
+            extra_host_config=extra_host_config)
+
+        # figure out what the node is and then get its ip
+        name = yield self.lookup_node_name()
+        self.user.server.ip = self.node_info[name]
+        self.log.info("{} was started on {} ({}:{})".format(
+            self.container_name, name, self.user.server.ip,
+            self.user.server.port))
+
+        self.log.info(self.env)
+
