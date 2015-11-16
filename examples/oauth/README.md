@@ -11,6 +11,11 @@ spinning up a [docker](https://www.docker.com/) container for each user.
 
 (I assume you have installed dockerspawner dependencies and built the single-user container already)
 
+Install oauthenticator:
+
+    pip install git+https://github.com/jupyter/oauthenticator.git
+
+
 Make a file called `userlist` with one GitHub user name per line.
 If that user should be an admin (you!), add `admin` after a space.
 
@@ -41,7 +46,7 @@ To run the server on HTTPS, put your ssl key and cert in ssl/ssl.key and ssl/ssl
 
 You can run the server with:
 
-    sh run.sh
+    bash run.sh
 
 Which will run the JupyterHub server, loading your GitHub credentials from `env`.
 When users login, a container will be created for them. Like magic!

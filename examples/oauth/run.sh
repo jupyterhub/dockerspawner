@@ -1,7 +1,7 @@
-here="$(dirname $0)"
-export PYTHONPATH="$here:$here/../..:$PYTHONPATH"
+#!/usr/bin/env bash
 
-test -f oauthenticator.py || curl https://raw.githubusercontent.com/jupyter/oauthenticator/master/oauthenticator.py > oauthenticator.py
+here="$(dirname $0)"
+
 # load github auth from env
 source $here/env
 
