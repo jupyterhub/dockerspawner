@@ -438,12 +438,6 @@ class SwarmSpawner(DockerSpawner):
             self.node_info[node] = ip_port.split(":")[0]
         self.log.debug("Swarm nodes are: {}".format(self.node_info))
 
-        # specify extra host configuration
-        if extra_host_config is None:
-            extra_host_config = {}
-        if 'mem_limit' not in extra_host_config:
-            extra_host_config['mem_limit'] = '1g'
-
         # start the container
         yield super(SwarmSpawner, self).start(
             image=image,
@@ -458,5 +452,4 @@ class SwarmSpawner(DockerSpawner):
             self.container_name, name, self.user.server.ip,
             self.user.server.port))
 
-        self.log.info(self.env)
-
+        self.log.debug(self.env)
