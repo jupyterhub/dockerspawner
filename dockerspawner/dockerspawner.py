@@ -135,6 +135,18 @@ class DockerSpawner(Spawner):
         )
     )
 
+    use_internal_ip = Bool(
+        False,
+        config=True,
+        help=dedent(
+            """
+            Enable the usage of the internal docker ip. This is useful if you are running
+            jupyterhub (as a container) and the user containers within the same docker engine.
+            E.g. by mounting the docker socket of the host into the jupyterhub container.
+            """
+        )
+    )
+
     @property
     def tls_client(self):
         """A tuple consisting of the TLS client certificate and key if they
@@ -360,10 +372,17 @@ class DockerSpawner(Spawner):
         # start the container
         yield self.docker('start', self.container_id, **start_kwargs)
 
-        # get the public-facing ip, port
-        resp = yield self.docker('port', self.container_id, 8888)
-        self.user.server.ip = self.container_ip
-        self.user.server.port = resp[0]['HostPort']
+        if self.use_internal_ip:
+            inspect_resp = yield self.docker('inspect_container', self.container_id)
+            self.user.server.ip = inspect_resp['NetworkSettings']['IPAddress']
+            self.user.server.port = 8888
+        else:
+            # get the public-facing ip, port
+            resp = yield self.docker('port', self.container_id, 8888)
+            self.user.server.ip = self.container_ip
+            self.user.server.port = resp[0]['HostPort']
+
+
 
     @gen.coroutine
     def stop(self, now=False):
