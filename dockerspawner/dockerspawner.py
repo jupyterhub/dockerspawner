@@ -372,17 +372,20 @@ class DockerSpawner(Spawner):
         # start the container
         yield self.docker('start', self.container_id, **start_kwargs)
 
+        ip, port = yield from self.get_ip_and_port()
+        self.user.server.ip = ip
+        self.user.server.port = port
+
+    def get_ip_and_port(self):
         if self.use_internal_ip:
             inspect_resp = yield self.docker('inspect_container', self.container_id)
-            self.user.server.ip = inspect_resp['NetworkSettings']['IPAddress']
-            self.user.server.port = 8888
+            ip = inspect_resp['NetworkSettings']['IPAddress']
+            port = 8888
         else:
-            # get the public-facing ip, port
             resp = yield self.docker('port', self.container_id, 8888)
-            self.user.server.ip = self.container_ip
-            self.user.server.port = resp[0]['HostPort']
-
-
+            ip = self.container_ip
+            port = resp[0]['HostPort']
+        return ip, port
 
     @gen.coroutine
     def stop(self, now=False):
