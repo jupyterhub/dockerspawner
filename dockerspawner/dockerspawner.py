@@ -336,9 +336,9 @@ class DockerSpawner(Spawner):
                 create_kwargs.update(extra_create_kwargs)
 
             # build the dictionary of keyword arguments for host_config
-            host_config = dict(
-                binds=self.volume_binds,
-                port_bindings={8888: (self.container_ip,)})
+            host_config = dict(binds=self.volume_binds)
+            if not self.use_internal_ip:
+                host_config['port_bindings'] = {8888: (self.container_ip,)}
             host_config.update(self.extra_host_config)
             if extra_host_config:
                 host_config.update(extra_host_config)
