@@ -147,6 +147,18 @@ class DockerSpawner(Spawner):
         )
     )
 
+    internal_ip_network_name = Unicode(
+        "bridge",
+        config=True,
+        help=dedent(
+            """
+            Retrieve the internal IP from this docker network. Defaults to the default docker
+            network 'bridge'. You need to set this if you run your jupyterhub containers in a
+            non-standard network
+            """
+        )
+    )
+
     @property
     def tls_client(self):
         """A tuple consisting of the TLS client certificate and key if they
@@ -378,8 +390,17 @@ class DockerSpawner(Spawner):
 
     def get_ip_and_port(self):
         if self.use_internal_ip:
-            inspect_resp = yield self.docker('inspect_container', self.container_id)
-            ip = inspect_resp['NetworkSettings']['IPAddress']
+            resp = yield self.docker('inspect_container', self.container_id)
+            networks = resp['NetworkSettings']['Networks']
+            if self.internal_ip_network_name not in networks:
+                raise Exception(
+                    "Unknown docker network '{network}'. Did you create it with 'docker network create <name>' and "
+                    "did you pass network_mode=<name> in extra_kwargs?".format(
+                        network=self.internal_ip_network_name
+                    )
+                )
+            network = networks[self.internal_ip_network_name]
+            ip = network['IPAddress']
             port = 8888
         else:
             resp = yield self.docker('port', self.container_id, 8888)
