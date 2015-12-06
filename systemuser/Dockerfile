@@ -1,7 +1,7 @@
 # Build as jupyter/systemuser
 # Run with the DockerSpawner in JupyterHub
 
-FROM ipython/scipystack
+FROM jupyter/scipy-notebook
 
 MAINTAINER IPython Project <ipython-dev@scipy.org>
 

@@ -1,6 +1,6 @@
 # jupyter/systemuser
 
-Built from the `ipython/scipystack` base image.
+Built from the `jupyter/scipy-notebook` base image.
 
 This image contains a single user notebook server for use with
 [JupyterHub](https://github.com/jupyter/jupyterhub). In particular, it is meant
