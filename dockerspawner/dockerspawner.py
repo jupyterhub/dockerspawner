@@ -90,6 +90,8 @@ class DockerSpawner(Spawner):
             """
             Map from host file/directory to container file/directory.
             Volumes specified here will be read/write in the container.
+            If you use {username} in the host file / directory path, it will be
+            replaced with the current user's name.
             """
         )
     )
@@ -99,6 +101,8 @@ class DockerSpawner(Spawner):
             """
             Map from host file/directory to container file/directory.
             Volumes specified here will be read-only in the container.
+            If you use {username} in the host file / directory path, it will be
+            replaced with the current user's name.
             """
         )
     )
@@ -174,11 +178,11 @@ class DockerSpawner(Spawner):
         }
         """
         volumes = {
-            key: {'bind': value, 'ro': False}
+            key.format(username=self.user.name): {'bind': value, 'ro': False}
             for key, value in self.volumes.items()
         }
         ro_volumes = {
-            key: {'bind': value, 'ro': True}
+            key.format(username=self.user.name): {'bind': value, 'ro': True}
             for key, value in self.read_only_volumes.items()
         }
         volumes.update(ro_volumes)
