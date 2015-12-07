@@ -391,22 +391,30 @@ class DockerSpawner(Spawner):
     def get_ip_and_port(self):
         if self.use_internal_ip:
             resp = yield self.docker('inspect_container', self.container_id)
-            networks = resp['NetworkSettings']['Networks']
-            if self.internal_ip_network_name not in networks:
-                raise Exception(
-                    "Unknown docker network '{network}'. Did you create it with 'docker network create <name>' and "
-                    "did you pass network_mode=<name> in extra_kwargs?".format(
-                        network=self.internal_ip_network_name
-                    )
-                )
-            network = networks[self.internal_ip_network_name]
-            ip = network['IPAddress']
+            network_settings = resp['NetworkSettings']
+            if 'Networks' in network_settings:
+                ip = self.get_network_ip(network_settings)
+            else:  # Fallback for old versions of docker (<1.9) without network management
+                ip = network_settings['IPAddress']
             port = 8888
         else:
             resp = yield self.docker('port', self.container_id, 8888)
             ip = self.container_ip
             port = resp[0]['HostPort']
         return ip, port
+
+    def get_network_ip(self, network_settings):
+        networks = network_settings['Networks']
+        if self.internal_ip_network_name not in networks:
+            raise Exception(
+                "Unknown docker network '{network}'. Did you create it with 'docker network create <name>' and "
+                "did you pass network_mode=<name> in extra_kwargs?".format(
+                    network=self.internal_ip_network_name
+                )
+            )
+        network = networks[self.internal_ip_network_name]
+        ip = network['IPAddress']
+        return ip
 
     @gen.coroutine
     def stop(self, now=False):
