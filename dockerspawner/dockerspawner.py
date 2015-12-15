@@ -139,6 +139,18 @@ class DockerSpawner(Spawner):
         )
     )
 
+    use_internal_ip = Bool(
+        False,
+        config=True,
+        help=dedent(
+            """
+            Enable the usage of the internal docker ip. This is useful if you are running
+            jupyterhub (as a container) and the user containers within the same docker engine.
+            E.g. by mounting the docker socket of the host into the jupyterhub container.
+            """
+        )
+    )
+
     @property
     def tls_client(self):
         """A tuple consisting of the TLS client certificate and key if they
@@ -328,9 +340,9 @@ class DockerSpawner(Spawner):
                 create_kwargs.update(extra_create_kwargs)
 
             # build the dictionary of keyword arguments for host_config
-            host_config = dict(
-                binds=self.volume_binds,
-                port_bindings={8888: (self.container_ip,)})
+            host_config = dict(binds=self.volume_binds)
+            if not self.use_internal_ip:
+                host_config['port_bindings'] = {8888: (self.container_ip,)}
             host_config.update(self.extra_host_config)
             if extra_host_config:
                 host_config.update(extra_host_config)
@@ -364,10 +376,20 @@ class DockerSpawner(Spawner):
         # start the container
         yield self.docker('start', self.container_id, **start_kwargs)
 
-        # get the public-facing ip, port
-        resp = yield self.docker('port', self.container_id, 8888)
-        self.user.server.ip = self.container_ip
-        self.user.server.port = resp[0]['HostPort']
+        ip, port = yield from self.get_ip_and_port()
+        self.user.server.ip = ip
+        self.user.server.port = port
+
+    def get_ip_and_port(self):
+        if self.use_internal_ip:
+            inspect_resp = yield self.docker('inspect_container', self.container_id)
+            ip = inspect_resp['NetworkSettings']['IPAddress']
+            port = 8888
+        else:
+            resp = yield self.docker('port', self.container_id, 8888)
+            ip = self.container_ip
+            port = resp[0]['HostPort']
+        return ip, port
 
     @gen.coroutine
     def stop(self, now=False):
