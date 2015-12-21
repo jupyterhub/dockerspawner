@@ -152,8 +152,8 @@ class DockerSpawner(Spawner):
         config=True,
         help=dedent(
             """
-            Retrieve the internal IP from this docker network. Defaults to the default docker
-            network 'bridge'. You need to set this if you run your jupyterhub containers in a
+            The name of the docker network from which to retrieve the internal IP address. Defaults to the default
+            docker network 'bridge'. You need to set this if you run your jupyterhub containers in a
             non-standard network. Only has an effect if use_internal_ip=True.
             """
         )
