@@ -147,14 +147,14 @@ class DockerSpawner(Spawner):
         )
     )
 
-    internal_ip_network_name = Unicode(
+    network_name = Unicode(
         "bridge",
         config=True,
         help=dedent(
             """
             Retrieve the internal IP from this docker network. Defaults to the default docker
             network 'bridge'. You need to set this if you run your jupyterhub containers in a
-            non-standard network
+            non-standard network. Only has an effect if use_internal_ip=True.
             """
         )
     )
@@ -405,14 +405,14 @@ class DockerSpawner(Spawner):
 
     def get_network_ip(self, network_settings):
         networks = network_settings['Networks']
-        if self.internal_ip_network_name not in networks:
+        if self.network_name not in networks:
             raise Exception(
                 "Unknown docker network '{network}'. Did you create it with 'docker network create <name>' and "
                 "did you pass network_mode=<name> in extra_kwargs?".format(
-                    network=self.internal_ip_network_name
+                    network=self.network_name
                 )
             )
-        network = networks[self.internal_ip_network_name]
+        network = networks[self.network_name]
         ip = network['IPAddress']
         return ip
 
