@@ -434,9 +434,9 @@ class SwarmSpawner(DockerSpawner):
         # look up mapping of node names to ip addresses
         info = yield self.docker('info')
         self.node_info = {}
-        for node, nodeip in [(entry[0], entry[1].split(":")[0])
+        for node, nodeip in ((entry[0], entry[1].split(":")[0])
                              for entry in info['DriverStatus']
-                             if SIMPLE_IP_PORT.match(entry[1])]:
+                             if SIMPLE_IP_PORT.match(entry[1])):
             self.node_info[node] = nodeip
         self.log.debug("Swarm nodes are: {}".format(self.node_info))
 
