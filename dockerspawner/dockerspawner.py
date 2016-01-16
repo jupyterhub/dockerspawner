@@ -4,6 +4,7 @@ in a separate docker container
 """
 import itertools
 import os
+import re
 import string
 from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor
@@ -21,6 +22,8 @@ from traitlets import (
     Unicode,
     Bool,
 )
+
+SIMPLE_IP_PORT = re.compile('^(?:[0-9]{1,3}\.){3}[0-9]{1,3}:\d{1,5}$')
 
 
 class UnicodeOrFalse(Unicode):
@@ -430,12 +433,11 @@ class SwarmSpawner(DockerSpawner):
               extra_start_kwargs=None, extra_host_config=None):
         # look up mapping of node names to ip addresses
         info = yield self.docker('info')
-        num_nodes = int(info['DriverStatus'][3][1])
-        node_info = info['DriverStatus'][4::5]
         self.node_info = {}
-        for i in range(num_nodes):
-            node, ip_port = node_info[i]
-            self.node_info[node] = ip_port.split(":")[0]
+        for node, nodeip in [(entry[0], entry[1].split(":")[0])
+                             for entry in info['DriverStatus']
+                             if SIMPLE_IP_PORT.match(entry[1])]:
+            self.node_info[node] = nodeip
         self.log.debug("Swarm nodes are: {}".format(self.node_info))
 
         # start the container
