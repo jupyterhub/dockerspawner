@@ -1,0 +1,14 @@
+sudo: required
+language: python
+python:
+    - 3.5
+services:
+  - docker
+before_install:
+  - pip install pyflakes
+install:
+  - pip install .
+script:
+  - pyflakes dockerspawner
+  - docker build -t jupyter/singleuser singleuser
+  - docker build -t jupyter/systemuser systemuser
