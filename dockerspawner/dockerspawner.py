@@ -19,7 +19,6 @@ from traitlets import (
     Dict,
     Unicode,
     Bool,
-    Enum,
 )
 
 
