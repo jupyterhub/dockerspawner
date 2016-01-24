@@ -1,3 +1,3 @@
-from .dockerspawner import DockerSpawner
+from .dockerspawner import DockerSpawner, SwarmSpawner
 from .systemuserspawner import SystemUserSpawner
-__all__ = ['DockerSpawner', 'SystemUserSpawner']
+__all__ = ['DockerSpawner', 'SwarmSpawner', 'SystemUserSpawner']
