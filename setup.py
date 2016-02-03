@@ -32,7 +32,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 # Get the current package version.
 version_ns = {}
-with open(pjoin(here, 'version.py')) as f:
+with open(pjoin(here, 'dockerspawner', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
 
@@ -57,6 +57,9 @@ setup_args = dict(
         'Programming Language :: Python :: 3',
     ],
 )
+
+if 'bdist_wheel' in sys.argv:
+    import setuptools
 
 # setuptools requirements
 if 'setuptools' in sys.modules:
