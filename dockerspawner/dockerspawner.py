@@ -201,11 +201,11 @@ class DockerSpawner(Spawner):
         }
         """
         volumes = {
-            key.format(username=self.user.name): {'bind': value, 'ro': False}
+            key.format(username=self.user.name): {'bind': value.format(username=self.user.name), 'ro': False}
             for key, value in self.volumes.items()
         }
         ro_volumes = {
-            key.format(username=self.user.name): {'bind': value, 'ro': True}
+            key.format(username=self.user.name): {'bind': value.format(username=self.user.name), 'ro': True}
             for key, value in self.read_only_volumes.items()
         }
         volumes.update(ro_volumes)

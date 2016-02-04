@@ -25,6 +25,19 @@ class SystemUserSpawner(DockerSpawner):
         )
     )
 
+    image_homedir_format_string = Unicode(
+        "/home/{username}",
+        config=True,
+        help=dedent(
+            """
+            Format string for the path to the user's home directory
+            inside the image.  The format string should include a
+            `username` variable, which will be formatted with the
+            user's username.
+            """
+        )
+    )
+
     user_id = Integer(-1,
         help=dedent(
             """
@@ -51,7 +64,7 @@ class SystemUserSpawner(DockerSpawner):
         """
         Path to the user's home directory in the docker image.
         """
-        return "/home/{username}".format(username=self.user.name)
+        return self.image_homedir_format_string.format(username=self.user.name)
 
     @property
     def volume_mount_points(self):
