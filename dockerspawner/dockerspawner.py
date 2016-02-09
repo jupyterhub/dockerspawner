@@ -94,6 +94,7 @@ class DockerSpawner(Spawner):
             """
         )
     )
+
     read_only_volumes = Dict(
         config=True,
         help=dedent(
@@ -150,8 +151,7 @@ class DockerSpawner(Spawner):
         )
     )
 
-    use_docker_links = Bool(
-        False,
+    use_docker_links = Dict(
         config=True,
         help=dedent(
             """
@@ -374,7 +374,7 @@ class DockerSpawner(Spawner):
                 host_config.update(extra_host_config)
 
             if self.use_docker_links:
-                containers = self.client.containers(quiet=True, filters={'com.jupyter.service': 'jupyterhub'})
+                containers = self.client.containers(quiet=True, filters={'org.jupyter.service': 'jupyterhub'})
 
                 if len(containers) > 0:
                     container_id = containers[0]['Id']
