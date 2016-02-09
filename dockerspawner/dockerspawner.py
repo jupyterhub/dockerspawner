@@ -31,7 +31,7 @@ class UnicodeOrFalse(Unicode):
 
 
 class DockerSpawner(Spawner):
-    
+
     _executor = None
     @property
     def executor(self):
@@ -40,7 +40,7 @@ class DockerSpawner(Spawner):
         if cls._executor is None:
             cls._executor = ThreadPoolExecutor(1)
         return cls._executor
-    
+
     _client = None
     @property
     def client(self):
@@ -121,7 +121,7 @@ class DockerSpawner(Spawner):
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
     extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
     extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
-    
+
     _container_safe_chars = set(string.ascii_letters + string.digits + '-')
     _container_escape_char = '_'
 
@@ -146,6 +146,18 @@ class DockerSpawner(Spawner):
             Enable the usage of the internal docker ip. This is useful if you are running
             jupyterhub (as a container) and the user containers within the same docker engine.
             E.g. by mounting the docker socket of the host into the jupyterhub container.
+            """
+        )
+    )
+
+    use_docker_links = Bool(
+        False,
+        config=True,
+        help=dedent(
+            """
+            If the Jupyterhub is running in a Docker container, this can be used
+            to connect using a Docker link, this simplifies the routing because
+            all traffic will be using docker hostnames.
             """
         )
     )
@@ -228,7 +240,7 @@ class DockerSpawner(Spawner):
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
         self.container_id = state.get('container_id', '')
-    
+
     def get_state(self):
         state = super(DockerSpawner, self).get_state()
         if self.container_id:
@@ -247,7 +259,7 @@ class DockerSpawner(Spawner):
     def _env_keep_default(self):
         """Don't inherit any env from the parent process"""
         return []
-    
+
     def _env_default(self):
         env = super(DockerSpawner, self)._env_default()
         env.update(dict(
@@ -267,19 +279,19 @@ class DockerSpawner(Spawner):
 
     def _docker(self, method, *args, **kwargs):
         """wrapper for calling docker methods
-        
+
         to be passed to ThreadPoolExecutor
         """
         m = getattr(self.client, method)
         return m(*args, **kwargs)
-    
+
     def docker(self, method, *args, **kwargs):
         """Call a docker method in a background thread
-        
+
         returns a Future
         """
         return self.executor.submit(self._docker, method, *args, **kwargs)
-    
+
     @gen.coroutine
     def poll(self):
         """Check for my id in `docker ps`"""
@@ -351,12 +363,27 @@ class DockerSpawner(Spawner):
                 create_kwargs.update(extra_create_kwargs)
 
             # build the dictionary of keyword arguments for host_config
-            host_config = dict(binds=self.volume_binds)
+            host_config = dict(binds=self.volume_binds, links={})
+
             if not self.use_internal_ip:
                 host_config['port_bindings'] = {8888: (self.container_ip,)}
+
             host_config.update(self.extra_host_config)
+
             if extra_host_config:
                 host_config.update(extra_host_config)
+
+            if self.use_docker_links:
+                containers = self.client.containers(quiet=True, filters={'com.jupyter.service': 'jupyterhub'})
+
+                if len(containers) > 0:
+                    container_id = containers[0]['Id']
+                    host_config['links'].update({container_id: 'jupyterhub'})
+                    self.log.info("Linked to container id %s", container_id)
+                else:
+                    self.log.warn("Could not find parent container id")
+
+            self.log.debug("Starting host with config: %s", host_config)
 
             host_config = self.client.create_host_config(**host_config)
             create_kwargs.setdefault('host_config', {}).update(host_config)
