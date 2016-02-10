@@ -151,13 +151,16 @@ class DockerSpawner(Spawner):
         )
     )
 
-    use_docker_links = Dict(
+    links = Dict(
         config=True,
         help=dedent(
             """
-            If the Jupyterhub is running in a Docker container, this can be used
-            to connect using a Docker link, this simplifies the routing because
-            all traffic will be using docker hostnames.
+            Specify docker link mapping to add to the container, e.g.
+            
+                links = {'jupyterhub: 'jupyterhub'}
+            
+            If the Hub is running in a Docker container,
+            this can simplify routing because all traffic will be using docker hostnames.
             """
         )
     )
@@ -363,7 +366,7 @@ class DockerSpawner(Spawner):
                 create_kwargs.update(extra_create_kwargs)
 
             # build the dictionary of keyword arguments for host_config
-            host_config = dict(binds=self.volume_binds, links={})
+            host_config = dict(binds=self.volume_binds, links=self.links)
 
             if not self.use_internal_ip:
                 host_config['port_bindings'] = {8888: (self.container_ip,)}
@@ -372,16 +375,6 @@ class DockerSpawner(Spawner):
 
             if extra_host_config:
                 host_config.update(extra_host_config)
-
-            if self.use_docker_links:
-                containers = self.client.containers(quiet=True, filters={'org.jupyter.service': 'jupyterhub'})
-
-                if len(containers) > 0:
-                    container_id = containers[0]['Id']
-                    host_config['links'].update({container_id: 'jupyterhub'})
-                    self.log.info("Linked to container id %s", container_id)
-                else:
-                    self.log.warn("Could not find parent container id")
 
             self.log.debug("Starting host with config: %s", host_config)
 
