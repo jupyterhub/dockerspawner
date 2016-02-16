@@ -333,6 +333,11 @@ class DockerSpawner(Spawner):
                 container = None
                 # my container is gone, forget my id
                 self.container_id = ''
+            elif e.response.status_code == 500:
+                self.log.info("Container '%s' is on unhealthy node", self.container_name)
+                container = None
+                # my container is unhealthy, forget my id
+                self.container_id = ''
             else:
                 raise
         return container
