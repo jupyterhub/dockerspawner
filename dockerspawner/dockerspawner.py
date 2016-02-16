@@ -422,7 +422,7 @@ class DockerSpawner(Spawner):
             port = 8888
         else:
             resp = yield self.docker('port', self.container_id, 8888)
-            ip = self.container_ip
+            ip = resp[0]['HostIp']
             port = resp[0]['HostPort']
         return ip, port
 
