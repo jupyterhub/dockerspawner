@@ -363,7 +363,7 @@ class DockerSpawner(Spawner):
             # build the dictionary of keyword arguments for create_container
             create_kwargs = dict(
                 image=image,
-                environment=self.env,
+                environment=self.get_env(),
                 volumes=self.volume_mount_points,
                 name=self.container_name)
             create_kwargs.update(self.extra_create_kwargs)
