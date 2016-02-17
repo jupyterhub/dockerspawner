@@ -412,7 +412,7 @@ class DockerSpawner(Spawner):
         # start the container
         yield self.docker('start', self.container_id, **start_kwargs)
 
-        ip, port = yield from self.get_ip_and_port()
+        ip, port = yield self.get_ip_and_port()
         self.user.server.ip = ip
         self.user.server.port = port
 
@@ -427,6 +427,8 @@ class DockerSpawner(Spawner):
             port = 8888
         else:
             resp = yield self.docker('port', self.container_id, 8888)
+            if resp is None:
+                raise RuntimeError("Failed to get port info for %s" % self.container_id)
             ip = resp[0]['HostIp']
             port = resp[0]['HostPort']
         return ip, port
