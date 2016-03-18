@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
+#
+# Build a singleuser image for JupyterHub from a given stack
+# The main assumption of the base image:
+#   - User jovyan is set up to run the notebook
+#
+# Usage:
+#
+#     rebase-singleuser jupyter/scipy-notebook my-singleuser-image
+
+set -e
+
+base="$1"
+name="$2"
+if [[ -z "$base" || -z "$name" ]]; then
+  echo "Usage: rebase-singleuser [base image] [destination image]" >&2
+  exit 1
+fi
+
+# modify FROM target in singleuser Dockerfile
+echo "rebuilding singleuser FROM $base"
+sed -i '' "s@^FROM.*\$@FROM $base@" singleuser/Dockerfile
+
+# build new image
+docker build -t "$name" singleuser
+echo "built singleuser image $name"
