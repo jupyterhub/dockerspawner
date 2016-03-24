@@ -263,8 +263,8 @@ class DockerSpawner(Spawner):
         """Don't inherit any env from the parent process"""
         return []
 
-    def _env_default(self):
-        env = super(DockerSpawner, self)._env_default()
+    def get_env(self):
+        env = super(DockerSpawner, self).get_env()
         env.update(dict(
             JPY_USER=self.user.name,
             JPY_COOKIE_NAME=self.user.server.cookie_name,
