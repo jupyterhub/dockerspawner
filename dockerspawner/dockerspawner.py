@@ -156,9 +156,9 @@ class DockerSpawner(Spawner):
         help=dedent(
             """
             Specify docker link mapping to add to the container, e.g.
-            
+
                 links = {'jupyterhub: 'jupyterhub'}
-            
+
             If the Hub is running in a Docker container,
             this can simplify routing because all traffic will be using docker hostnames.
             """
@@ -271,6 +271,9 @@ class DockerSpawner(Spawner):
             JPY_BASE_URL=self.user.server.base_url,
             JPY_HUB_PREFIX=self.hub.server.base_url
         ))
+
+        if self.notebook_dir:
+            env['NOTEBOOK_DIR'] = self.notebook_dir
 
         if self.hub_ip_connect:
            hub_api_url = self._public_hub_api_url()
