@@ -98,8 +98,8 @@ class SystemUserSpawner(DockerSpawner):
         }
         return volumes
 
-    def _env_default(self):
-        env = super(SystemUserSpawner, self)._env_default()
+    def get_env(self):
+        env = super(SystemUserSpawner, self).get_env()
         env.update(dict(
             USER=self.user.name,
             USER_ID=self.user_id,
