@@ -1,11 +1,11 @@
-# jupyter/systemuser
+# jupyterhub/systemuser
 
 Built from the `jupyter/scipy-notebook` base image.
 
 This image contains a single user notebook server for use with
-[JupyterHub](https://github.com/jupyter/jupyterhub). In particular, it is meant
+[JupyterHub](https://github.com/jupyterhub/jupyterhub). In particular, it is meant
 to be used with the
-[SystemUserSpawner](https://github.com/jupyter/dockerspawner/blob/master/dockerspawner/systemuserspawner.py)
+[SystemUserSpawner](https://github.com/jupyterhub/dockerspawner/blob/master/dockerspawner/systemuserspawner.py)
 class to launch user notebook servers within docker containers.
 
 This particular server initially runs (within the container) as the `root` user.

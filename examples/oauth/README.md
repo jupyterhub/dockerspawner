@@ -1,10 +1,10 @@
 # DockerSpawner
 
-Enables [JupyterHub](https://github.com/jupyter/jupyterhub) to spawn
+Enables [JupyterHub](https://github.com/jupyterhub/jupyterhub) to spawn
 user servers in docker containers.
 
-This is an example of running [JupyterHub](https://github.com/jupyter/jupyterhub)
-with [GitHub OAuth](https://github.com/jupyter/oauthenticator) for authentication,
+This is an example of running [JupyterHub](https://github.com/jupyterhub/jupyterhub)
+with [GitHub OAuth](https://github.com/jupyterhub/oauthenticator) for authentication,
 spinning up a [docker](https://www.docker.com/) container for each user.
 
 ## setup
@@ -13,7 +13,7 @@ spinning up a [docker](https://www.docker.com/) container for each user.
 
 Install oauthenticator:
 
-    pip install git+https://github.com/jupyter/oauthenticator.git
+    pip install oauthenticator
 
 
 Make a file called `userlist` with one GitHub user name per line.

@@ -10,5 +10,5 @@ install:
   - pip install .
 script:
   - pyflakes dockerspawner
-  - docker build -t jupyter/singleuser singleuser
-  - docker build -t jupyter/systemuser systemuser
+  - docker build -t jupyterhub/singleuser singleuser
+  - docker build -t jupyterhub/systemuser systemuser

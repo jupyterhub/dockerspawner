@@ -1,6 +1,6 @@
 # DockerSpawner
 
-Enables [JupyterHub](https://github.com/jupyter/jupyterhub) to spawn
+Enables [JupyterHub](https://github.com/jupyterhub/jupyterhub) to spawn
 user servers in docker containers.
 
 ## Setting up the spawner
@@ -48,19 +48,19 @@ container, and authenticates users using GitHub OAuth).
 
 ### Single user notebook server
 
-Build the `jupyter/singleuser` container with:
+Build the `jupyterhub/singleuser` container with:
 
-    docker build -t jupyter/singleuser singleuser
+    docker build -t jupyterhub/singleuser singleuser
 
-or use `docker pull jupyter/singleuser` to download it from [Docker
-Hub](https://registry.hub.docker.com/u/jupyter/singleuser/).
+or use `docker pull jupyterhub/singleuser` to download it from [Docker
+Hub](https://registry.hub.docker.com/u/jupyterhub/singleuser/).
 
 ### System user notebook server
 
-Or the `jupyter/systemuser` container with:
+Or the `jupyterhub/systemuser` container with:
 
-    docker build -t jupyter/systemuser systemuser
+    docker build -t jupyterhub/systemuser systemuser
 
-or use `docker pull jupyter/systemuser` to download it from [Docker
-Hub](https://registry.hub.docker.com/u/jupyter/systemuser/).
+or use `docker pull jupyterhub/systemuser` to download it from [Docker
+Hub](https://registry.hub.docker.com/u/jupyterhub/systemuser/).
 
