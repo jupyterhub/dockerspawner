@@ -19,6 +19,7 @@ from traitlets import (
     Dict,
     Unicode,
     Bool,
+    Int,
 )
 
 
@@ -71,6 +72,7 @@ class DockerSpawner(Spawner):
 
     container_id = Unicode()
     container_ip = Unicode('127.0.0.1', config=True)
+    container_port = Int(8888, min=1, max=65535, config=True)
     container_image = Unicode("jupyterhub/singleuser", config=True)
     container_prefix = Unicode(
         "jupyter",
@@ -377,7 +379,7 @@ class DockerSpawner(Spawner):
             host_config = dict(binds=self.volume_binds, links=self.links)
 
             if not self.use_internal_ip:
-                host_config['port_bindings'] = {8888: (self.container_ip,)}
+                host_config['port_bindings'] = {self.container_port: (self.container_ip,)}
 
             host_config.update(self.extra_host_config)
 
@@ -427,9 +429,9 @@ class DockerSpawner(Spawner):
                 ip = self.get_network_ip(network_settings)
             else:  # Fallback for old versions of docker (<1.9) without network management
                 ip = network_settings['IPAddress']
-            port = 8888
+            port = self.container_port
         else:
-            resp = yield self.docker('port', self.container_id, 8888)
+            resp = yield self.docker('port', self.container_id, self.container_port)
             if resp is None:
                 raise RuntimeError("Failed to get port info for %s" % self.container_id)
             ip = resp[0]['HostIp']
