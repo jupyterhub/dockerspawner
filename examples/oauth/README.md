@@ -36,6 +36,8 @@ Make sure the callback URL is:
 
 Where `[your-host]` is where your server will be running. Such as `example.com:8000`.
 Add your oauth client id, client secret, and callback URL to the `env file`.
+Note: The client secret should not be visible publicly. Use caution if
+placing `env file` in version control.
 
 
 ### ssl
