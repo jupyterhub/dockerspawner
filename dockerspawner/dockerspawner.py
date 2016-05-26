@@ -89,10 +89,17 @@ class DockerSpawner(Spawner):
         config=True,
         help=dedent(
             """
-            Map from host file/directory to container file/directory.
-            Volumes specified here will be read/write in the container.
-            If you use {username} in the host file / directory path, it will be
-            replaced with the current user's name.
+            Map from host file/directory to container (guest) file/directory
+            mount point and (optionally) a mode. When specifying the
+            guest mount point (bind) for the volume, you may use a
+            dict or str. If a str, then the volume will default to a
+            read-write (mode="rw"). With a dict, the bind is
+            identified by "bind" and the "mode" may be one of "rw"
+            (default), "ro" (read-only), "z" (public/shared SELinux
+            volume label), and "Z" (private/unshared SELinux volume
+            label). If you use {username} in either the host or guest
+            file/directory path, it will be replaced with the current
+            user's name.
             """
         )
     )
@@ -196,15 +203,10 @@ class DockerSpawner(Spawner):
         all the locations where you're going to mount volumes when you call
         create_container.
 
-        Returns a list of all the values in self.volumes or
+        Returns a sorted list of all the values in self.volumes or
         self.read_only_volumes.
         """
-        return list(
-            itertools.chain(
-                self.volumes.values(),
-                self.read_only_volumes.values(),
-            )
-        )
+        return sorted(map(lambda x: x['bind'], self.volume_binds.values()))
 
     @property
     def volume_binds(self):
@@ -214,19 +216,13 @@ class DockerSpawner(Spawner):
         looks like:
 
         {
-            host_location: {'bind': container_location, 'ro': True}
+            host_location: {'bind': container_location, 'mode': 'rw'}
         }
+        mode may be 'ro', 'rw', 'z', or 'Z'.
+
         """
-        volumes = {
-            key.format(username=self.user.name): {'bind': value.format(username=self.user.name), 'ro': False}
-            for key, value in self.volumes.items()
-        }
-        ro_volumes = {
-            key.format(username=self.user.name): {'bind': value.format(username=self.user.name), 'ro': True}
-            for key, value in self.read_only_volumes.items()
-        }
-        volumes.update(ro_volumes)
-        return volumes
+        binds = self._volumes_to_binds(self.volumes, {})
+        return self._volumes_to_binds(self.read_only_volumes, binds, mode='ro')
 
     _escaped_name = None
     @property
@@ -470,3 +466,23 @@ class DockerSpawner(Spawner):
             yield self.docker('remove_container', self.container_id, v=True)
 
         self.clear_state()
+
+
+    def _volumes_to_binds(self, volumes, binds, mode='rw'):
+        """Extract the volume mount points from volumes property.
+
+        Returns a dict of dict entries of the form::
+
+            {'/host/dir': {'bind': '/guest/dir': 'mode': 'rw'}}
+        """
+        def _fmt(v):
+            return v.format(username=self.user.name)
+
+        for k, v in volumes.items():
+            m = mode
+            if isinstance(v, dict):
+                if 'mode' in v:
+                    m = v['mode']
+                v = v['bind']
+            binds[_fmt(k)] = {'bind': _fmt(v), 'mode': m}
+        return binds
