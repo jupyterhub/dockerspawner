@@ -1,7 +1,7 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
-import itertools
+
 import os
 import string
 from textwrap import dedent
