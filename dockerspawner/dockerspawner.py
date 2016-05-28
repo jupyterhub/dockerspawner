@@ -418,6 +418,18 @@ class DockerSpawner(Spawner):
         self.user.server.port = port
 
     def get_ip_and_port(self):
+        """Queries Docker daemon for container's IP and port.
+
+        If you are using network_mode=host, you will need to override
+        this method as follows::
+
+            async def get_ip_and_port(self):
+                return self.container_ip, self.container_port
+
+        You will need to make sure container_ip and container_port
+        are correct, which depends on the route to the container
+        and the port it opens.
+        """
         if self.use_internal_ip:
             resp = yield self.docker('inspect_container', self.container_id)
             network_settings = resp['NetworkSettings']
