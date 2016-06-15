@@ -15,8 +15,8 @@ Install to the system:
 
 ### DockerSpawner
 
-For basic, temporary notebook servers, tell JupyterHub to use DockerSpawner by
-adding the following to your `jupyterhub_config.py`:
+Tell JupyterHub to use DockerSpawner by adding the following line to 
+your `jupyterhub_config.py`:
 
     c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
 
