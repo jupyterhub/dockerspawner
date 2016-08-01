@@ -1,4 +1,3 @@
 jupyterhub>=0.4
 escapism
 docker-py
-jupyter_client
