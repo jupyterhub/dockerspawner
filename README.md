@@ -44,6 +44,19 @@ For a full example of how `SystemUserSpawner` is used, see the
 repository (this additionally runs the JupyterHub server within a docker
 container, and authenticates users using GitHub OAuth).
 
+### Using Docker Swarm
+
+Both `DockerSpawner` and `SystemUserSpawner` are compatible with
+[Docker Swarm](https://docs.docker.com/swarm/). Simply add to your
+`jupyterhub_config.py` file:
+
+```
+c.DockerSpawner.container_ip = "0.0.0.0"
+```
+
+which will tell DockerSpawner/SystemUserSpawner to get the container IP address
+and port number from `docker port`.
+
 ## Building the docker images
 
 ### Single user notebook server
