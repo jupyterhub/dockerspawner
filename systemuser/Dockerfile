@@ -6,7 +6,8 @@ FROM jupyterhub/singleuser
 MAINTAINER Project Jupyter <jupyter@googlegroups.com>
 
 USER root
-RUN userdel jovyan
+WORKDIR /home
+RUN userdel jovyan && rm -rf /home/jovyan
 ENV SHELL /bin/bash
 ADD systemuser.sh /srv/singleuser/systemuser.sh
 # smoke test entrypoint
