@@ -414,8 +414,11 @@ class DockerSpawner(Spawner):
         yield self.docker('start', self.container_id, **start_kwargs)
 
         ip, port = yield self.get_ip_and_port()
+        # store on user for pre-jupyterhub-0.7:
         self.user.server.ip = ip
         self.user.server.port = port
+        # jupyterhub 0.7 prefers returning ip, port:
+        return (ip, port)
     
     @gen.coroutine
     def get_ip_and_port(self):
