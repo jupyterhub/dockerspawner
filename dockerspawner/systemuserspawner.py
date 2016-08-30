@@ -6,7 +6,6 @@ from traitlets import (
     Integer,
     Unicode,
 )
-from tornado import gen
 
 
 class SystemUserSpawner(DockerSpawner):
@@ -128,10 +127,9 @@ class SystemUserSpawner(DockerSpawner):
             state['user_id'] = self.user_id
         return state
 
-    @gen.coroutine
     def start(self, image=None):
         """start the single-user server in a docker container"""
-        yield super(SystemUserSpawner, self).start(
+        return super(SystemUserSpawner, self).start(
             image=image,
             extra_create_kwargs={'working_dir': self.homedir}
         )
