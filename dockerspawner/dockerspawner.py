@@ -23,6 +23,18 @@ from traitlets import (
 )
 
 
+def slugify(value):
+    """
+    Normalizes string, converts to lowercase, removes non-alpha characters,
+    and converts spaces to hyphens.
+    """
+    import unicodedata,re
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub('[^\w\s-]', '', value).strip().lower()
+    value = re.sub('[-\s]+', '-', value)
+    return value
+
+
 class UnicodeOrFalse(Unicode):
     info_text = 'a unicode string or False'
     def validate(self, obj, value):
@@ -30,7 +42,7 @@ class UnicodeOrFalse(Unicode):
             return value
         return super(UnicodeOrFalse, self).validate(obj, value)
 
-
+    
 class DockerSpawner(Spawner):
 
     _executor = None
@@ -202,12 +214,13 @@ class DockerSpawner(Spawner):
         Volumes are declared in docker-py in two stages.  First, you declare
         all the locations where you're going to mount volumes when you call
         create_container.
-
         Returns a sorted list of all the values in self.volumes or
         self.read_only_volumes.
         """
-        return sorted(map(lambda x: x['bind'], self.volume_binds.values()))
-
+        return [value.format(username=slugify(self.user.name)) for value in
+                list(self.volumes.values()) +
+                list(self.read_only_volumes.values())]
+    
     @property
     def volume_binds(self):
         """
@@ -493,7 +506,7 @@ class DockerSpawner(Spawner):
             {'/host/dir': {'bind': '/guest/dir': 'mode': 'rw'}}
         """
         def _fmt(v):
-            return v.format(username=self.user.name)
+            return v.format(username=slugify(self.user.name))
 
         for k, v in volumes.items():
             m = mode
@@ -503,3 +516,5 @@ class DockerSpawner(Spawner):
                 v = v['bind']
             binds[_fmt(k)] = {'bind': _fmt(v), 'mode': m}
         return binds
+
+
