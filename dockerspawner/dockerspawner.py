@@ -217,9 +217,7 @@ class DockerSpawner(Spawner):
         Returns a sorted list of all the values in self.volumes or
         self.read_only_volumes.
         """
-        return [value.format(username=slugify(self.user.name)) for value in
-                list(self.volumes.values()) +
-                list(self.read_only_volumes.values())]
+        return sorted([value['bind'] for value in self.volume_binds.values()])
     
     @property
     def volume_binds(self):
