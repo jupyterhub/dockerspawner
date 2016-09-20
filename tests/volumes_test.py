@@ -27,6 +27,17 @@ def test_binds(monkeypatch):
     assert d.volume_binds == {'/nfs/xyz': {'bind': '/home/xyz', 'mode': 'z'}}
     assert d.volume_mount_points == ['/home/xyz']
 
+def test_slugify(monkeypatch):
+    import jupyterhub
+    monkeypatch.setattr("jupyterhub.spawner.Spawner", _MockSpawner)
+    from dockerspawner.dockerspawner import DockerSpawner
+    d = DockerSpawner()
+    d.user = types.SimpleNamespace(name='s! me')
+    d.volumes = {'/opt/notebooks/{username}': '/home/jovyan/'}
+    print(d.volume_binds['/opt/notebooks/s-me'])
+    assert d.volume_binds['/opt/notebooks/s-me'] == {'bind': '/home/jovyan/', 'mode': 'rw'}
+
+
 
 class _MockSpawner(LoggingConfigurable):
     pass

@@ -1,0 +1,4 @@
+codecov
+pytest-cov
+pytest>=2.8
+pyflakes
