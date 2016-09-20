@@ -5,7 +5,7 @@ python:
 services:
   - docker
 before_install:
-  - pip install  -f travis-wheels/wheelhouse -v --pre -r dev-requirements.txt
+  - pip install -v --pre -r dev-requirements.txt
 install:
   - pip install -e .
 script:
