@@ -23,18 +23,6 @@ from traitlets import (
 )
 
 
-def slugify(value):
-    """
-    Normalizes string, converts to lowercase, removes non-alpha characters,
-    and converts spaces to hyphens.
-    """
-    import unicodedata,re
-    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
-    value = re.sub('[^\w\s-]', '', value).strip().lower()
-    value = re.sub('[-\s]+', '-', value)
-    return value
-
-
 class UnicodeOrFalse(Unicode):
     info_text = 'a unicode string or False'
     def validate(self, obj, value):
@@ -42,7 +30,7 @@ class UnicodeOrFalse(Unicode):
             return value
         return super(UnicodeOrFalse, self).validate(obj, value)
 
-    
+
 class DockerSpawner(Spawner):
 
     _executor = None
@@ -504,7 +492,7 @@ class DockerSpawner(Spawner):
             {'/host/dir': {'bind': '/guest/dir': 'mode': 'rw'}}
         """
         def _fmt(v):
-            return v.format(username=slugify(self.user.name))
+            return v.format(username=self.user.name)
 
         for k, v in volumes.items():
             m = mode
