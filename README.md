@@ -9,7 +9,7 @@
 
 # DockerSpawner
 
-** DockerSpawner** enables [JupyterHub](https://github.com/jupyterhub/jupyterhub) 
+**DockerSpawner** enables [JupyterHub](https://github.com/jupyterhub/jupyterhub) 
 to spawn single user notebook servers in Docker containers.
 
 
