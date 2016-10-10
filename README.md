@@ -1,7 +1,7 @@
 **[Prerequisites](#prerequisites)** |
 **[Installation](#installation)** |
 **[Configuration](#configuration)** |
-**[Docker](#docker)** |
+**[Building the Docker images](#building-the-docker-images)** |
 **[Contributing](#contributing)** |
 **[License](#license)** |
 **[Getting help](#getting-help)**
@@ -9,7 +9,7 @@
 
 # DockerSpawner
 
-** DockerSpawner enables [JupyterHub](https://github.com/jupyterhub/jupyterhub) 
+** DockerSpawner** enables [JupyterHub](https://github.com/jupyterhub/jupyterhub) 
 to spawn single user notebook servers in Docker containers.
 
 
@@ -45,26 +45,43 @@ Install dockerspawner to the system:
 
 ### Choose a spawner
 
-- DockerSpawner
-- SystemUserSpawner
+Two basic types of spawners are available for dockerspawner:
 
-#### DockerSpawner
+- [DockerSpawner](#DockerSpawner): useful if you would like to spawn 
+  single user notebook servers on the fly. It will take an
+  authenticated user and spawn a notebook server in a Docker container
+  for the user.
+
+- [SystemUserSpawner](#SystemUserSpawner): useful if you would like to
+  spawn single user notebook servers that correspond to the system's 
+  users.
+
+In general, DockerSpawner will likely be used more frequently since it
+is more general and flexible than SystemUserSpawner. SystemUserSpawner
+is handy when you wish to use the system users and user home directories
+that already exist on a system.
+
+### DockerSpawner
 
 Tell JupyterHub to use DockerSpawner by adding the following line to 
 your `jupyterhub_config.py`:
 
+```python
     c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
+```
 
 There is a complete example in [examples/oauth](examples/oauth) for
 using GitHub OAuth to authenticate users, and spawn containers with docker.
 
-#### SystemUserSpawner
+### SystemUserSpawner
 
 If you want to spawn notebook servers for users that correspond to system users,
 you can use the SystemUserSpawner instead. Add the following to your
 `jupyterhub_config.py`:
 
+```python
     c.JupyterHub.spawner_class = 'dockerspawner.SystemUserSpawner'
+```
 
 The SystemUserSpawner will also need to know where the user home directories
 are on the host. By default, it expects them to be in `/home/<username>`, but if
@@ -72,47 +89,64 @@ you want to change this, you'll need to further modify the
 `jupyterhub_config.py`. For example, the following will look for a user's home
 directory on the host system at `/volumes/user/<username>`:
 
+```python
     c.SystemUserSpawner.host_homedir_format_string = '/volumes/user/{username}'
+```
 
 For a full example of how `SystemUserSpawner` is used, see the
 [compmodels-jupyterhub](https://github.com/jhamrick/compmodels-jupyterhub)
 repository (this additionally runs the JupyterHub server within a docker
 container, and authenticates users using GitHub OAuth).
 
-
 ### Using Docker Swarm
 
 Both `DockerSpawner` and `SystemUserSpawner` are compatible with
-[Docker Swarm](https://docs.docker.com/swarm/). Simply add to your
-`jupyterhub_config.py` file:
+[Docker Swarm](https://docs.docker.com/swarm/) when multiple system
+nodes will be used in a cluster for JupyterHub. Simply add `0.0.0.0`
+to your `jupyterhub_config.py` file as the `container_ip`:
 
-```
+```python
 c.DockerSpawner.container_ip = "0.0.0.0"
 ```
 
-which will tell DockerSpawner/SystemUserSpawner to get the container IP address
-and port number from `docker port`.
+This will configure DockerSpawner and SystemUserSpawner to get
+the container IP address and port number using the `docker port`
+command.
 
 
-## Building the docker images
+## Building the Docker images
 
 ### Single user notebook server
 
 Build the `jupyterhub/singleuser` container with:
 
+```bash
     docker build -t jupyterhub/singleuser singleuser
+```
 
-or use `docker pull jupyterhub/singleuser` to download it from [Docker
-Hub](https://registry.hub.docker.com/u/jupyterhub/singleuser/).
+You may also use `docker pull jupyterhub/singleuser` to download the
+container from [Docker Hub](https://registry.hub.docker.com/u/jupyterhub/singleuser/).
 
 ### System user notebook server
 
-Or the `jupyterhub/systemuser` container with:
+This is used with [`SystemUserSpawner`](#systemuserspawner).
 
+Build the `jupyterhub/systemuser` container with:
+
+```bash
     docker build -t jupyterhub/systemuser systemuser
+```
 
-or use `docker pull jupyterhub/systemuser` to download it from [Docker
-Hub](https://registry.hub.docker.com/u/jupyterhub/systemuser/).
+You may also use `docker pull jupyterhub/systemuser` to download the
+containter from [Docker Hub](https://registry.hub.docker.com/u/jupyterhub/systemuser/).
+
+
+## Data persistence
+
+If you wish to persist hub or user notebook data, additional configuration
+is required. See JupyterHub configuration documentation for more
+information on data persistence and Docker documentation on mounting
+data volumes.
 
 
 ## Contributing
