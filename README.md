@@ -64,8 +64,8 @@ may wish to use SystemUserSpawner are:
   should be able to access from within the container. For example, you
   wish to use the system users and user home directories that
   already exist on a system.
-- You are using an external service that relies on distinct unix user
-  ownership and permissions (i.e. nbgrader).
+- You are using an external service, such as nbgrader, that relies on 
+  distinct unix user ownership and permissions.
   
 If neither of those cases applies, DockerSpawner is probably the right
 choice.
@@ -123,6 +123,48 @@ This will configure DockerSpawner and SystemUserSpawner to get
 the container IP address and port number using the `docker port`
 command.
 
+### Data persistence and DockerSpawner
+
+With `DockerSpawner`, the home directory, `/home/jupyter`, is *not* 
+persistent by default, so some configuration is required to do so unless
+the directory is to be used with temporary or demonstration JupyterHub
+deployments.
+
+The simplest version of persistence to the host filesystem is to
+isolate users in the filesystem, but leave everything owned by the same
+'actual' user with DockerSpawner. That is, using docker mounts to
+isolate user files, not ownership or permissions on the host.
+
+Volume mapping for DockerSpawner in `jupyterhub_config.py`
+is required configuration for persistence. To map volumes from 
+the host file/directory to the container (referred to as guest)
+file/directory mount point, set the `c.DockerSpawner.volumes` to specify
+the guest mount point (bind) for the volume.
+
+If you use {username} in either the host or guest file/directory path,
+username substitution will be done and {username} will be replaced with
+the current user's name.
+
+```python
+# Explicitly set notebook directory because we'll be mounting a host volume to
+# it.  Most jupyter/docker-stacks *-notebook images run the Notebook server as
+# user `jovyan`, and set the notebook directory to `/home/jovyan/work`.
+# We follow the same convention.
+notebook_dir = os.environ.get('DOCKER_NOTEBOOK_DIR') or '/home/jovyan/work'
+c.DockerSpawner.notebook_dir = notebook_dir
+
+# Mount the real user's Docker volume on the host to the notebook user's
+# notebook directory in the container
+c.DockerSpawner.volumes = { 'jupyterhub-user-{username}': notebook_dir }
+```
+
+The [`jupyterhub-deploy-docker`](https://github.com/jupyterhub/jupyterhub-deploy-docker) repo
+contains a reference deployment that persists the notebook directory; 
+see its [`jupyterhub_config.py`](https://github.com/jupyterhub/jupyterhub-deploy-docker/blob/master/jupyterhub_config.py)
+for an example configuration.
+
+See Docker documentation on [data volumes] for more information on data
+persistence. 
 
 ## Building the Docker images
 
@@ -149,20 +191,6 @@ Build the `jupyterhub/systemuser` container with:
 
 You may also use `docker pull jupyterhub/systemuser` to download the
 containter from [Docker Hub](https://registry.hub.docker.com/u/jupyterhub/systemuser/).
-
-
-## Data persistence
-
-The simplest version of persistence to the host filesystem is to
-isolate users in the filesystem, but leave everything owned by the same
-'actual' user with DockerSpawner. That is, using docker mounts to
-isolate user files, not ownership or permissions on the host.
-
-If you wish to persist hub or user notebook data, additional configuration
-is required. See Docker documentation on [data volumes] for more
-information on data persistence. For example, a primitive example using
-user home directories is described in Min Ragan-Kelley's
-[PyData London workshop].
 
 
 ## Contributing
@@ -213,5 +241,5 @@ and you may participate in development discussions or get live help on
 
 
   [data volumes]: https://docs.docker.com/engine/tutorials/dockervolumes/#/data-volumes
-  [PyData London workshop]: https://youtu.be/gSVvxOchT8Y?t=1h13m30s
+
   
