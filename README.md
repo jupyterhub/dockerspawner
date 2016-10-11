@@ -56,10 +56,20 @@ Two basic types of spawners are available for dockerspawner:
   spawn single user notebook servers that correspond to the system's 
   users.
 
-In general, DockerSpawner will likely be used more frequently since it
-is more general and flexible than SystemUserSpawner. SystemUserSpawner
-is handy when you wish to use the system users and user home directories
-that already exist on a system.
+In most cases, we recommend using DockerSpawner. Use cases where you
+may wish to use SystemUserSpawner are:
+
+- You are using docker just for environment management, but are running
+  on a system where the users already have accounts and files they
+  should be able to access from within the container. For example, you
+  wish to use the system users and user home directories that
+  already exist on a system.
+- You are using an external service that relies on distinct unix user
+  ownership and permissions (i.e. nbgrader).
+  
+If neither of those cases applies, DockerSpawner is probably the right
+choice.
+
 
 ### DockerSpawner
 
@@ -143,10 +153,16 @@ containter from [Docker Hub](https://registry.hub.docker.com/u/jupyterhub/system
 
 ## Data persistence
 
+The simplest version of persistence to the host filesystem is to
+isolate users in the filesystem, but leave everything owned by the same
+'actual' user with DockerSpawner. That is, using docker mounts to
+isolate user files, not ownership or permissions on the host.
+
 If you wish to persist hub or user notebook data, additional configuration
-is required. See JupyterHub configuration documentation for more
-information on data persistence and Docker documentation on mounting
-data volumes.
+is required. See Docker documentation on [data volumes] for more
+information on data persistence. For example, a primitive example using
+user home directories is described in Min Ragan-Kelley's
+[PyData London workshop].
 
 
 ## Contributing
@@ -194,3 +210,8 @@ and you may participate in development discussions or get live help on
 
 - [Documentation for Project Jupyter](http://jupyter.readthedocs.io/en/latest/index.html) | [PDF](https://media.readthedocs.org/pdf/jupyter/latest/jupyter.pdf)
 - [Project Jupyter website](https://jupyter.org)
+
+
+  [data volumes]: https://docs.docker.com/engine/tutorials/dockervolumes/#/data-volumes
+  [PyData London workshop]: https://youtu.be/gSVvxOchT8Y?t=1h13m30s
+  
