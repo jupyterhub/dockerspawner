@@ -125,8 +125,8 @@ command.
 
 ### Data persistence and DockerSpawner
 
-With `DockerSpawner`, the home directory, `/home/jupyter`, is *not* 
-persistent by default, so some configuration is required to do so unless
+With `DockerSpawner`, the user's home directory
+is *not* persistent by default, so some configuration is required to do so unless
 the directory is to be used with temporary or demonstration JupyterHub
 deployments.
 
@@ -144,6 +144,10 @@ the guest mount point (bind) for the volume.
 If you use `{username}` in either the host or guest file/directory path,
 username substitution will be done and `{username}` will be replaced with
 the current user's name.
+
+(Note: The jupyter/docker-stacks notebook images run the Notebook server as user
+`jovyan` and set the user's notebook directory to `/home/jovyan/work`.)
+
 
 ```python
 # Explicitly set notebook directory because we'll be mounting a host volume to
