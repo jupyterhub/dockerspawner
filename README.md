@@ -141,8 +141,8 @@ the host file/directory to the container (referred to as guest)
 file/directory mount point, set the `c.DockerSpawner.volumes` to specify
 the guest mount point (bind) for the volume.
 
-If you use {username} in either the host or guest file/directory path,
-username substitution will be done and {username} will be replaced with
+If you use `{username}` in either the host or guest file/directory path,
+username substitution will be done and `{username}` will be replaced with
 the current user's name.
 
 ```python
