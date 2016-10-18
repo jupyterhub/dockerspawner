@@ -492,7 +492,7 @@ class DockerSpawner(Spawner):
             {'/host/dir': {'bind': '/guest/dir': 'mode': 'rw'}}
         """
         def _fmt(v):
-            return v.format(username=self.user.name)
+            return v.format(username=self.escaped_name)
 
         for k, v in volumes.items():
             m = mode
