@@ -20,12 +20,8 @@ from traitlets import (
     Unicode,
     Bool,
     Int,
-    Instance,
-    Type,
-    default
 )
 
-from .volumenamingstrategy import VolumeNamingStrategy
 
 class UnicodeOrFalse(Unicode):
     info_text = 'a unicode string or False'
@@ -33,6 +29,7 @@ class UnicodeOrFalse(Unicode):
         if value is False:
             return value
         return super(UnicodeOrFalse, self).validate(obj, value)
+
 
 class DockerSpawner(Spawner):
 
@@ -100,11 +97,7 @@ class DockerSpawner(Spawner):
             identified by "bind" and the "mode" may be one of "rw"
             (default), "ro" (read-only), "z" (public/shared SELinux
             volume label), and "Z" (private/unshared SELinux volume
-            label). 
-
-            If volume_naming_strategy_class is not set, the default
-            dockerspawner.VolumeNamingStrategy is used for naming volumens.
-            In this case, if you use {username} in either the host or guest
+            label). If you use {username} in either the host or guest
             file/directory path, it will be replaced with the current
             user's name.
             """
@@ -117,33 +110,11 @@ class DockerSpawner(Spawner):
             """
             Map from host file/directory to container file/directory.
             Volumes specified here will be read-only in the container.
-
-            If volume_naming_strategy_class is not set, the default
-            dockerspawner.VolumeNamingStrategy is used for naming volumens.
-            In this case, if you use {username} in either the host or guest
-            file/directory path, it will be replaced with the current
-            user's name.
+            If you use {username} in the host file / directory path, it will be
+            replaced with the current user's name.
             """
         )
     )
-
-    volume_naming_strategy_class = Type(VolumeNamingStrategy, VolumeNamingStrategy,
-        help="""Class for resolving Docker volume names for users.
-
-	May be any subclass of dockerspawner.VolumeNamingStrategy. Defaults to
-        dockerspawner.VolumeNamingStrategy itself. 
-
-        In this case, if you use {username} in either the host or guest
-        file/directory path, it will be replaced with the current
-        user's name.
-        """
-    ).tag(config=True)
-
-    volume_naming_strategy = Instance(VolumeNamingStrategy)
-
-    @default('volume_naming_strategy')
-    def _volume_naming_strategy_default(self):
-        return self.volume_naming_strategy_class()
 
     use_docker_client_env = Bool(False, config=True, help="If True, will use Docker client env variable (boot2docker friendly)")
     tls = Bool(False, config=True, help="If True, connect to docker with --tls")
@@ -512,6 +483,7 @@ class DockerSpawner(Spawner):
 
         self.clear_state()
 
+
     def _volumes_to_binds(self, volumes, binds, mode='rw'):
         """Extract the volume mount points from volumes property.
 
@@ -520,7 +492,7 @@ class DockerSpawner(Spawner):
             {'/host/dir': {'bind': '/guest/dir': 'mode': 'rw'}}
         """
         def _fmt(v):
-            return self.volume_naming_strategy.name_volume(v, self)
+            return v.format(username=self.user.name)
 
         for k, v in volumes.items():
             m = mode
