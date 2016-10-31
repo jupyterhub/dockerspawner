@@ -102,7 +102,7 @@ class DockerSpawner(Spawner):
             label). 
 
             If format_volume_name is not set, 
-default_format_volume_name is used for naming volumes.
+            default_format_volume_name is used for naming volumes.
             In this case, if you use {username} in either the host or guest
             file/directory path, it will be replaced with the current
             user's name.
@@ -118,7 +118,7 @@ default_format_volume_name is used for naming volumes.
             Volumes specified here will be read-only in the container.
 
             If format_volume_name is not set, 
-default_format_volume_name is used for naming volumes.
+            default_format_volume_name is used for naming volumes.
             In this case, if you use {username} in either the host or guest
             file/directory path, it will be replaced with the current
             user's name.
