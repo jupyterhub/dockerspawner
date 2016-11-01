@@ -20,8 +20,11 @@ from traitlets import (
     Unicode,
     Bool,
     Int,
+    Any,
+    default
 )
 
+from .volumenamingstrategy import default_format_volume_name
 
 class UnicodeOrFalse(Unicode):
     info_text = 'a unicode string or False'
@@ -29,7 +32,6 @@ class UnicodeOrFalse(Unicode):
         if value is False:
             return value
         return super(UnicodeOrFalse, self).validate(obj, value)
-
 
 class DockerSpawner(Spawner):
 
@@ -97,7 +99,11 @@ class DockerSpawner(Spawner):
             identified by "bind" and the "mode" may be one of "rw"
             (default), "ro" (read-only), "z" (public/shared SELinux
             volume label), and "Z" (private/unshared SELinux volume
-            label). If you use {username} in either the host or guest
+            label). 
+
+            If format_volume_name is not set, 
+            default_format_volume_name is used for naming volumes.
+            In this case, if you use {username} in either the host or guest
             file/directory path, it will be replaced with the current
             user's name.
             """
@@ -110,11 +116,29 @@ class DockerSpawner(Spawner):
             """
             Map from host file/directory to container file/directory.
             Volumes specified here will be read-only in the container.
-            If you use {username} in the host file / directory path, it will be
-            replaced with the current user's name.
+
+            If format_volume_name is not set, 
+            default_format_volume_name is used for naming volumes.
+            In this case, if you use {username} in either the host or guest
+            file/directory path, it will be replaced with the current
+            user's name.
             """
         )
     )
+
+    format_volume_name = Any(
+        help="""Any callable that accepts a string template and a DockerSpawner instance as parameters in that order and returns a string.
+
+        Reusable implementations should go in dockerspawner.VolumeNamingStrategy, tests should go in ...
+        """
+    ).tag(config=True)
+
+    def default_format_volume_name(template, spawner):
+        return template.format(username=spawner.user.name)
+
+    @default('format_volume_name')
+    def _get_default_format_volume_name(self):
+        return default_format_volume_name
 
     use_docker_client_env = Bool(False, config=True, help="If True, will use Docker client env variable (boot2docker friendly)")
     tls = Bool(False, config=True, help="If True, connect to docker with --tls")
@@ -483,7 +507,6 @@ class DockerSpawner(Spawner):
 
         self.clear_state()
 
-
     def _volumes_to_binds(self, volumes, binds, mode='rw'):
         """Extract the volume mount points from volumes property.
 
@@ -492,7 +515,7 @@ class DockerSpawner(Spawner):
             {'/host/dir': {'bind': '/guest/dir': 'mode': 'rw'}}
         """
         def _fmt(v):
-            return v.format(username=self.user.name)
+            return self.format_volume_name(v, self)
 
         for k, v in volumes.items():
             m = mode
