@@ -26,6 +26,15 @@ from traitlets import (
 
 from .volumenamingstrategy import default_format_volume_name
 
+
+# The suffixes that docker supports for memory limits
+MEM_UNIT_SUFFIXES = {
+    'k': 1024,
+    'g': 1024 * 1024,
+    't': 1024 * 1024 * 1024,
+}
+
+
 class UnicodeOrFalse(Unicode):
     info_text = 'a unicode string or False'
     def validate(self, obj, value):
@@ -155,6 +164,19 @@ class DockerSpawner(Spawner):
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
     extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
     extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
+
+    mem_limit = Unicode(
+        None,
+        allow_none=True,
+        config=True,
+        help="""
+        Memory limit for each user's container when created
+
+        Can have suffixes of k, m, or g to mean kilobyte, megabyte or gigabyte.
+
+        If set to None, no limits are enforced.
+        """
+    )
 
     _container_safe_chars = set(string.ascii_letters + string.digits + '-')
     _container_escape_char = '_'
@@ -302,6 +324,14 @@ class DockerSpawner(Spawner):
            hub_api_url = self.hub.api_url
         env['JPY_HUB_API_URL'] = hub_api_url
 
+        if self.mem_limit:
+            if not self.mem_limit.isdigit():
+                mem_limit_num = self.mem_limit[:-1]
+                mem_limit_suffix = self.mem_limit[-1]
+                env['LIMIT_MEM'] = mem_limit_num * MEM_UNIT_SUFFIXES[mem_limit_suffix]
+            else:
+                env['LIMIT_MEM'] = self.mem_limit
+
         return env
 
     def _docker(self, method, *args, **kwargs):
@@ -389,7 +419,9 @@ class DockerSpawner(Spawner):
                 image=image,
                 environment=self.get_env(),
                 volumes=self.volume_mount_points,
-                name=self.container_name)
+                name=self.container_name,
+                mem_limit=self.mem_limit
+            )
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
                 create_kwargs.update(extra_create_kwargs)
