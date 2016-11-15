@@ -389,7 +389,13 @@ class DockerSpawner(Spawner):
                 image=image,
                 environment=self.get_env(),
                 volumes=self.volume_mount_points,
-                name=self.container_name)
+                name=self.container_name,
+            )
+            if hasattr(self, 'mem_limit') and self.mem_limit is not None:
+                # If jupyterhub version > 0.7, mem_limit is a traitlet that can
+                # be directly configured. If so, use it to set mem_limit. Note that
+                # this will still be overriden by extra_create_kwargs
+                create_kwargs['mem_limit'] = self.mem_limit
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
                 create_kwargs.update(extra_create_kwargs)
