@@ -26,7 +26,6 @@ from traitlets import (
 
 from .volumenamingstrategy import default_format_volume_name
 
-
 class UnicodeOrFalse(Unicode):
     info_text = 'a unicode string or False'
     def validate(self, obj, value):
