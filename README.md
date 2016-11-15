@@ -170,6 +170,16 @@ for an example configuration.
 See Docker documentation on [data volumes] for more information on data
 persistence. 
 
+## Memory limits
+
+If you have `jupyterhub >= 0.7`, you can set a memory limit for each user's container easily.
+
+```
+c.Spawner.mem_limit = '2G'
+```
+
+The value can either be an integer (bytes) or a string with a 'K', 'M', 'G' or 'T' prefix.
+
 ## Building the Docker images
 
 ### Single user notebook server
