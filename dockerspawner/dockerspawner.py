@@ -427,6 +427,13 @@ class DockerSpawner(Spawner):
             self.log.info(
                 "Found existing container '%s' (id: %s)",
                 self.container_name, self.container_id[:7])
+            # Handle re-using API token.
+            # Get the API token from the environment variables
+            # of the running container:
+            for line in container['Config']['Env']:
+                if line.startswith('JPY_API_TOKEN='):
+                    self.api_token = line.split('=', 1)[1]
+                    break
 
         # TODO: handle unpause
         self.log.info(
@@ -510,6 +517,10 @@ class DockerSpawner(Spawner):
                 self.container_name, self.container_id[:7])
             # remove the container, as well as any associated volumes
             yield self.docker('remove_container', self.container_id, v=True)
+
+        # indicate that we will resume,
+        # so JupyterHub >= 0.7.1 won't cleanup our API token
+        self.will_resume = (not self.remove_containers)
 
         self.clear_state()
 
