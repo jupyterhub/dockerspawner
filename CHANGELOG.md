@@ -6,6 +6,14 @@ command line for details.
 
 ## [Unreleased]
 
+## [0.6] - 2016-01-02
+
+- Add `DockerSpawner.format_volume_name` for custom naming strategies for mounted volumes.
+- Support `mem_limit` config introduced in JupyterHub 0.7.
+- Support `will_resume` flag necessary for resuming containers with
+  `DockerSpawner.remove_containers = False` and JupyterHub 0.7
+  (requires JupyterHub 0.7.1).
+
 ## [0.5] - 2016-10-05
 
 - return ip, port from `DockerSpawner.start`, for future-compatibility (setting ip, port directly is deprecated in JupyterHub 0.7).
@@ -35,7 +43,8 @@ command line for details.
 First release
 
 
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.5.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.6.0...HEAD
+[0.6]: https://github.com/jupyterhub/dockerspawner/compare/0.5.0...0.6.0
 [0.5]: https://github.com/jupyterhub/dockerspawner/compare/0.4.0...0.5.0
 [0.4]: https://github.com/jupyterhub/dockerspawner/compare/0.3.0...0.4.0
 [0.3]: https://github.com/jupyterhub/dockerspawner/compare/0.2.0...0.3.0
