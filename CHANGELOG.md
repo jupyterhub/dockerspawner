@@ -6,7 +6,7 @@ command line for details.
 
 ## [Unreleased]
 
-## [0.6] - 2016-01-02
+## [0.6] - 2017-01-02
 
 - Add `DockerSpawner.format_volume_name` for custom naming strategies for mounted volumes.
 - Support `mem_limit` config introduced in JupyterHub 0.7.
