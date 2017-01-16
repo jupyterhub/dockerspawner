@@ -127,9 +127,18 @@ class SystemUserSpawner(DockerSpawner):
             state['user_id'] = self.user_id
         return state
 
-    def start(self, image=None):
+    def start(self, image=None, extra_create_kwargs=None,
+        extra_start_kwargs=None, extra_host_config=None):
         """start the single-user server in a docker container"""
+        if extra_create_kwargs is None:
+            extra_create_kwargs = {}
+
+        if 'working_dir' not in extra_create_kwargs:
+            extra_create_kwargs['working_dir'] = self.homedir
+
         return super(SystemUserSpawner, self).start(
             image=image,
-            extra_create_kwargs={'working_dir': self.homedir}
+            extra_create_kwargs=extra_create_kwargs,
+            extra_start_kwargs=extra_start_kwargs,
+            extra_host_config=extra_host_config
         )
