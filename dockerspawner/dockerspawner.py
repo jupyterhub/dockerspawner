@@ -190,7 +190,7 @@ class DockerSpawner(Spawner):
             """
             Specify docker link mapping to add to the container, e.g.
 
-                links = {'jupyterhub: 'jupyterhub'}
+                links = {'jupyterhub': 'jupyterhub'}
 
             If the Hub is running in a Docker container,
             this can simplify routing because all traffic will be using docker hostnames.
