@@ -99,9 +99,9 @@ class DockerSpawner(Spawner):
             identified by "bind" and the "mode" may be one of "rw"
             (default), "ro" (read-only), "z" (public/shared SELinux
             volume label), and "Z" (private/unshared SELinux volume
-            label). 
+            label).
 
-            If format_volume_name is not set, 
+            If format_volume_name is not set,
             default_format_volume_name is used for naming volumes.
             In this case, if you use {username} in either the host or guest
             file/directory path, it will be replaced with the current
@@ -117,7 +117,7 @@ class DockerSpawner(Spawner):
             Map from host file/directory to container file/directory.
             Volumes specified here will be read-only in the container.
 
-            If format_volume_name is not set, 
+            If format_volume_name is not set,
             default_format_volume_name is used for naming volumes.
             In this case, if you use {username} in either the host or guest
             file/directory path, it will be replaced with the current
@@ -230,7 +230,7 @@ class DockerSpawner(Spawner):
         self.read_only_volumes.
         """
         return sorted([value['bind'] for value in self.volume_binds.values()])
-    
+
     @property
     def volume_binds(self):
         """
@@ -391,17 +391,18 @@ class DockerSpawner(Spawner):
                 volumes=self.volume_mount_points,
                 name=self.container_name,
             )
-            if hasattr(self, 'mem_limit') and self.mem_limit is not None:
-                # If jupyterhub version > 0.7, mem_limit is a traitlet that can
-                # be directly configured. If so, use it to set mem_limit. Note that
-                # this will still be overriden by extra_create_kwargs
-                create_kwargs['mem_limit'] = self.mem_limit
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
                 create_kwargs.update(extra_create_kwargs)
 
             # build the dictionary of keyword arguments for host_config
             host_config = dict(binds=self.volume_binds, links=self.links)
+
+            if hasattr(self, 'mem_limit') and self.mem_limit is not None:
+                # If jupyterhub version > 0.7, mem_limit is a traitlet that can
+                # be directly configured. If so, use it to set mem_limit.
+                # this will still be overriden by extra_host_config
+                host_config['mem_limit'] = self.mem_limit
 
             if not self.use_internal_ip:
                 host_config['port_bindings'] = {self.container_port: (self.container_ip,)}
@@ -455,14 +456,14 @@ class DockerSpawner(Spawner):
         self.user.server.port = port
         # jupyterhub 0.7 prefers returning ip, port:
         return (ip, port)
-    
+
     @gen.coroutine
     def get_ip_and_port(self):
         """Queries Docker daemon for container's IP and port.
 
         If you are using network_mode=host, you will need to override
         this method as follows::
-            
+
             @gen.coroutine
             def get_ip_and_port(self):
                 return self.container_ip, self.container_port
