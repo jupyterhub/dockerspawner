@@ -176,14 +176,15 @@ class DockerSpawner(Spawner):
         help=dedent(
             """
             Enable the usage of the internal docker ip. This is useful if you are running
-            jupyterhub (as a container) and the user containers within the same docker engine.
+            jupyterhub (as a container) and the user containers within the same docker network.
             E.g. by mounting the docker socket of the host into the jupyterhub container.
+            Default is True if using a docker network, False if bridge or host networking is used.
             """
         )
     )
     @default('use_internal_ip')
     def _default_use_ip(self):
-        # setting network_name to something other than bridge, host implies use_internal_ip
+        # setting network_name to something other than bridge or host implies use_internal_ip
         if self.network_name not in {'bridge', 'host'}:
             return True
         else:
@@ -208,9 +209,10 @@ class DockerSpawner(Spawner):
         config=True,
         help=dedent(
             """
-            The name of the docker network from which to retrieve the internal IP address. Defaults to the default
-            docker network 'bridge'. You need to set this if you run your jupyterhub containers in a
-            non-standard network. Only has an effect if use_internal_ip=True.
+            Run the containers on this docker network.
+            If it is an internal docker network, the Hub should be on the same network,
+            as internal docker IP addresses will be used.
+            For bridge networking, external ports will be bound.
             """
         )
     )
