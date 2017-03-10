@@ -160,7 +160,6 @@ class DockerSpawner(Spawner):
     _container_escape_char = '_'
 
     hub_ip_connect = Unicode(
-        "",
         config=True,
         help=dedent(
             """
@@ -172,8 +171,7 @@ class DockerSpawner(Spawner):
         )
     )
 
-    use_internal_ip = Bool(
-        False,
+    use_internal_ip = Bool(False,
         config=True,
         help=dedent(
             """
@@ -183,6 +181,13 @@ class DockerSpawner(Spawner):
             """
         )
     )
+    @default('use_internal_ip')
+    def _default_use_ip(self):
+        # setting network_name to something other than bridge, host implies use_internal_ip
+        if self.network_name not in {'bridge', 'host'}:
+            return True
+        else:
+            return False
 
     links = Dict(
         config=True,
@@ -406,8 +411,8 @@ class DockerSpawner(Spawner):
 
             if not self.use_internal_ip:
                 host_config['port_bindings'] = {self.container_port: (self.container_ip,)}
-
             host_config.update(self.extra_host_config)
+            host_config.setdefault('network_mode', self.network_name)
 
             if extra_host_config:
                 host_config.update(extra_host_config)
@@ -492,8 +497,8 @@ class DockerSpawner(Spawner):
         networks = network_settings['Networks']
         if self.network_name not in networks:
             raise Exception(
-                "Unknown docker network '{network}'. Did you create it with 'docker network create <name>' and "
-                "did you pass network_mode=<name> in extra_kwargs?".format(
+                "Unknown docker network '{network}'."
+                " Did you create it with `docker network create <name>`?".format(
                     network=self.network_name
                 )
             )
