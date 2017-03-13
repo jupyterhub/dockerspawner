@@ -54,7 +54,7 @@ class DockerSpawner(Spawner):
                 kwargs = kwargs_from_env(
                     assert_hostname=self.tls_assert_hostname
                 )
-                client = docker.Client(version='auto', **kwargs)
+                client = docker.APIClient(version='auto', **kwargs)
             else:
                 if self.tls:
                     tls_config = True
@@ -68,7 +68,7 @@ class DockerSpawner(Spawner):
                     tls_config = None
 
                 docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
-                client = docker.Client(base_url=docker_host, tls=tls_config, version='auto')
+                client = docker.APIClient(base_url=docker_host, tls=tls_config, version='auto')
             cls._client = client
         return cls._client
 
