@@ -6,7 +6,7 @@ command line for details.
 
 ## [Unreleased]
 
-## [0.7] - 2017-03-XX
+## [0.7] - 2017-03-14
 
 - Only need to set `DockerSpawner.network_name` to run on a docker network,
   instead of setting `host_config`, `network_name`, and `use_internal_ip` separately.
@@ -50,7 +50,8 @@ command line for details.
 First release
 
 
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.6.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.7.0...HEAD
+[0.7]: https://github.com/jupyterhub/dockerspawner/compare/0.6.0...0.7.0
 [0.6]: https://github.com/jupyterhub/dockerspawner/compare/0.5.0...0.6.0
 [0.5]: https://github.com/jupyterhub/dockerspawner/compare/0.4.0...0.5.0
 [0.4]: https://github.com/jupyterhub/dockerspawner/compare/0.3.0...0.4.0
