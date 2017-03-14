@@ -6,6 +6,13 @@ command line for details.
 
 ## [Unreleased]
 
+## [0.7] - 2017-03-14
+
+- Only need to set `DockerSpawner.network_name` to run on a docker network,
+  instead of setting `host_config`, `network_name`, and `use_internal_ip` separately.
+- Set `mem_limit` on `host_config` for docker API 1.19
+- Match start keyword args on SystemUserSpawner to DockerSpawner
+
 ## [0.6] - 2017-01-02
 
 - Add `DockerSpawner.format_volume_name` for custom naming strategies for mounted volumes.
@@ -43,7 +50,8 @@ command line for details.
 First release
 
 
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.6.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.7.0...HEAD
+[0.7]: https://github.com/jupyterhub/dockerspawner/compare/0.6.0...0.7.0
 [0.6]: https://github.com/jupyterhub/dockerspawner/compare/0.5.0...0.6.0
 [0.5]: https://github.com/jupyterhub/dockerspawner/compare/0.4.0...0.5.0
 [0.4]: https://github.com/jupyterhub/dockerspawner/compare/0.3.0...0.4.0
