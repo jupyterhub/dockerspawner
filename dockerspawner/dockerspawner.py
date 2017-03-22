@@ -2,7 +2,6 @@
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
 
-import os
 import string
 from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor
@@ -21,7 +20,8 @@ from traitlets import (
     Bool,
     Int,
     Any,
-    default
+    default,
+    observe,
 )
 
 from .volumenamingstrategy import default_format_volume_name
@@ -50,25 +50,11 @@ class DockerSpawner(Spawner):
         """single global client instance"""
         cls = self.__class__
         if cls._client is None:
-            if self.use_docker_client_env:
-                kwargs = kwargs_from_env(
-                    assert_hostname=self.tls_assert_hostname
-                )
-                client = docker.APIClient(version='auto', **kwargs)
-            else:
-                if self.tls:
-                    tls_config = True
-                elif self.tls_verify or self.tls_ca or self.tls_client:
-                    tls_config = docker.tls.TLSConfig(
-                        client_cert=self.tls_client,
-                        ca_cert=self.tls_ca,
-                        verify=self.tls_verify,
-                        assert_hostname = self.tls_assert_hostname)
-                else:
-                    tls_config = None
-
-                docker_host = os.environ.get('DOCKER_HOST', 'unix://var/run/docker.sock')
-                client = docker.APIClient(base_url=docker_host, tls=tls_config, version='auto')
+            kwargs = {}
+            if self.tls_config:
+                kwargs['tls'] = docker.tls.TLSConfig(**self.tls_config)
+            kwargs.update(kwargs_from_env())
+            client = docker.APIClient(version='auto', **kwargs)
             cls._client = client
         return cls._client
 
@@ -140,16 +126,27 @@ class DockerSpawner(Spawner):
     def _get_default_format_volume_name(self):
         return default_format_volume_name
 
-    use_docker_client_env = Bool(False, config=True, help="If True, will use Docker client env variable (boot2docker friendly)")
-    tls = Bool(False, config=True, help="If True, connect to docker with --tls")
-    tls_verify = Bool(False, config=True, help="If True, connect to docker with --tlsverify")
-    tls_ca = Unicode("", config=True, help="Path to CA certificate for docker TLS")
-    tls_cert = Unicode("", config=True, help="Path to client certificate for docker TLS")
-    tls_key = Unicode("", config=True, help="Path to client key for docker TLS")
-    tls_assert_hostname = UnicodeOrFalse(default_value=None, allow_none=True,
-        config=True,
-        help="If False, do not verify hostname of docker daemon",
+    use_docker_client_env = Bool(True, config=True,
+        help="DEPRECATED. Docker env variables are always used if present.")
+    @observe('use_docker_client_env')
+    def _client_env_changed(self):
+        self.log.warning("DockerSpawner.use_docker_client_env is deprecated and ignored."
+        "  Docker environment variables are always used if defined.")
+    tls_config = Dict(config=True,
+        help="""Arguments to pass to docker TLS configuration.
+        
+        See docker.client.TLSConfig constructor for options.
+        """
     )
+    tls = tls_verify = tls_ca = tls_cert = \
+    tls_key = tls_assert_hostname = Any(config=True,
+        help="""DEPRECATED. Use DockerSpawner.tls_config dict to set any TLS options."""
+    )
+    @observe('tls', 'tls_verify', 'tls_ca', 'tls_cert', 'tls_key', 'tls_assert_hostname')
+    def _tls_changed(self, change):
+        self.log.warning("%s config ignored, use %s.tls_config dict to set full TLS configuration.",
+            change.name, self.__class__.__name__,
+        )
 
     remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
