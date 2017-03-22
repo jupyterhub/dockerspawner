@@ -25,7 +25,7 @@ if os.name in ('nt', 'dos'):
 
 # At least we're on the python version we need, move on.
 
-from distutils.core import setup
+from setuptools import setup
 
 pjoin = os.path.join
 here = os.path.abspath(os.path.dirname(__file__))
@@ -35,6 +35,23 @@ version_ns = {}
 with open(pjoin(here, 'dockerspawner', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
 
+install_requires = []
+with open('requirements.txt') as f:
+    for line in f.readlines():
+        req = line.strip()
+        if not req or req.startswith('#'):
+            continue
+        install_requires.append(req)
+
+from setuptools.command.bdist_egg import bdist_egg
+class bdist_egg_disabled(bdist_egg):
+    """Disabled version of bdist_egg
+
+    Prevents setup.py install from performing setuptools' default easy_install,
+    which it should never ever do.
+    """
+    def run(self):
+        sys.exit("Aborting implicit building of eggs. Use `pip install .` to install from source.")
 
 setup_args = dict(
     name                = 'dockerspawner',
@@ -56,20 +73,12 @@ setup_args = dict(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
     ],
+    install_requires = install_requires,
+    cmdclass = {
+        'bdist_egg': bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
+    }
 )
 
-if 'bdist_wheel' in sys.argv:
-    import setuptools
-
-# setuptools requirements
-if 'setuptools' in sys.modules:
-    setup_args['install_requires'] = install_requires = []
-    with open('requirements.txt') as f:
-        for line in f.readlines():
-            req = line.strip()
-            if not req or req.startswith(('-e', '#')):
-                continue
-            install_requires.append(req)
 
 
 def main():
