@@ -5,15 +5,9 @@ FROM jupyter/scipy-notebook
 
 MAINTAINER Project Jupyter <jupyter@googlegroups.com>
 
-EXPOSE 8888
+# no need for singleuser Dockerfile anymore,
+# all scripts have been ported to jupyter/base-notebook docker image
 
-USER root
-# fetch juptyerhub-singleuser entrypoint
-RUN wget -q https://raw.githubusercontent.com/jupyterhub/jupyterhub/0.6.1/scripts/jupyterhub-singleuser -O /usr/local/bin/jupyterhub-singleuser && \
-    chmod 755 /usr/local/bin/jupyterhub-singleuser
-
-ADD singleuser.sh /srv/singleuser/singleuser.sh
-USER jovyan
 # smoke test that it's importable at least
-RUN sh /srv/singleuser/singleuser.sh -h
-CMD ["sh", "/srv/singleuser/singleuser.sh"]
+RUN sh /usr/local/bin/start-singleuser.sh -h
+CMD ["sh", "/usr/local/bin/start-singleuser.sh"]

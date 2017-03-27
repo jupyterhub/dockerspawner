@@ -13,7 +13,7 @@ then
     notebook_arg="--notebook-dir=${NOTEBOOK_DIR}"
 fi
 
-sudo -E PATH="${CONDA_DIR}/bin:$PATH" -u $USER jupyterhub-singleuser \
+sudo -E PATH="${CONDA_DIR}/bin:$PATH" -u $USER $CONDA_DIR/bin/jupyterhub-singleuser \
   --port=8888 \
   --ip=0.0.0.0 \
   --user=$JPY_USER \
