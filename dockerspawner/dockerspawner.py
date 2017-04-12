@@ -329,7 +329,7 @@ class DockerSpawner(Spawner):
         container = yield self.get_container()
         if not container:
             self.log.warn("container not found")
-            return ""
+            return None 
 
         container_state = container['State']
         self.log.debug(
