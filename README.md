@@ -8,6 +8,7 @@
 
 
 # DockerSpawner
+[![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/jupyter/dockerspawner?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 **DockerSpawner** enables [JupyterHub](https://github.com/jupyterhub/jupyterhub) 
 to spawn single user notebook servers in Docker containers.
