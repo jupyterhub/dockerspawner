@@ -398,6 +398,10 @@ class DockerSpawner(Spawner):
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
                 create_kwargs.update(extra_create_kwargs)
+            if image.startswith('jupyter/') and 'command' not in create_kwargs:
+                # jupyter/docker-stacks launch with /usr/local/bin/start-singleuser.sh
+                # use this as default if any jupyter/ image is being used.
+                create_kwargs['command'] = '/usr/local/bin/start-singleuser.sh'
 
             # build the dictionary of keyword arguments for host_config
             host_config = dict(binds=self.volume_binds, links=self.links)
