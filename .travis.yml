@@ -5,9 +5,9 @@ python:
 services:
   - docker
 before_install:
-  - pip install -v --pre -r dev-requirements.txt
+  - pip install --pre -r dev-requirements.txt
 install:
-  - pip install -e .
+  - pip install .
 script:
   - pyflakes dockerspawner
   - docker build -t jupyterhub/singleuser singleuser
