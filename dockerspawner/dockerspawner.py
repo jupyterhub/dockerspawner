@@ -373,6 +373,20 @@ class DockerSpawner(Spawner):
                 raise
         return container
 
+    def upgrade_kwags(self, data):
+        import sys
+        if data is not None:
+            for k, v in data.items():
+                w = v.format(username=self.user.name, escapedusername=self.escaped_name)
+                sys.stderr.write("upgrade_kwags:: {}: {} -> {}\n\n".format(k, v, w))
+                data[k] = w
+        else:
+            sys.stderr.write("DATA IS NONE\n\n")
+
+        return data
+
+
+
     @gen.coroutine
     def start(self, image=None, extra_create_kwargs=None,
         extra_start_kwargs=None, extra_host_config=None):
@@ -398,6 +412,27 @@ class DockerSpawner(Spawner):
                 volumes=self.volume_mount_points,
                 name=self.container_name,
             )
+
+            self.upgrade_kwags(self.extra_create_kwargs)
+
+            #https://github.com/docker/docker-py/issues/982
+            if "networkalias" in self.extra_create_kwargs:
+                networkalias = self.extra_create_kwargs["networkalias"]
+                if (not isinstance(networkalias, list)) and isinstance(networkalias, str):
+                    networkalias = [networkalias]
+
+                del self.extra_create_kwargs["networkalias"]
+                networking_config=self.client.create_networking_config(
+                  endpoints_config={
+                    self.network_name: self.client.create_endpoint_config(
+                        aliases=networkalias,
+                      )
+                   }
+                )
+                self.extra_create_kwargs["networking_config"]=networking_config
+
+
+
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
                 create_kwargs.update(extra_create_kwargs)
@@ -413,6 +448,7 @@ class DockerSpawner(Spawner):
 
             if not self.use_internal_ip:
                 host_config['port_bindings'] = {self.container_port: (self.container_ip,)}
+
             host_config.update(self.extra_host_config)
             host_config.setdefault('network_mode', self.network_name)
 
