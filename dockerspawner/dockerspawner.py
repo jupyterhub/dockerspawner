@@ -149,6 +149,13 @@ class DockerSpawner(Spawner):
         )
 
     remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
+
+    @property
+    def will_resume(self):
+        # indicate that we will resume,
+        # so JupyterHub >= 0.7.1 won't cleanup our API token
+        return not self.remove_containers
+
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
     extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
     extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
@@ -329,7 +336,7 @@ class DockerSpawner(Spawner):
         container = yield self.get_container()
         if not container:
             self.log.warn("container not found")
-            return ""
+            return 0
 
         container_state = container['State']
         self.log.debug(
@@ -526,10 +533,6 @@ class DockerSpawner(Spawner):
                 self.container_name, self.container_id[:7])
             # remove the container, as well as any associated volumes
             yield self.docker('remove_container', self.container_id, v=True)
-
-        # indicate that we will resume,
-        # so JupyterHub >= 0.7.1 won't cleanup our API token
-        self.will_resume = (not self.remove_containers)
 
         self.clear_state()
 
