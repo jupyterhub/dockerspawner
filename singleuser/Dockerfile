@@ -9,5 +9,5 @@ MAINTAINER Project Jupyter <jupyter@googlegroups.com>
 # all scripts have been ported to jupyter/base-notebook docker image
 
 # smoke test that it's importable at least
-RUN sh /usr/local/bin/start-singleuser.sh -h
-CMD ["sh", "/usr/local/bin/start-singleuser.sh"]
+RUN /usr/local/bin/start-singleuser.sh -h
+CMD ["/usr/local/bin/start-singleuser.sh"]
