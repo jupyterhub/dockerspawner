@@ -54,6 +54,7 @@ class DockerSpawner(Spawner):
             if self.tls_config:
                 kwargs['tls'] = docker.tls.TLSConfig(**self.tls_config)
             kwargs.update(kwargs_from_env())
+            kwargs.update(self.client_kwargs)
             client = docker.APIClient(version='auto', **kwargs)
             cls._client = client
         return cls._client
@@ -69,6 +70,15 @@ class DockerSpawner(Spawner):
             """
             Prefix for container names. The full container name for a particular
             user will be <prefix>-<username>.
+            """
+        )
+    )
+
+    client_kwargs = Dict(
+        config=True,
+        help=dedent(
+            """
+            Docker client configurables
             """
         )
     )
