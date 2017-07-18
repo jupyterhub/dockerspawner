@@ -1,5 +1,3 @@
-import pwd
-
 from dockerspawner import DockerSpawner
 from textwrap import dedent
 from traitlets import (
@@ -114,6 +112,7 @@ class SystemUserSpawner(DockerSpawner):
         this will never be called, which is necessary if
         the system users are not on the Hub system (i.e. Hub itself is in a container).
         """
+        import pwd
         return pwd.getpwnam(self.user.name).pw_uid
 
     def load_state(self, state):
