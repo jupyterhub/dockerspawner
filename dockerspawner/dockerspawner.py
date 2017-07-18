@@ -76,11 +76,7 @@ class DockerSpawner(Spawner):
 
     client_kwargs = Dict(
         config=True,
-        help=dedent(
-            """
-            Docker client configurables
-            """
-        )
+        help="Extra keyword arguments to pass to the docker.Client constructor.",
     )
 
     volumes = Dict(
