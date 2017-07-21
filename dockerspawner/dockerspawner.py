@@ -54,6 +54,7 @@ class DockerSpawner(Spawner):
             if self.tls_config:
                 kwargs['tls'] = docker.tls.TLSConfig(**self.tls_config)
             kwargs.update(kwargs_from_env())
+            kwargs.update(self.client_kwargs)
             client = docker.APIClient(version='auto', **kwargs)
             cls._client = client
         return cls._client
@@ -71,6 +72,11 @@ class DockerSpawner(Spawner):
             user will be <prefix>-<username>.
             """
         )
+    )
+
+    client_kwargs = Dict(
+        config=True,
+        help="Extra keyword arguments to pass to the docker.Client constructor.",
     )
 
     volumes = Dict(
