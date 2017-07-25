@@ -50,7 +50,7 @@ class DockerSpawner(Spawner):
         """single global client instance"""
         cls = self.__class__
         if cls._client is None:
-            kwargs = {version='auto'}
+            kwargs = {'version':'auto'}
             if self.tls_config:
                 kwargs['tls'] = docker.tls.TLSConfig(**self.tls_config)
             kwargs.update(kwargs_from_env())
