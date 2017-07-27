@@ -6,6 +6,14 @@ command line for details.
 
 ## [Unreleased]
 
+## [0.8] - 2017-07-28
+
+- experimental fixes for running on Windows
+- added `DockerSpawner.client_kwargs` config to passthrough to the `docker.Client` constructor
+- workaround bug where Docker can report ports as strings
+- bump docker dependency to new `docker` package from `docker-py`
+
+
 ## [0.7] - 2017-03-14
 
 - Only need to set `DockerSpawner.network_name` to run on a docker network,
@@ -50,7 +58,8 @@ command line for details.
 First release
 
 
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.7.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.8.0...HEAD
+[0.8]: https://github.com/jupyterhub/dockerspawner/compare/0.7.0...0.8.0
 [0.7]: https://github.com/jupyterhub/dockerspawner/compare/0.6.0...0.7.0
 [0.6]: https://github.com/jupyterhub/dockerspawner/compare/0.5.0...0.6.0
 [0.5]: https://github.com/jupyterhub/dockerspawner/compare/0.4.0...0.5.0
