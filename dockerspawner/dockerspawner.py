@@ -50,12 +50,12 @@ class DockerSpawner(Spawner):
         """single global client instance"""
         cls = self.__class__
         if cls._client is None:
-            kwargs = {}
+            kwargs = {'version':'auto'}
             if self.tls_config:
                 kwargs['tls'] = docker.tls.TLSConfig(**self.tls_config)
             kwargs.update(kwargs_from_env())
             kwargs.update(self.client_kwargs)
-            client = docker.APIClient(version='auto', **kwargs)
+            client = docker.APIClient(**kwargs)
             cls._client = client
         return cls._client
 
