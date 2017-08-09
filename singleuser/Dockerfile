@@ -1,13 +1,9 @@
 # Build as jupyterhub/singleuser
 # Run with the DockerSpawner in JupyterHub
 
-FROM jupyter/scipy-notebook
-
+FROM jupyter/base-notebook:b4dd11e16ae4
 MAINTAINER Project Jupyter <jupyter@googlegroups.com>
 
-# no need for singleuser Dockerfile anymore,
-# all scripts have been ported to jupyter/base-notebook docker image
-
-# smoke test that it's importable at least
-RUN /usr/local/bin/start-singleuser.sh -h
-CMD ["/usr/local/bin/start-singleuser.sh"]
+ADD install_jupyterhub /tmp/install_jupyterhub
+ARG JUPYTERHUB_VERSION=master
+RUN python /tmp/install_jupyterhub

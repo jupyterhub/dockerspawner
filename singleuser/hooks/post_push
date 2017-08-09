@@ -1,0 +1,6 @@
+#!/bin/bash
+env
+for V in master 0.8 0.7 0.7.2; do
+  docker push $DOCKER_REPO:$V
+done
+

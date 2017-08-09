@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+import os
+from subprocess import check_call
+
+V = os.environ['JUPYTERHUB_VERSION']
+
+if V == 'master':
+  check_call([
+    'pip', 'install', 'https://github.com/jupyterhub/jupyterhub/archive/master.tar.gz',
+  ])
+else:
+  version_info = [ int(part) for part in V.split('.') ]
+  version_info[-1] += 1
+  upper_bound = '.'.join(map(str, version_info))
+  vs = '>=%s,<%s' % (V, upper_bound)
+  check_call([
+      'pip', 'install', '--upgrade',
+      '--upgrade-strategy', 'only-if-needed',
+      'jupyterhub%s' % vs
+  ])
+  

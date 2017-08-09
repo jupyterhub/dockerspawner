@@ -1,0 +1,23 @@
+#!/bin/bash
+set -x
+bash --version
+
+env | sort
+stable=0.7.2
+for V in master 0.7 0.7.2; do
+    docker build --build-arg JUPYTERHUB_VERSION=$V -t $DOCKER_REPO:$V .
+done
+echo "tagging $IMAGE_NAME"
+docker tag $DOCKER_REPO:$stable $IMAGE_NAME
+
+echo "getting master"
+# tag X.Y for master
+master_v=$(docker run --rm -it $DOCKER_REPO:master jupyterhub --version)
+split=( ${master_v//./ } )
+master_xy="${split[0]}.${split[1]}"
+env
+
+echo $master_v
+echo $master_xy
+
+docker tag $DOCKER_REPO:master $DOCKER_REPO:$master_xy
