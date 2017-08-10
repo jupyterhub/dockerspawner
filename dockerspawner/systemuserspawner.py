@@ -8,8 +8,6 @@ from traitlets import (
 
 class SystemUserSpawner(DockerSpawner):
 
-    container_image = Unicode("jupyterhub/systemuser", config=True)
-
     host_homedir_format_string = Unicode(
         "/home/{username}",
         config=True,
@@ -97,10 +95,13 @@ class SystemUserSpawner(DockerSpawner):
 
     def get_env(self):
         env = super(SystemUserSpawner, self).get_env()
+        # relies on NB_USER and NB_UID handling in jupyter/docker-stacks
         env.update(dict(
-            USER=self.user.name,
-            USER_ID=self.user_id,
-            HOME=self.homedir
+            USER=self.user.name, # deprecated
+            NB_USER=self.user.name,
+            USER_ID=self.user_id, # deprecated
+            NB_UID=self.user_id,
+            HOME=self.homedir,
         ))
         return env
     
@@ -132,8 +133,10 @@ class SystemUserSpawner(DockerSpawner):
         if extra_create_kwargs is None:
             extra_create_kwargs = {}
 
-        if 'working_dir' not in extra_create_kwargs:
-            extra_create_kwargs['working_dir'] = self.homedir
+        extra_create_kwargs.setdefault('working_dir', self.homedir)
+        # systemuser image must be started as root
+        # relies on NB_UID and NB_USER handling in docker-stacks
+        extra_create_kwargs.setdefault('user', '0')
 
         return super(SystemUserSpawner, self).start(
             image=image,
