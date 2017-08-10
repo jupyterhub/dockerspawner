@@ -33,6 +33,9 @@ class UnicodeOrFalse(Unicode):
             return value
         return super(UnicodeOrFalse, self).validate(obj, value)
 
+import jupyterhub
+_jupyterhub_xy = '%i.%i' % (jupyterhub.version_info[:2])
+
 class DockerSpawner(Spawner):
 
     _executor = None
@@ -62,7 +65,7 @@ class DockerSpawner(Spawner):
     container_id = Unicode()
     container_ip = Unicode('127.0.0.1', config=True)
     container_port = Int(8888, min=1, max=65535, config=True)
-    container_image = Unicode("jupyterhub/singleuser", config=True)
+    container_image = Unicode("jupyterhub/singleuser:%s" % _jupyterhub_xy, config=True)
     container_prefix = Unicode(
         "jupyter",
         config=True,
