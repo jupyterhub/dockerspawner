@@ -1,23 +1,26 @@
 #!/bin/bash
-set -x
+set -ex
 bash --version
 
 env | sort
-stable=0.7.2
-for V in master 0.7 0.7.2; do
+stable=0.7
+for V in master 0.7; do
     docker build --build-arg JUPYTERHUB_VERSION=$V -t $DOCKER_REPO:$V .
 done
 echo "tagging $IMAGE_NAME"
 docker tag $DOCKER_REPO:$stable $IMAGE_NAME
 
-echo "getting master"
-# tag X.Y for master
-master_v=$(docker run --rm -it $DOCKER_REPO:master jupyterhub --version)
-split=( ${master_v//./ } )
-master_xy="${split[0]}.${split[1]}"
-env
+function get_hub_version() {
+  rm -f hub_version
+  docker run --rm -v $PWD:/version -i $DOCKER_REPO:$1 sh -c 'jupyterhub --version > /version/hub_version'
+  hub_xyz=$(cat hub_version)
+  split=( ${hub_xyz//./ } )
+  hub_xy="${split[0]}.${split[1]}"
+}
+# tag e.g. 0.7.2 with 0.7
+get_hub_version 0.7
+docker tag $DOCKER_REPO:0.7 $DOCKER_REPO:$hub_xyz
 
-echo $master_v
-echo $master_xy
-
-docker tag $DOCKER_REPO:master $DOCKER_REPO:$master_xy
+# tag e.g. 0.8 with master
+get_hub_version master
+docker tag $DOCKER_REPO:master $DOCKER_REPO:$hub_xy
