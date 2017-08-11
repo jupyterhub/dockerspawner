@@ -1,7 +1,7 @@
 # Build as jupyterhub/singleuser
 # Run with the DockerSpawner in JupyterHub
 
-FROM jupyter/base-notebook:b4dd11e16ae4
+FROM jupyter/base-notebook:5ded1de07260
 MAINTAINER Project Jupyter <jupyter@googlegroups.com>
 
 ADD install_jupyterhub /tmp/install_jupyterhub
