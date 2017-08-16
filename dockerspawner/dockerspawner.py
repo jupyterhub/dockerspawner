@@ -2,10 +2,11 @@
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
 
-import string
-from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor
 from pprint import pformat
+import string
+from textwrap import dedent
+import warnings
 
 import docker
 from docker.errors import APIError
@@ -62,10 +63,85 @@ class DockerSpawner(Spawner):
             cls._client = client
         return cls._client
 
+    # notice when user has set the command
+    # default command is that of the container,
+    # but user can override it via config
+    _user_set_cmd = False
+    @observe('cmd')
+    def _cmd_changed(self, change):
+        self._user_set_cmd = True
+
     container_id = Unicode()
+    
+    # deprecate misleading container_ip, since
+    # it is not the ip in the container,
+    # but the host ip of the port forwarded to the container
+    # when use_internal_ip is False
     container_ip = Unicode('127.0.0.1', config=True)
+    @observe('container_ip')
+    def _container_ip_deprecated(self, change):
+        self.log.warning(
+            "DockerSpawner.container_ip is deprecated in dockerspawner-0.9."
+            "  Use DockerSpawner.host_ip to specify the host ip that is forwarded to the container"
+        )
+        self.host_ip = change.new
+
+    host_ip = Unicode('127.0.0.1',
+        help="""The ip address on the host on which to expose the container's port
+
+        Typically 127.0.0.1, but can be public interfaces as well
+        in cases where the Hub and/or proxy are on different machines
+        from the user containers.
+
+        Only used when use_internal_ip = False.
+        """
+    )
+
+    # unlike container_ip, container_port is the internal port
+    # on which the server is bound.
     container_port = Int(8888, min=1, max=65535, config=True)
+    @observe('container_port')
+    def _container_port_changed(self, change):
+        self.log.warning(
+            "DockerSpawner.container_port is deprecated in dockerspawner 0.9."
+            "  Use DockerSpawner.port"
+        )
+        self.port = change.new
+
+    # fix default port to 8888, used in the container
+    @default('port')
+    def _port_default(self):
+        return 8888
+
+    # default to listening on all-interfaces in the container
+    @default('ip')
+    def _ip_default(self):
+        return '0.0.0.0'
+
     container_image = Unicode("jupyterhub/singleuser:%s" % _jupyterhub_xy, config=True)
+    @observe('container_image')
+    def _container_image_changed(self, change):
+        self.log.warning(
+            "DockerSpawner.container_image is deprecated in dockerspawner 0.9."
+            "  Use DockerSpawner.image"
+        )
+        self.image = change.new
+
+    image = Unicode("jupyterhub/singleuser:%s" % _jupyterhub_xy, config=True,
+        help="""The image to use for single-user servers.
+
+        This image should have the same version of jupyterhub as
+        the Hub itself installed.
+
+        If the default command of the image does not launch
+        jupyterhub-singleuser, set `c.Spawner.cmd` to
+        launch jupyterhub-singleuser, e.g.
+
+        Any of the jupyter docker-stacks should work without additional config,
+        as long as the version of jupyterhub in the image is compatible.
+        """
+    )
+
     container_prefix = Unicode(
         "jupyter",
         config=True,
@@ -183,6 +259,14 @@ class DockerSpawner(Spawner):
             """
         )
     )
+    @observe('hub_ip_connect')
+    def _ip_connect_changed(self, change):
+        if jupyterhub.version_info >= (0, 8):
+            warnings.warn(
+                "DockerSpawner.hub_ip_connect is no longer needed with JupyterHub 0.8."
+                "  Use JupyterHub.hub_connect_ip instead.",
+                warnings.DeprecationWarning,
+            )
 
     use_internal_ip = Bool(False,
         config=True,
@@ -304,25 +388,17 @@ class DockerSpawner(Spawner):
         """Don't inherit any env from the parent process"""
         return []
 
-    def get_env(self):
-        env = super(DockerSpawner, self).get_env()
-        env.update(dict(
-            JPY_USER=self.user.name,
-            JPY_COOKIE_NAME=self.user.server.cookie_name,
-            JPY_BASE_URL=self.user.server.base_url,
-            JPY_HUB_PREFIX=self.hub.server.base_url
-        ))
-
-        if self.notebook_dir:
-            env['NOTEBOOK_DIR'] = self.notebook_dir
-
+    def get_args(self):
+        args = super().get_args()
         if self.hub_ip_connect:
-           hub_api_url = self._public_hub_api_url()
-        else:
-           hub_api_url = self.hub.api_url
-        env['JPY_HUB_API_URL'] = hub_api_url
-
-        return env
+            # JupyterHub 0.7 specifies --hub-api-url
+            # on the command-line, which is hard to update
+            for idx, arg in enumerate(list(args)):
+                if arg.startswith('--hub-api-url='):
+                    args.pop(idx)
+                    break
+            args.append('--hub-api-url=%s' % self._public_hub_api_url())
+        return args
 
     def _docker(self, method, *args, **kwargs):
         """wrapper for calling docker methods
@@ -402,7 +478,13 @@ class DockerSpawner(Spawner):
         """
         container = yield self.get_container()
         if container is None:
-            image = image or self.container_image
+            image = image or self.image
+            if self._user_set_cmd:
+                cmd = self.cmd
+            else:
+                image_info = yield self.docker('inspect_image', image)
+                cmd = image_info['Config']['Cmd']
+            cmd = cmd + self.get_args()
 
             # build the dictionary of keyword arguments for create_container
             create_kwargs = dict(
@@ -410,6 +492,7 @@ class DockerSpawner(Spawner):
                 environment=self.get_env(),
                 volumes=self.volume_mount_points,
                 name=self.container_name,
+                command=cmd,
             )
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
@@ -425,7 +508,7 @@ class DockerSpawner(Spawner):
                 host_config['mem_limit'] = self.mem_limit
 
             if not self.use_internal_ip:
-                host_config['port_bindings'] = {self.container_port: (self.container_ip,)}
+                host_config['port_bindings'] = {self.port: (self.host_ip,)}
             host_config.update(self.extra_host_config)
             host_config.setdefault('network_mode', self.network_name)
 
@@ -471,9 +554,10 @@ class DockerSpawner(Spawner):
         yield self.docker('start', self.container_id, **start_kwargs)
 
         ip, port = yield self.get_ip_and_port()
-        # store on user for pre-jupyterhub-0.7:
-        self.user.server.ip = ip
-        self.user.server.port = port
+        if jupyterhub.version_info < (0,7):
+            # store on user for pre-jupyterhub-0.7:
+            self.user.server.ip = ip
+            self.user.server.port = port
         # jupyterhub 0.7 prefers returning ip, port:
         return (ip, port)
 
@@ -486,9 +570,9 @@ class DockerSpawner(Spawner):
 
             @gen.coroutine
             def get_ip_and_port(self):
-                return self.container_ip, self.container_port
+                return self.host_ip, self.port
 
-        You will need to make sure container_ip and container_port
+        You will need to make sure host_ip and port
         are correct, which depends on the route to the container
         and the port it opens.
         """
@@ -499,9 +583,9 @@ class DockerSpawner(Spawner):
                 ip = self.get_network_ip(network_settings)
             else:  # Fallback for old versions of docker (<1.9) without network management
                 ip = network_settings['IPAddress']
-            port = self.container_port
+            port = self.port
         else:
-            resp = yield self.docker('port', self.container_id, self.container_port)
+            resp = yield self.docker('port', self.container_id, self.port)
             if resp is None:
                 raise RuntimeError("Failed to get port info for %s" % self.container_id)
             ip = resp[0]['HostIp']
