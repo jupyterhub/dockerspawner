@@ -11,5 +11,4 @@ install:
 script:
   - pyflakes dockerspawner
   - docker build -t jupyterhub/singleuser singleuser
-  - docker build -t jupyterhub/systemuser systemuser
   - travis_retry py.test --cov dockerspawner tests -v
