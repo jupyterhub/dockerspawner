@@ -477,6 +477,14 @@ class DockerSpawner(Spawner):
 
         """
         container = yield self.get_container()
+        if container and self.remove_containers:
+            self.log.warning(
+                "Removing container that should have been cleaned up: %s (id: %s)",
+                self.container_name, self.container_id[:7])
+            # remove the container, as well as any associated volumes
+            yield self.docker('remove_container', self.container_id, v=True)
+            container = None
+
         if container is None:
             image = image or self.image
             if self._user_set_cmd:
