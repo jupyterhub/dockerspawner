@@ -6,6 +6,44 @@ command line for details.
 
 ## [Unreleased]
 
+
+## [0.9] - 2017-08
+
+0.9 cleans up some configuration and improves support for the transition from JupyterHub 0.8 to 0.9.
+It also reduces some of the special arguments and env handling, allowing for more consistency with other Spawners, and fewer assumptions about the image 
+
+In particular:
+
+- any image with the correct version of JupyterHub installed (it should match JupyterHub) should work with DockerSpawner.
+- any image **based on one of the [jupyter/docker-stacks][]** should work with SystemUserSpawner.
+  There is no longer any need for the `jupyterhub/systemuser` docker image.
+- The jupyterhub/singleuser image is now built from the JupyterHub repo, not this one.
+- `jupyterhub/systemuser` image is deprecated.
+  `jupyterhub/systemuser` launches containers as root and relies on
+  the `NB_UID` and `NB_GID` handling of `jupyter/docker-stacks` to setup the user.
+- The default `jupyterhub/singleuser` image has tags for JupyterHub versions,
+  to ensure image compatibility with JupyterHub.
+  The default image is now `jupyterhub/singleuser:x.y`, where `x.y` is the major.minor version of
+  the current JupyterHub instance,
+  so DockerSpawner should work by default with JupyterHub 0.7 or 0.8
+  without needing to specify the image.
+- `Spawner.cmd` config is now supported, which can be used to override the CMD arg.
+  By default, the image's CMD is used.
+- `Spawner.get_args()` behavior is now properly inherited,
+  and args are appended to the spawn command as in other Spawners.
+- Arguments are now passed via `.get_args()` as in the base Spawner,
+  rather than custom environment variables which user images had to support.
+- `DockerSpawner.hub_ip_connect` is deprecated when running with JupyterHub 0.8.
+
+Some configuration has been cleaned up to be clearer and more concise:
+
+- `DockerSpawner.container_image` is deprecated in favor of `DockerSpawner.image`.
+- `DockerSpawner.container_port` is deprecated in favor of existing `Spawner.port`.
+- Inaccurately named `DockerSpawner.container_ip` is deprecated in favor of `DockerSpawner.host_ip`
+  because it configures the host IP forwarded to the container.
+
+[jupyter/docker-stacks]: https://github.com/jupyter/docker-stacks
+
 ## [0.8] - 2017-07-28
 
 - experimental fixes for running on Windows
@@ -58,7 +96,8 @@ command line for details.
 First release
 
 
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.8.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.9.0...HEAD
+[0.9]: https://github.com/jupyterhub/dockerspawner/compare/0.8.0...0.9.0
 [0.8]: https://github.com/jupyterhub/dockerspawner/compare/0.7.0...0.8.0
 [0.7]: https://github.com/jupyterhub/dockerspawner/compare/0.6.0...0.7.0
 [0.6]: https://github.com/jupyterhub/dockerspawner/compare/0.5.0...0.6.0
