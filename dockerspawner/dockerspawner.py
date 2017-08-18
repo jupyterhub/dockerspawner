@@ -589,10 +589,7 @@ class DockerSpawner(Spawner):
             if resp is None:
                 raise RuntimeError("Failed to get port info for %s" % self.container_id)
             ip = resp[0]['HostIp']
-            port = resp[0]['HostPort']
-            if not isinstance(port, int):
-                self.log.warning("casting port to int from value "+repr(port))
-                port = int(port)
+            port = int(resp[0]['HostPort'])
         return ip, port
 
     def get_network_ip(self, network_settings):
