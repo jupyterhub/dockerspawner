@@ -535,7 +535,7 @@ class DockerSpawner(Spawner):
             # Get the API token from the environment variables
             # of the running container:
             for line in container['Config']['Env']:
-                if line.startswith('JPY_API_TOKEN='):
+                if line.startswith(('JPY_API_TOKEN=', 'JUPYTERHUB_API_TOKEN=')):
                     self.api_token = line.split('=', 1)[1]
                     break
 
