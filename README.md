@@ -93,15 +93,18 @@ For a full example of how `SystemUserSpawner` is used, see the
 repository (this additionally runs the JupyterHub server within a docker
 container, and authenticates users using GitHub OAuth).
 
-### Using Docker Swarm
+### Using Docker Swarm (not swarm mode!)
+
+**Note:** This is the older Docker Swarm, which makes a swarm look like a single docker instance.
+For the newer Docker Swarm Mode, see [SwarmSpawner](https://github.com/cassinyio/SwarmSpawner).
 
 Both `DockerSpawner` and `SystemUserSpawner` are compatible with
 [Docker Swarm](https://docs.docker.com/swarm/) when multiple system
 nodes will be used in a cluster for JupyterHub. Simply add `0.0.0.0`
-to your `jupyterhub_config.py` file as the `container_ip`:
+to your `jupyterhub_config.py` file as the `host_ip`:
 
 ```python
-c.DockerSpawner.container_ip = "0.0.0.0"
+c.DockerSpawner.host_ip = "0.0.0.0"
 ```
 
 This will configure DockerSpawner and SystemUserSpawner to get
@@ -165,32 +168,63 @@ c.Spawner.mem_limit = '2G'
 
 The value can either be an integer (bytes) or a string with a 'K', 'M', 'G' or 'T' prefix.
 
-## Building the Docker images
+## Picking or building a Docker image
 
-### Single user notebook server
+By default, DockerSpawner uses the `jupyterhub/singleuser` image
+with the appropriate tag that pins the right version of JupyterHub.
+Any of the existing Jupyter [docker stacks](https://github.com/jupyter/docker-stacks)
+can be used with JupyterHub, provided that the version of JupyterHub in the image matches,
+and are encouraged as the image of choice. Make sure to pick a tag!
 
-Build the `jupyterhub/singleuser` container with:
-
-```bash
-    docker build -t jupyterhub/singleuser singleuser
+```python
+c.DockerSpawner.image = 'jupyter/scipy-notebook:8f56e3c47fec'
 ```
 
-You may also use `docker pull jupyterhub/singleuser` to download the
-container from [Docker Hub](https://registry.hub.docker.com/u/jupyterhub/singleuser/).
+The docker-stacks are moving targets with always changing versions.
+Since you need to make sure that JupyterHub in the image is compatible with JupyterHub,
+always include the `:hash` tag part when specifying the image.
 
-### System user notebook server
 
-This is used with [`SystemUserSpawner`](#systemuserspawner).
+You can also build your own image.
+The only requirements for an image to be used with JupyterHub:
 
-Build the `jupyterhub/systemuser` container with:
+1. it has Python >= 3.4
+2. it has JupyterHub
+3. it has the Jupyter `notebook` package
+4. CMD launches jupyterhub-singleuser OR the `c.Spawner.cmd` configuration is used
+    to do this.
 
-```bash
-    docker build -t jupyterhub/systemuser systemuser
+For just about any starting image, you can make it work with JupyterHub by installing
+the appropriate JupyterHub version and the Jupyter notebook package.
+
+For instance, from the docker-stacks, pin your JupyterHub version and you are done:
+
+```Dockerfile
+FROM jupyter/scipy-notebook:8f56e3c47fec
+ARG JUPYTERHUB_VERSION=0.8.0
+RUN pip3 install --no-cache \
+    jupyterhub==$JUPYTERHUB_VERSION
 ```
 
-You may also use `docker pull jupyterhub/systemuser` to download the
-containter from [Docker Hub](https://registry.hub.docker.com/u/jupyterhub/systemuser/).
+Or for the absolute minimal JupyterHub user image starting only from the base Python image:
 
+```Dockerfile
+FROM python:3.6
+RUN pip3 install \
+    jupyterhub==0.7.2 \
+    'notebook>=5.0,<=6.0'
+
+# create a user, since we don't want to run as root
+RUN useradd -m jovyan
+ENV HOME=/home/jovyan
+WORKDIR $HOME
+USER jovyan
+
+CMD ["jupyterhub-singleuser"]
+```
+
+This Dockerfile should work with just about any base image in the FROM line,
+provided it has Python 3 installed.
 
 ## Contributing
 
