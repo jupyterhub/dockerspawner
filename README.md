@@ -15,29 +15,14 @@ to spawn single user notebook servers in Docker containers.
 
 ## Prerequisites
 
-Python version 3.3 and above is required.
-
-Clone the repo:
-
-```bash
-
-    git clone https://github.com/jupyterhub/dockerspawner.git
-    cd dockerspawner
-```
-
-Install dependencies:
-
-```bash
-    pip install -r requirements.txt
-```
-
+JupyterHub 0.7 or above is required, which also means Python 3.3 or above.
 
 ## Installation
 
 Install dockerspawner to the system:
 
 ```bash
-    python setup.py install
+pip install dockerspawner
 ```
 
 
