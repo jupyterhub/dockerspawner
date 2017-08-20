@@ -7,10 +7,12 @@ command line for details.
 ## [Unreleased]
 
 
-## [0.9] - 2017-08
+## [0.9] - 2017-08-20
 
 0.9 cleans up some configuration and improves support for the transition from JupyterHub 0.8 to 0.9.
-It also reduces some of the special arguments and env handling, allowing for more consistency with other Spawners, and fewer assumptions about the image that will be used by the Spawner.
+It also reduces some of the special arguments and env handling,
+allowing for more consistency with other Spawners,
+and fewer assumptions about the image that will be used by the Spawner.
 
 The following is a minimal Dockerfile that works with DockerSpawner 0.9 and JupyterHub 0.7.2:
 
