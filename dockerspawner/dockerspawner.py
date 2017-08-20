@@ -502,6 +502,10 @@ class DockerSpawner(Spawner):
                 name=self.container_name,
                 command=cmd,
             )
+
+            # ensure internal port is exposed
+            create_kwargs['ports'] = {'%i/tcp' % self.port: None}
+
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
                 create_kwargs.update(extra_create_kwargs)
