@@ -10,7 +10,24 @@ command line for details.
 ## [0.9] - 2017-08
 
 0.9 cleans up some configuration and improves support for the transition from JupyterHub 0.8 to 0.9.
-It also reduces some of the special arguments and env handling, allowing for more consistency with other Spawners, and fewer assumptions about the image 
+It also reduces some of the special arguments and env handling, allowing for more consistency with other Spawners, and fewer assumptions about the image that will be used by the Spawner.
+
+The following is a minimal Dockerfile that works with DockerSpawner 0.9 and JupyterHub 0.7.2:
+
+```Dockerfile
+FROM python:3.6
+RUN pip install \
+    jupyterhub==0.8.0 \
+    'notebook==5.0.0'
+
+# Don't want to run as root!
+RUN useradd -m jovyan
+ENV HOME=/home/jovyan
+WORKDIR $HOME
+USER jovyan
+
+CMD ["jupyterhub-singleuser"]
+```
 
 In particular:
 
