@@ -7,7 +7,14 @@ command line for details.
 ## [Unreleased]
 
 
-## [0.9] - 2017-08-20
+## 0.9
+
+### [0.9.1] - 2017-08-23
+
+- Fix typo which would cause using the deprecated `.hub_ip_connect` configuration
+  with JupyterHub 0.8 to crash instead of warn in 0.9.0.
+
+### [0.9.0] - 2017-08-20
 
 0.9 cleans up some configuration and improves support for the transition from JupyterHub 0.8 to 0.9.
 It also reduces some of the special arguments and env handling,
@@ -53,6 +60,7 @@ In particular:
 - Arguments are now passed via `.get_args()` as in the base Spawner,
   rather than custom environment variables which user images had to support.
 - `DockerSpawner.hub_ip_connect` is deprecated when running with JupyterHub 0.8.
+  Use `JupyterHub.hub_connect_ip` instead, which is used by all Spawners.
 
 Some configuration has been cleaned up to be clearer and more concise:
 
@@ -115,8 +123,9 @@ Some configuration has been cleaned up to be clearer and more concise:
 First release
 
 
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.9.0...HEAD
-[0.9]: https://github.com/jupyterhub/dockerspawner/compare/0.8.0...0.9.0
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.9.1...HEAD
+[0.9.1]: https://github.com/jupyterhub/dockerspawner/compare/0.9.0...0.9.1
+[0.9.0]: https://github.com/jupyterhub/dockerspawner/compare/0.8.0...0.9.0
 [0.8]: https://github.com/jupyterhub/dockerspawner/compare/0.7.0...0.8.0
 [0.7]: https://github.com/jupyterhub/dockerspawner/compare/0.6.0...0.7.0
 [0.6]: https://github.com/jupyterhub/dockerspawner/compare/0.5.0...0.6.0
