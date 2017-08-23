@@ -265,7 +265,7 @@ class DockerSpawner(Spawner):
             warnings.warn(
                 "DockerSpawner.hub_ip_connect is no longer needed with JupyterHub 0.8."
                 "  Use JupyterHub.hub_connect_ip instead.",
-                warnings.DeprecationWarning,
+                DeprecationWarning,
             )
 
     use_internal_ip = Bool(False,
