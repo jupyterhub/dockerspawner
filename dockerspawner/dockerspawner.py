@@ -142,12 +142,24 @@ class DockerSpawner(Spawner):
         """
     )
 
-    user_container_name = Unicode(
-        "{username}-{imagename}",
+    container_prefix = Unicode(
+        "jupyter",
         config=True,
         help=dedent(
             """
-            The name of the container name: with {username} and {imagename} replacement
+            Prefix for container names. See user_container_name for full container name for a particular
+            user.
+            """
+        )
+    )
+
+    user_container_name = Unicode(
+        "{prefix}-{username}",
+        config=True,
+        help=dedent(
+            """
+            Name of the container: with {username}, {imagename}, {container_prefix} replacements.
+            The default user_container_name is <prefix>-<username> for backward compatibility
             """
         )
     )
@@ -363,7 +375,8 @@ class DockerSpawner(Spawner):
     @property
     def container_name(self):
         escaped_container_image = self.image.replace("/", "_")
-        d = {'username' : self.escaped_name, 'imagename' : escaped_container_image}
+        server_name = getattr(self, 'name', '')
+        d = {'username' : self.escaped_name, 'imagename' : escaped_container_image, 'servername' : server_name, 'prefix' : self.container_prefix}
         return self.user_container_name.format(**d)
 
     def load_state(self, state):
