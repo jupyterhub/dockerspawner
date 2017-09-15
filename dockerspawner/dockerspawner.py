@@ -147,8 +147,19 @@ class DockerSpawner(Spawner):
         config=True,
         help=dedent(
             """
-            Prefix for container names. The full container name for a particular
-            user will be <prefix>-<username>.
+            Prefix for container names. See container_name_template for full container name for a particular
+            user.
+            """
+        )
+    )
+
+    container_name_template = Unicode(
+        "{prefix}-{username}",
+        config=True,
+        help=dedent(
+            """
+            Name of the container: with {username}, {imagename}, {prefix} replacements.
+            The default container_name_template is <prefix>-<username> for backward compatibility
             """
         )
     )
@@ -363,7 +374,10 @@ class DockerSpawner(Spawner):
 
     @property
     def container_name(self):
-        return "{}-{}".format(self.container_prefix, self.escaped_name)
+        escaped_container_image = self.image.replace("/", "_")
+        server_name = getattr(self, 'name', '')
+        d = {'username' : self.escaped_name, 'imagename' : escaped_container_image, 'servername' : server_name, 'prefix' : self.container_prefix}
+        return self.container_name_template.format(**d)
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
