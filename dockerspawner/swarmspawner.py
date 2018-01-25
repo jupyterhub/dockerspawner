@@ -9,6 +9,7 @@ from pprint import pformat
 from textwrap import dedent
 
 import docker
+from docker.types import ContainerSpec, TaskTemplate, Resources
 from docker.errors import APIError
 from docker.utils import kwargs_from_env
 from escapism import escape
@@ -484,6 +485,20 @@ class SwarmSpawner(Spawner):
                 raise
         return service
 
+    @property
+    def _container_spec_keys(self):
+        return [s.strip() for s in "image, command, args, hostname, env, workdir, user, labels, mounts, "
+                                   "stop_grace_period, secrets, tty, groups, open_stdin, read_only, stop_signal, "
+                                   "healthcheck, hosts, dns_config, configs, privileges".split(',')]
+
+    @property
+    def _resource_spec_keys(self):
+        return [s.strip() for s in "cpu_limit, mem_limit, cpu_reservation, mem_reservation".split(',')]
+
+    @property
+    def _task_spec_keys(self):
+        return ["networks"]
+
     @gen.coroutine
     def start(self, image=None, extra_create_kwargs=None,
               extra_start_kwargs=None, extra_host_config=None):
@@ -519,7 +534,7 @@ class SwarmSpawner(Spawner):
             # build the dictionary of keyword arguments for create_service
             create_kwargs = dict(
                 image=image,
-                environment=self.get_env(),
+                env=self.get_env(),
                 volumes=self.volume_mount_points,
                 name=self.service_name,
                 command=cmd,
@@ -541,8 +556,6 @@ class SwarmSpawner(Spawner):
                 # this will still be overriden by extra_host_config
                 host_config['mem_limit'] = self.mem_limit
 
-            if not self.use_internal_ip:
-                host_config['port_bindings'] = {self.port: (self.host_ip,)}
             host_config.update(self.extra_host_config)
             host_config.setdefault('network_mode', self.network_name)
 
@@ -555,8 +568,14 @@ class SwarmSpawner(Spawner):
             create_kwargs.setdefault('host_config', {}).update(host_config)
 
             # create the service
-            resp = yield self.docker('create_service', **create_kwargs)
-            self.service_id = resp['Id']
+            container_spec = {k: v for k, v in create_kwargs.items() if k in self._container_spec_keys}
+            container_spec = ContainerSpec(**container_spec)
+            resource_spec = {k: v for k, v in create_kwargs.items() if k in self._resource_spec_keys}
+            resource_spec = Resources(**resource_spec)
+            task_spec = {k: v for k, v in create_kwargs.items() if k in self._task_spec_keys}
+            task_spec = TaskTemplate(container_spec=container_spec, resources=resource_spec, **task_spec)
+            resp = yield self.docker('create_service', task_template=create_kwargs, name=self.service_name)
+            self.service_id = resp['ID']
             self.log.info(
                 "Created service '%s' (id: %s) from image %s",
                 self.service_name, self.service_id[:7], image)
