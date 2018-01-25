@@ -9,7 +9,7 @@ from pprint import pformat
 from textwrap import dedent
 
 import docker
-from docker.types import ContainerSpec, TaskTemplate, Resources
+from docker.types import ContainerSpec, TaskTemplate, Resources, EndpointSpec
 from docker.errors import APIError
 from docker.utils import kwargs_from_env
 from escapism import escape
@@ -79,8 +79,8 @@ class SwarmSpawner(Spawner):
     @observe('service_ip')
     def _service_ip_deprecated(self, change):
         self.log.warning(
-            "DockerSpawner.service_ip is deprecated in dockerspawner-0.9."
-            "  Use DockerSpawner.host_ip to specify the host ip that is forwarded to the service"
+            "SwarmSpawner.service_ip is deprecated in dockerspawner-0.9."
+            "  Use SwarmSpawner.host_ip to specify the host ip that is forwarded to the service"
         )
         self.host_ip = change.new
 
@@ -102,8 +102,8 @@ class SwarmSpawner(Spawner):
     @observe('service_port')
     def _service_port_changed(self, change):
         self.log.warning(
-            "DockerSpawner.service_port is deprecated in dockerspawner 0.9."
-            "  Use DockerSpawner.port"
+            "SwarmSpawner.service_port is deprecated in dockerspawner 0.9."
+            "  Use SwarmSpawner.port"
         )
         self.port = change.new
 
@@ -122,8 +122,8 @@ class SwarmSpawner(Spawner):
     @observe('service_image')
     def _service_image_changed(self, change):
         self.log.warning(
-            "DockerSpawner.service_image is deprecated in dockerspawner 0.9."
-            "  Use DockerSpawner.image"
+            "SwarmSpawner.service_image is deprecated in dockerspawner 0.9."
+            "  Use SwarmSpawner.image"
         )
         self.image = change.new
 
@@ -209,7 +209,7 @@ class SwarmSpawner(Spawner):
     )
 
     format_volume_name = Any(
-        help="""Any callable that accepts a string template and a DockerSpawner instance as parameters in that order and returns a string.
+        help="""Any callable that accepts a string template and a SwarmSpawner instance as parameters in that order and returns a string.
 
         Reusable implementations should go in dockerspawner.VolumeNamingStrategy, tests should go in ...
         """
@@ -227,7 +227,7 @@ class SwarmSpawner(Spawner):
 
     @observe('use_docker_client_env')
     def _client_env_changed(self):
-        self.log.warning("DockerSpawner.use_docker_client_env is deprecated and ignored."
+        self.log.warning("SwarmSpawner.use_docker_client_env is deprecated and ignored."
                          "  Docker environment variables are always used if defined.")
 
     tls_config = Dict(config=True,
@@ -238,7 +238,7 @@ class SwarmSpawner(Spawner):
                       )
     tls = tls_verify = tls_ca = tls_cert = \
         tls_key = tls_assert_hostname = Any(config=True,
-                                            help="""DEPRECATED. Use DockerSpawner.tls_config dict to set any TLS options."""
+                                            help="""DEPRECATED. Use SwarmSpawner.tls_config dict to set any TLS options."""
                                             )
 
     @observe('tls', 'tls_verify', 'tls_ca', 'tls_cert', 'tls_key', 'tls_assert_hostname')
@@ -267,7 +267,7 @@ class SwarmSpawner(Spawner):
         config=True,
         help=dedent(
             """
-            If set, DockerSpawner will configure the services to use
+            If set, SwarmSpawner will configure the services to use
             the specified IP to connect the hub api.  This is useful
             when the hub_api is bound to listen on all ports or is
             running inside of a service.
@@ -279,7 +279,7 @@ class SwarmSpawner(Spawner):
     def _ip_connect_changed(self, change):
         if jupyterhub.version_info >= (0, 8):
             warnings.warn(
-                "DockerSpawner.hub_ip_connect is no longer needed with JupyterHub 0.8."
+                "SwarmSpawner.hub_ip_connect is no longer needed with JupyterHub 0.8."
                 "  Use JupyterHub.hub_connect_ip instead.",
                 DeprecationWarning,
             )
@@ -441,26 +441,22 @@ class SwarmSpawner(Spawner):
     @gen.coroutine
     def poll(self):
         """Check for my id in `docker ps`"""
-        service = yield self.get_service()
+        service = yield self.get_task()
         if not service:
             self.log.warn("service not found")
             return 0
 
-        service_state = service['State']
+        service_state = service['Status']
         self.log.debug(
             "Service %s status: %s",
             self.service_id[:7],
             pformat(service_state),
         )
 
-        if service_state["Running"]:
+        if service_state['State'] == 'running':
             return None
         else:
-            return (
-                "ExitCode={ExitCode}, "
-                "Error='{Error}', "
-                "FinishedAt={FinishedAt}".format(**service_state)
-            )
+            return {k: pformat(v) for k, v in service.items()}
 
     @gen.coroutine
     def get_service(self):
@@ -469,7 +465,8 @@ class SwarmSpawner(Spawner):
             service = yield self.docker(
                 'inspect_service', self.service_name
             )
-            self.service_id = service['Id']
+            self.service_id = service['ID']
+            self.log.critical(pformat(service))
         except APIError as e:
             if e.response.status_code == 404:
                 self.log.info("Service '%s' is gone", self.service_name)
@@ -485,6 +482,30 @@ class SwarmSpawner(Spawner):
                 raise
         return service
 
+    @gen.coroutine
+    def get_task(self):
+        self.log.debug("Getting task of service '%s'", self.service_name)
+        if self.get_service() is None:
+            return None
+        try:
+            tasks = yield self.docker('tasks', filters={'service': self.service_name, 'desired-state': 'running'})
+            if len(tasks) == 0:
+                return None
+            elif len(tasks) > 1:
+                self.log.critical(pformat(tasks))
+                raise RuntimeError("Found more than one running notebook task for service '{}'".format(self.service_name))
+            task = tasks[0]
+            self.log.critical(pformat(task))
+        except APIError as e:
+            if e.response.status_code == 404:
+                self.log.info("Task for service '%s' is gone", self.service_name)
+                task = None
+            else:
+                raise
+
+        return task
+
+
     @property
     def _container_spec_keys(self):
         return [s.strip() for s in "image, command, args, hostname, env, workdir, user, labels, mounts, "
@@ -498,6 +519,10 @@ class SwarmSpawner(Spawner):
     @property
     def _task_spec_keys(self):
         return ["networks"]
+
+    @property
+    def _endpoint_spec_keys(self):
+        return ["ports"]
 
     @gen.coroutine
     def start(self, image=None, extra_create_kwargs=None,
@@ -519,7 +544,7 @@ class SwarmSpawner(Spawner):
                 "Removing service that should have been cleaned up: %s (id: %s)",
                 self.service_name, self.service_id[:7])
             # remove the service, as well as any associated volumes
-            yield self.docker('remove_service', self.service_id, v=True)
+            yield self.docker('remove_service', self.service_id)
             service = None
 
         if service is None:
@@ -538,43 +563,43 @@ class SwarmSpawner(Spawner):
                 volumes=self.volume_mount_points,
                 name=self.service_name,
                 command=cmd,
+                mem_limit=self.mem_limit,
+                mem_reservation=self.mem_guarantee,
+                cpu_limit=int(self.cpu_limit * 1e9) if self.cpu_limit else None,
+                cpu_reservation=int(self.cpu_guarantee * 1e9) if self.cpu_guarantee else None,
+                networks=[self.network_name] if self.network_name else []
             )
 
             # ensure internal port is exposed
-            create_kwargs['ports'] = {'%i/tcp' % self.port: None}
+            create_kwargs['ports'] = {self.port: (None, 'tcp')}
 
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
                 create_kwargs.update(extra_create_kwargs)
 
-            # build the dictionary of keyword arguments for host_config
-            host_config = dict(binds=self.volume_binds, links=self.links)
-
-            if hasattr(self, 'mem_limit') and self.mem_limit is not None:
-                # If jupyterhub version > 0.7, mem_limit is a traitlet that can
-                # be directly configured. If so, use it to set mem_limit.
-                # this will still be overriden by extra_host_config
-                host_config['mem_limit'] = self.mem_limit
-
-            host_config.update(self.extra_host_config)
-            host_config.setdefault('network_mode', self.network_name)
-
-            if extra_host_config:
-                host_config.update(extra_host_config)
-
-            self.log.debug("Starting host with config: %s", host_config)
-
-            host_config = self.client.create_host_config(**host_config)
-            create_kwargs.setdefault('host_config', {}).update(host_config)
-
             # create the service
+            # TODO: Handle volumes!!! Can't do any persistence otherwise!
+            # http://docker-py.readthedocs.io/en/stable/api.html#docker.types.Mount
+            # http://docker-py.readthedocs.io/en/stable/api.html#docker.types.ContainerSpec
             container_spec = {k: v for k, v in create_kwargs.items() if k in self._container_spec_keys}
             container_spec = ContainerSpec(**container_spec)
+            self.log.debug(container_spec)
             resource_spec = {k: v for k, v in create_kwargs.items() if k in self._resource_spec_keys}
             resource_spec = Resources(**resource_spec)
+            self.log.debug(resource_spec)
             task_spec = {k: v for k, v in create_kwargs.items() if k in self._task_spec_keys}
-            task_spec = TaskTemplate(container_spec=container_spec, resources=resource_spec, **task_spec)
-            resp = yield self.docker('create_service', task_template=create_kwargs, name=self.service_name)
+            task_spec = TaskTemplate(container_spec=container_spec, resources=resource_spec, force_update=1, **task_spec)
+            self.log.debug(task_spec)
+            endpoint_spec = {k: v for k, v in create_kwargs.items() if k in self._endpoint_spec_keys}
+            endpoint_spec = EndpointSpec(**endpoint_spec)
+            self.log.debug(endpoint_spec)
+
+            remaining_keys = set(create_kwargs.keys()) - set().union(self._container_spec_keys, self._resource_spec_keys, self._task_spec_keys, self._endpoint_spec_keys, {"name"})
+            if remaining_keys:
+                remaining_keys = {k: create_kwargs[k] for k in remaining_keys}
+                self.log.critical("Unused configuration keys: {}".format(pformat(remaining_keys)))
+
+            resp = yield self.docker('create_service', task_template=task_spec, endpoint_spec=endpoint_spec, name=create_kwargs['name'])
             self.service_id = resp['ID']
             self.log.info(
                 "Created service '%s' (id: %s) from image %s",
@@ -630,27 +655,10 @@ class SwarmSpawner(Spawner):
         are correct, which depends on the route to the service
         and the port it opens.
         """
-        if self.use_internal_ip:
-            resp = yield self.docker('inspect_service', self.service_id)
-            network_settings = resp['NetworkSettings']
-            ip = self.get_network_ip(network_settings)
-            port = self.port
-        else:
-            raise NotImplemented("Must use use_internal_ip when running Jupyter notebooks as docker services")
-        return ip, port
+        ip = self.service_name
+        port = self.port
 
-    def get_network_ip(self, network_settings):
-        networks = network_settings['Networks']
-        if self.network_name not in networks:
-            raise Exception(
-                "Unknown docker network '{network}'."
-                " Did you create it with `docker network create <name>`?".format(
-                    network=self.network_name
-                )
-            )
-        network = networks[self.network_name]
-        ip = network['IPAddress']
-        return ip
+        return ip, port
 
     @gen.coroutine
     def stop(self, now=False):
