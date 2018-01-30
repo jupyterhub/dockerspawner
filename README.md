@@ -30,12 +30,18 @@ pip install dockerspawner
 
 ### Choose a spawner
 
-Two basic types of spawners are available for dockerspawner:
+Three basic types of spawners are available for dockerspawner:
 
 - [DockerSpawner](#DockerSpawner): useful if you would like to spawn 
   single user notebook servers on the fly. It will take an
   authenticated user and spawn a notebook server in a Docker container
   for the user.
+
+- [SwarmSpawner](#SwarmSpawner): same behavior as DockerSpawner, but
+  launches single user notebook servers as Docker Swarm mode services
+  instead of as individual containers. This allows for running JupyerHub
+  in a swarm so that notebook containers can be run on any of multiple
+  servers.
 
 - [SystemUserSpawner](#SystemUserSpawner): useful if you would like to
   spawn single user notebook servers that correspond to the system's 
@@ -68,6 +74,59 @@ your `jupyterhub_config.py`:
 There is a complete example in [examples/oauth](examples/oauth) for
 using GitHub OAuth to authenticate users, and spawn containers with docker.
 
+### SwarmSpawner
+
+Tell JupyterHub to use SwarmSpawner by adding the following line to
+your `jupyterhub_config.py`:
+
+```python
+    c.JupyterHub.spawner_class = 'dockerspawner.SwarmSpawner'
+```
+
+You need to make sure that the JupyterHub process is launched on a Swarm manager
+node, since its node needs to have permission to launch new Swarm services. It also
+needs to have the docker socket mounted (like DockerSpawner) to communicate out of its
+own container with the host's docker server. You can accomplish this in your
+`docker-compose.yml` with the following settings:
+
+```yml
+  jupyterhub:
+    image: jupyterhub/jupyterhub
+    # This is necessary to prevent the singleton hub from using its service number as its hostname
+    hostname: jupyterhub
+    # Permit communication with the host's docker server
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    # Ensure Hub and Notebook servers are on the same network
+    networks:
+      - jupyterhub_network
+    environment:
+      DOCKER_NETWORK_NAME: jupyterhub_network
+    # Ensure that we execute on a Swarm manager
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+```
+
+You'll also need to ensure that the JupyterHub service and the launched single-user
+services all run on the same Swarm overlay network. You can create one easily using:
+
+```
+docker network create --driver overlay jupyterhub_network
+```
+
+Then use this network in your jupyterhub_config.py like the following example:
+
+```python
+network_name = os.environ['DOCKER_NETWORK_NAME']
+c.SwarmSpawner.network_name = network_name
+c.SwarmSpawner.extra_host_config = {'network_mode': network_name}
+```
+
+Unless otherwise noted, SwarmSpawner supports the same configuration options as DockerSpawner.
+
 ### SystemUserSpawner
 
 If you want to spawn notebook servers for users that correspond to system users,
@@ -96,7 +155,8 @@ container, and authenticates users using GitHub OAuth).
 ### Using Docker Swarm (not swarm mode!)
 
 **Note:** This is the older Docker Swarm, which makes a swarm look like a single docker instance.
-For the newer Docker Swarm Mode, see [SwarmSpawner](https://github.com/cassinyio/SwarmSpawner).
+For the newer Docker Swarm Mode, see [SwarmSpawner](#SwarmSpawner). This used to be supported by
+[cassinyio](https://github.com/cassinyio/SwarmSpawner), but this repository has been deprecated.
 
 Both `DockerSpawner` and `SystemUserSpawner` are compatible with
 [Docker Swarm](https://docs.docker.com/swarm/) when multiple system
