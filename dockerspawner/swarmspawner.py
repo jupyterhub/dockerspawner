@@ -3,13 +3,14 @@ A Spawner for JupyterHub that runs each user's server in a separate docker servi
 """
 
 import string
+import os
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from pprint import pformat
 from textwrap import dedent
 
 import docker
-from docker.types import ContainerSpec, TaskTemplate, Resources, EndpointSpec
+from docker.types import ContainerSpec, TaskTemplate, Resources, EndpointSpec, Mount, DriverConfig
 from docker.errors import APIError
 from docker.utils import kwargs_from_env
 from escapism import escape
@@ -369,6 +370,44 @@ class SwarmSpawner(Spawner):
         binds = self._volumes_to_binds(self.volumes, {})
         return self._volumes_to_binds(self.read_only_volumes, binds, mode='ro')
 
+    volume_driver = Unicode(
+        "",
+        config=True,
+        help=dedent(
+            """
+            Use this driver for mounting the notebook volumes.
+            Note that this driver must support multiple hosts in order for it to work across the swarm.
+            For a list of possible drivers, see https://docs.docker.com/engine/extend/legacy_plugins/#volume-plugins
+            """
+        )
+    )
+
+    volume_driver_options = Dict(
+        config=True,
+        help=dedent(
+            """
+            Configuration options for the multi-host volume driver.
+            """
+        )
+    )
+
+    @property
+    def mount_driver_config(self):
+        return DriverConfig(name=self.volume_driver, options=self.volume_driver_options or None)
+
+    @property
+    def mounts(self):
+        if len(self.volume_binds):
+            driver = self.mount_driver_config
+            return [Mount(target=vol['bind'],
+                          source=host_loc,
+                          type='bind',
+                          read_only=vol['mode'] == 'ro',
+                          driver_config=driver)
+                    for host_loc, vol in self.volume_binds.items()]
+        else:
+            return []
+
     _escaped_name = None
 
     @property
@@ -466,7 +505,7 @@ class SwarmSpawner(Spawner):
                 'inspect_service', self.service_name
             )
             self.service_id = service['ID']
-            self.log.critical(pformat(service))
+            # self.log.critical(pformat(service))
         except APIError as e:
             if e.response.status_code == 404:
                 self.log.info("Service '%s' is gone", self.service_name)
@@ -492,10 +531,10 @@ class SwarmSpawner(Spawner):
             if len(tasks) == 0:
                 return None
             elif len(tasks) > 1:
-                self.log.critical(pformat(tasks))
+                # self.log.critical(pformat(tasks))
                 raise RuntimeError("Found more than one running notebook task for service '{}'".format(self.service_name))
             task = tasks[0]
-            self.log.critical(pformat(task))
+            # self.log.critical(pformat(task))
         except APIError as e:
             if e.response.status_code == 404:
                 self.log.info("Task for service '%s' is gone", self.service_name)
@@ -560,27 +599,24 @@ class SwarmSpawner(Spawner):
             create_kwargs = dict(
                 image=image,
                 env=self.get_env(),
-                volumes=self.volume_mount_points,
+                mounts=self.mounts,
                 name=self.service_name,
                 command=cmd,
                 mem_limit=self.mem_limit,
                 mem_reservation=self.mem_guarantee,
                 cpu_limit=int(self.cpu_limit * 1e9) if self.cpu_limit else None,
                 cpu_reservation=int(self.cpu_guarantee * 1e9) if self.cpu_guarantee else None,
-                networks=[self.network_name] if self.network_name else []
+                networks=[self.network_name] if self.network_name else [],
+                ports={self.port: (None, 'tcp')},
             )
-
-            # ensure internal port is exposed
-            create_kwargs['ports'] = {self.port: (None, 'tcp')}
 
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
                 create_kwargs.update(extra_create_kwargs)
 
             # create the service
-            # TODO: Handle volumes!!! Can't do any persistence otherwise!
-            # http://docker-py.readthedocs.io/en/stable/api.html#docker.types.Mount
-            # http://docker-py.readthedocs.io/en/stable/api.html#docker.types.ContainerSpec
+            self.log.warning(create_kwargs)
+
             container_spec = {k: v for k, v in create_kwargs.items() if k in self._container_spec_keys}
             container_spec = ContainerSpec(**container_spec)
             self.log.debug(container_spec)
