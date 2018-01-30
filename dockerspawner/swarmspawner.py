@@ -3,7 +3,6 @@ A Spawner for JupyterHub that runs each user's server in a separate docker servi
 """
 
 import string
-import os
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from pprint import pformat
