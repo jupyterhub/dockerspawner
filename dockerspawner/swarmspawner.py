@@ -587,14 +587,12 @@ class SwarmSpawner(Spawner):
 
         if service is None:
             image = image or self.image
+            cmd = None
             if self._user_set_cmd:
                 cmd = self.cmd
-            else:
-                image_info = yield self.docker('inspect_image', image)
-                cmd = image_info['Config']['Cmd']
-            if cmd is None:
-                cmd = ["start-notebook.sh"]
-            cmd = cmd + self.get_args()
+            # else:
+            #     image_info = yield self.docker('inspect_image', image)
+            #     cmd = image_info['Config']['Cmd']
 
             # build the dictionary of keyword arguments for create_service
             create_kwargs = dict(
@@ -602,7 +600,7 @@ class SwarmSpawner(Spawner):
                 env=self.get_env(),
                 mounts=self.mounts,
                 name=self.service_name,
-                command=cmd,
+                args=self.get_args(),
                 mem_limit=self.mem_limit,
                 mem_reservation=self.mem_guarantee,
                 cpu_limit=int(self.cpu_limit * 1e9) if self.cpu_limit else None,
@@ -610,6 +608,10 @@ class SwarmSpawner(Spawner):
                 networks=[self.network_name] if self.network_name else [],
                 ports={self.port: (None, 'tcp')},
             )
+
+            if cmd:
+                create_kwargs['command'] = cmd
+
 
             create_kwargs.update(self.extra_create_kwargs)
             if extra_create_kwargs:
