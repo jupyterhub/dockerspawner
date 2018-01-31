@@ -80,7 +80,7 @@ Tell JupyterHub to use SwarmSpawner by adding the following line to
 your `jupyterhub_config.py`:
 
 ```python
-    c.JupyterHub.spawner_class = 'dockerspawner.SwarmSpawner'
+c.JupyterHub.spawner_class = 'dockerspawner.SwarmSpawner'
 ```
 
 You need to make sure that the JupyterHub process is launched on a Swarm manager
@@ -90,24 +90,24 @@ own container with the host's docker server. You can accomplish this in your
 `docker-compose.yml` with the following settings:
 
 ```yml
-  jupyterhub:
-    image: jupyterhub/jupyterhub
-    # This is necessary to prevent the singleton hub from using its service number as its hostname
-    hostname: jupyterhub
-    # Permit communication with the host's docker server
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-    # Ensure Hub and Notebook servers are on the same network
-    networks:
-      - jupyterhub_network
-    environment:
-      DOCKER_NETWORK_NAME: jupyterhub_network
-    # Ensure that we execute on a Swarm manager
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.role == manager
+jupyterhub:
+  image: jupyterhub/jupyterhub
+  # This is necessary to prevent the singleton hub from using its service number as its hostname
+  hostname: jupyterhub
+  # Permit communication with the host's docker server
+  volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+  # Ensure Hub and Notebook servers are on the same network
+  networks:
+    - jupyterhub_network
+  environment:
+    DOCKER_NETWORK_NAME: jupyterhub_network
+  # Ensure that we execute on a Swarm manager
+  deploy:
+    replicas: 1
+    placement:
+      constraints:
+        - node.role == manager
 ```
 
 You'll also need to ensure that the JupyterHub service and the launched single-user
@@ -134,7 +134,7 @@ you can use the SystemUserSpawner instead. Add the following to your
 `jupyterhub_config.py`:
 
 ```python
-    c.JupyterHub.spawner_class = 'dockerspawner.SystemUserSpawner'
+c.JupyterHub.spawner_class = 'dockerspawner.SystemUserSpawner'
 ```
 
 The SystemUserSpawner will also need to know where the user home directories
@@ -144,7 +144,7 @@ you want to change this, you'll need to further modify the
 directory on the host system at `/volumes/user/<username>`:
 
 ```python
-    c.SystemUserSpawner.host_homedir_format_string = '/volumes/user/{username}'
+c.SystemUserSpawner.host_homedir_format_string = '/volumes/user/{username}'
 ```
 
 For a full example of how `SystemUserSpawner` is used, see the
