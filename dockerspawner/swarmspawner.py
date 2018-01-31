@@ -592,6 +592,8 @@ class SwarmSpawner(Spawner):
             else:
                 image_info = yield self.docker('inspect_image', image)
                 cmd = image_info['Config']['Cmd']
+            if cmd is None:
+                cmd = ["start-notebook.sh"]
             cmd = cmd + self.get_args()
 
             # build the dictionary of keyword arguments for create_service
