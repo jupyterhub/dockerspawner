@@ -13,11 +13,22 @@ import warnings
 import docker
 from docker.errors import APIError
 from docker.utils import kwargs_from_env
-from tornado import gen
+from tornado import gen, web
 
 from escapism import escape
 from jupyterhub.spawner import Spawner
-from traitlets import Dict, Unicode, Bool, Int, Any, default, observe
+from traitlets import (
+    Any,
+    Bool,
+    Dict,
+    List,
+    Int,
+    Unicode,
+    Union,
+    default,
+    observe,
+    validate,
+)
 
 from .volumenamingstrategy import default_format_volume_name
 
@@ -117,6 +128,7 @@ class DockerSpawner(Spawner):
         """,
         config=True,
     )
+
     @default('host_ip')
     def _default_host_ip(self):
         docker_host = os.getenv('DOCKER_HOST')
@@ -177,6 +189,59 @@ class DockerSpawner(Spawner):
         """,
     )
 
+    image_whitelist = Union(
+        [Dict(), List()],
+        config=True,
+        help="""
+        List or dict of images that users can run.
+
+        If specified, users will be presented with a form
+        from which they can select an image to run.
+        """,
+    )
+
+    @validate('image_whitelist')
+    def _image_whitelist_dict(self, proposal):
+        """cast image_whitelist to a dict
+
+        If passing a list, cast it to a {item:item}
+        dict where the keys and values are the same.
+        """
+        whitelist = proposal.value
+        if not isinstance(whitelist, dict):
+            whitelist = {item: item for item in whitelist}
+        return whitelist
+
+    @default('options_form')
+    def _default_options_form(self):
+        if len(self.image_whitelist) <= 1:
+            # default form only when there are images to choose from
+            return ''
+        # form derived from wrapspawner.ProfileSpawner
+        option_t = '<option value="{image}" {selected}>{image}</option>'
+        options = [
+            option_t.format(
+                image=image, selected='selected' if image == self.image else ''
+            )
+            for image in self.image_whitelist
+        ]
+        return """
+        <label for="image">Select an image:</label>
+        <select class="form-control" name="image" required autofocus>
+        {options}
+        </select>
+        """.format(
+            options=options
+        )
+
+    def options_from_form(self, formdata):
+        """Turn options formdata into user_options"""
+        options = {}
+        print(formdata)
+        if 'image' in formdata:
+            options['image'] = formdata['image'][0]
+        return options
+
     container_prefix = Unicode(config=True, help="DEPRECATED in 0.10. Use prefix")
 
     container_name_template = Unicode(
@@ -185,7 +250,7 @@ class DockerSpawner(Spawner):
 
     @observe("container_name_template", "container_prefix")
     def _deprecate_container_alias(self, change):
-        new_name = change.name[len("container_"):]
+        new_name = change.name[len("container_") :]
         setattr(self, new_name, change.new)
 
     prefix = Unicode(
@@ -259,9 +324,7 @@ class DockerSpawner(Spawner):
 
         Reusable implementations should go in dockerspawner.VolumeNamingStrategy, tests should go in ...
         """
-    ).tag(
-        config=True
-    )
+    ).tag(config=True)
 
     def default_format_volume_name(template, spawner):
         return template.format(username=spawner.user.name)
@@ -599,8 +662,27 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def create_object(self):
         """Create the container/service object"""
+        # image priority:
+        # 1. explicit argument
+        #    (this never happens when DockerSpawner is used directly,
+        #    but can be used by subclasses)
+        # 2. user options (from spawn options form)
+        # 3. self.image from config
+        image = self.user_options.get('image') or self.image
+        if self.image_whitelist:
+            if image not in self.image_whitelist:
+                raise web.HTTPError(
+                    400,
+                    "Image %s not in whitelist: %s"
+                    % (image, ', '.join(self.image_whitelist)),
+                )
+            # resolve image alias to actual image name
+            image = self.image_whitelist[image]
+        # save choice in self.image
+        self.image = image
+
         create_kwargs = dict(
-            image=self.image,
+            image=image,
             environment=self.get_env(),
             volumes=self.volume_mount_points,
             name=self.container_name,
@@ -791,7 +873,10 @@ class DockerSpawner(Spawner):
         Consider using pause/unpause when docker-py adds support
         """
         self.log.info(
-            "Stopping %s %s (id: %s)", self.object_type, self.object_name, self.object_id[:7]
+            "Stopping %s %s (id: %s)",
+            self.object_type,
+            self.object_name,
+            self.object_id[:7],
         )
         yield self.stop_object()
 
