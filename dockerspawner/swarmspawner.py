@@ -606,7 +606,7 @@ class SwarmSpawner(Spawner):
                 cpu_limit=int(self.cpu_limit * 1e9) if self.cpu_limit else None,
                 cpu_reservation=int(self.cpu_guarantee * 1e9) if self.cpu_guarantee else None,
                 networks=[self.network_name] if self.network_name else [],
-                ports={self.port: (None, 'tcp')},
+                # ports={self.port: (None, 'tcp')},
             )
 
             if cmd:
