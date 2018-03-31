@@ -590,9 +590,6 @@ class SwarmSpawner(Spawner):
             cmd = None
             if self._user_set_cmd:
                 cmd = self.cmd
-            # else:
-            #     image_info = yield self.docker('inspect_image', image)
-            #     cmd = image_info['Config']['Cmd']
 
             # build the dictionary of keyword arguments for create_service
             create_kwargs = dict(
