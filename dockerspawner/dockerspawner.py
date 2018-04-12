@@ -520,9 +520,14 @@ class DockerSpawner(Spawner):
             # ensure internal port is exposed
             create_kwargs['ports'] = {'%i/tcp' % self.port: None}
 
-            create_kwargs.update(self.extra_create_kwargs)
-            if extra_create_kwargs:
-                create_kwargs.update(extra_create_kwargs)
+            extra_create_kwargs = {
+                **self.extra_create_kwargs,
+                **(extra_create_kwargs or {})
+            }
+            create_kwargs['environment'].update(
+                extra_create_kwargs.pop('environment', {})
+            )
+            create_kwargs.update(extra_create_kwargs)
 
             # build the dictionary of keyword arguments for host_config
             host_config = dict(binds=self.volume_binds, links=self.links)
