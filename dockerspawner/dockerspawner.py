@@ -94,7 +94,8 @@ class DockerSpawner(Spawner):
         from the user containers.
 
         Only used when use_internal_ip = False.
-        """
+        """,
+        config=True,
     )
 
     # unlike container_ip, container_port is the internal port
