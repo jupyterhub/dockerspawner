@@ -72,7 +72,7 @@ class DockerSpawner(Spawner):
         self._user_set_cmd = True
 
     container_id = Unicode()
-    
+
     # deprecate misleading container_ip, since
     # it is not the ip in the container,
     # but the host ip of the port forwarded to the container
@@ -231,7 +231,7 @@ class DockerSpawner(Spawner):
         "  Docker environment variables are always used if defined.")
     tls_config = Dict(config=True,
         help="""Arguments to pass to docker TLS configuration.
-        
+
         See docker.client.TLSConfig constructor for options.
         """
     )
@@ -254,7 +254,6 @@ class DockerSpawner(Spawner):
         return not self.remove_containers
 
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
-    extra_start_kwargs = Dict(config=True, help="Additional args to pass for container start")
     extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
 
     _container_safe_chars = set(string.ascii_letters + string.digits + '-')
@@ -478,17 +477,15 @@ class DockerSpawner(Spawner):
         return container
 
     @gen.coroutine
-    def start(self, image=None, extra_create_kwargs=None,
-        extra_start_kwargs=None, extra_host_config=None):
+    def start(self, image=None, extra_create_kwargs=None, extra_host_config=None):
         """Start the single-user server in a docker container. You can override
         the default parameters passed to `create_container` through the
-        `extra_create_kwargs` dictionary and passed to `start` through the
-        `extra_start_kwargs` dictionary.  You can also override the
+        `extra_create_kwargs` dictionary. You can also override the
         'host_config' parameter passed to `create_container` through the
         `extra_host_config` dictionary.
 
-        Per-instance `extra_create_kwargs`, `extra_start_kwargs`, and
-        `extra_host_config` take precedence over their global counterparts.
+        Per-instance `extra_create_kwargs`, and `extra_host_config` take
+        precedence over their global counterparts.
 
         """
         container = yield self.get_container()
@@ -571,14 +568,8 @@ class DockerSpawner(Spawner):
             "Starting container '%s' (id: %s)",
             self.container_name, self.container_id[:7])
 
-        # build the dictionary of keyword arguments for start
-        start_kwargs = {}
-        start_kwargs.update(self.extra_start_kwargs)
-        if extra_start_kwargs:
-            start_kwargs.update(extra_start_kwargs)
-
         # start the container
-        yield self.docker('start', self.container_id, **start_kwargs)
+        yield self.docker('start', self.container_id)
 
         ip, port = yield self.get_ip_and_port()
         if jupyterhub.version_info < (0,7):
