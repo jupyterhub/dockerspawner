@@ -620,6 +620,8 @@ class DockerSpawner(Spawner):
 
         if ip == '0.0.0.0':
             ip = urlparse(self.client.base_url).hostname
+            if ip == 'localnpipe':
+                ip = 'localhost'
 
         return ip, port
 
