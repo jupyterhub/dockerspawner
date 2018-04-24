@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pprint import pformat
 import string
 from textwrap import dedent
+from urllib.parse import urlparse
 import warnings
 
 import docker
@@ -608,6 +609,12 @@ class DockerSpawner(Spawner):
                 raise RuntimeError("Failed to get port info for %s" % self.container_id)
             ip = resp[0]['HostIp']
             port = int(resp[0]['HostPort'])
+
+        if ip == '0.0.0.0':
+            ip = urlparse(self.client.base_url).hostname
+            if ip == 'localnpipe':
+                ip = 'localhost'
+
         return ip, port
 
     def get_network_ip(self, network_settings):
