@@ -249,13 +249,31 @@ class DockerSpawner(Spawner):
             change.name, self.__class__.__name__,
         )
 
-    remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
+    remove_containers = Bool(
+        False,
+        config=True,
+        help="DEPRECATED in DockerSpawner 0.10. Use .remove",
+    )
+    @observe('remove_containers')
+    def _deprecate_remove_containers(self, change):
+        # preserve remove_containers alias to .remove
+        self.remove = change.new
+
+    remove = Bool(
+        False,
+        config=True,
+        help="""
+        If True, delete containers when servers are stopped.
+
+        This will destroy any data in the container not stored in mounted volumes.
+        """
+    )
 
     @property
     def will_resume(self):
         # indicate that we will resume,
         # so JupyterHub >= 0.7.1 won't cleanup our API token
-        return not self.remove_containers
+        return not self.remove
 
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
     extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
@@ -493,7 +511,7 @@ class DockerSpawner(Spawner):
 
         """
         container = yield self.get_container()
-        if container and self.remove_containers:
+        if container and self.remove:
             self.log.warning(
                 "Removing container that should have been cleaned up: %s (id: %s)",
                 self.container_name, self.container_id[:7])
@@ -644,7 +662,7 @@ class DockerSpawner(Spawner):
             self.container_name, self.container_id[:7])
         yield self.docker('stop', self.container_id)
 
-        if self.remove_containers:
+        if self.remove:
             self.log.info(
                 "Removing container %s (id: %s)",
                 self.container_name, self.container_id[:7])

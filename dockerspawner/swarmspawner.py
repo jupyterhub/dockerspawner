@@ -48,15 +48,6 @@ class SwarmSpawner(DockerSpawner):
         )
     )
 
-    # TODO: relevant anymore within swarmspawner?
-    remove_services = Bool(False, config=True, help="If True, delete services after they are stopped.")
-
-    @property
-    def will_resume(self):
-        # indicate that we will resume,
-        # so JupyterHub >= 0.7.1 won't cleanup our API token
-        return not self.remove_services
-
     @property
     def service_name(self):
         escaped_service_image = self.image.replace("/", "_")
@@ -214,7 +205,7 @@ class SwarmSpawner(DockerSpawner):
 
         """
         service = yield self.get_service()
-        if service and self.remove_services:
+        if service and self.remove:
             self.log.warning(
                 "Removing service that should have been cleaned up: %s (id: %s)",
                 self.service_name, self.service_id[:7])
@@ -344,7 +335,7 @@ class SwarmSpawner(DockerSpawner):
             self.service_name, self.service_id[:7])
         yield self.docker('remove_service', self.service_id)
 
-        # if self.remove_services:
+        # if self.remove:
         #     self.log.info(
         #         "Removing service %s (id: %s)",
         #         self.service_name, self.service_id[:7])
