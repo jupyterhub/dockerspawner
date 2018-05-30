@@ -5,18 +5,12 @@ A Spawner for JupyterHub that runs each user's server in a separate docker servi
 from pprint import pformat
 from textwrap import dedent
 
-from docker.types import ContainerSpec, TaskTemplate, Resources, EndpointSpec, Mount, DriverConfig
+from docker.types import (
+    ContainerSpec, TaskTemplate, Resources, EndpointSpec, Mount, DriverConfig
+)
 from docker.errors import APIError
 from tornado import gen
-from traitlets import (
-    Dict,
-    Unicode,
-    Bool,
-    Int,
-    Any,
-    default,
-    observe,
-)
+from traitlets import Dict, Unicode, Bool, Int, Any, default, observe
 
 from .dockerspawner import DockerSpawner
 import jupyterhub
@@ -25,7 +19,7 @@ import jupyterhub
 class SwarmSpawner(DockerSpawner):
     """A Spawner for JupyterHub that runs each user's server in a separate docker service"""
 
-    object_type = 'service'
+    object_type = "service"
 
     @property
     def service_id(self):
@@ -37,6 +31,34 @@ class SwarmSpawner(DockerSpawner):
         """alias for object_name"""
         return self.object_name
 
+    extra_resources_spec = Dict(
+        config=True,
+        help="""
+        Keyword arguments to pass to the Resources spec
+        """,
+    )
+
+    extra_container_spec = Dict(
+        config=True,
+        help="""
+        Keyword arguments to pass to the ContainerSpec constructor
+        """,
+    )
+
+    extra_task_spec = Dict(
+        config=True,
+        help="""
+        Keyword arguments to pass to the TaskTemplate constructor
+        """,
+    )
+
+    extra_endpoint_spec = Dict(
+        config=True,
+        help="""
+        Keyword arguments to pass to the Endpoint constructor
+        """,
+    )
+
     volume_driver = Unicode(
         "",
         config=True,
@@ -46,7 +68,7 @@ class SwarmSpawner(DockerSpawner):
             Note that this driver must support multiple hosts in order for it to work across the swarm.
             For a list of possible drivers, see https://docs.docker.com/engine/extend/legacy_plugins/#volume-plugins
             """
-        )
+        ),
     )
 
     volume_driver_options = Dict(
@@ -55,23 +77,30 @@ class SwarmSpawner(DockerSpawner):
             """
             Configuration options for the multi-host volume driver.
             """
-        )
+        ),
     )
 
     @property
     def mount_driver_config(self):
-        return DriverConfig(name=self.volume_driver, options=self.volume_driver_options or None)
+        return DriverConfig(
+            name=self.volume_driver, options=self.volume_driver_options or None
+        )
 
     @property
     def mounts(self):
         if len(self.volume_binds):
             driver = self.mount_driver_config
-            return [Mount(target=vol['bind'],
-                          source=host_loc,
-                          type='bind',
-                          read_only=vol['mode'] == 'ro',
-                          driver_config=driver)
-                    for host_loc, vol in self.volume_binds.items()]
+            return [
+                Mount(
+                    target=vol["bind"],
+                    source=host_loc,
+                    type="bind",
+                    read_only=vol["mode"] == "ro",
+                    driver_config=driver,
+                )
+                for host_loc, vol in self.volume_binds.items()
+            ]
+
         else:
             return []
 
@@ -119,25 +148,6 @@ class SwarmSpawner(DockerSpawner):
 
         return task
 
-
-    @property
-    def _container_spec_keys(self):
-        return [s.strip() for s in "image, command, args, hostname, env, workdir, user, labels, mounts, "
-                                   "stop_grace_period, secrets, tty, groups, open_stdin, read_only, stop_signal, "
-                                   "healthcheck, hosts, dns_config, configs, privileges".split(',')]
-
-    @property
-    def _resource_spec_keys(self):
-        return [s.strip() for s in "cpu_limit, mem_limit, cpu_reservation, mem_reservation".split(',')]
-
-    @property
-    def _task_spec_keys(self):
-        return ["networks"]
-
-    @property
-    def _endpoint_spec_keys(self):
-        return ["ports"]
-
     @gen.coroutine
     def start(self):
         """Start the single-user server in a docker service."""
@@ -156,50 +166,48 @@ class SwarmSpawner(DockerSpawner):
                 cmd = self.cmd
 
             # build the dictionary of keyword arguments for create_service
-            create_kwargs = dict(
+            container_kwargs = dict(
                 image=self.image,
                 env=self.get_env(),
-                mounts=self.mounts,
-                name=self.service_name,
                 args=self.get_args(),
+                mounts=self.mounts,
+            )
+            if cmd:
+                container_kwargs['command'] = cmd
+            container_kwargs.update(self.extra_container_spec)
+            container_spec = ContainerSpec(**container_kwargs)
+
+            resources_kwargs = dict(
                 mem_limit=self.mem_limit,
                 mem_reservation=self.mem_guarantee,
                 cpu_limit=int(self.cpu_limit * 1e9) if self.cpu_limit else None,
                 cpu_reservation=int(self.cpu_guarantee * 1e9) if self.cpu_guarantee else None,
-                networks=[self.network_name] if self.network_name else [],
-                # ports={self.port: (None, 'tcp')},
             )
+            resources_kwargs.update(self.extra_resources_spec)
+            resources_spec = Resources(**resources_kwargs)
 
-            if cmd:
-                create_kwargs['command'] = cmd
+            task_kwargs = dict(
+                container_spec=container_spec,
+                resources=resources_spec,
+                networks=[self.network_name] if self.network_name else [],
+            )
+            task_kwargs.update(self.extra_task_spec)
+            task_spec = TaskTemplate(**task_kwargs)
 
+            endpoint_kwargs = {}
+            endpoint_kwargs.update(self.extra_endpoint_spec)
+            endpoint_spec = EndpointSpec(**endpoint_kwargs)
 
+            create_kwargs = dict(
+                task_template=task_spec,
+                endpoint_spec=endpoint_spec,
+                name=self.service_name,
+            )
             create_kwargs.update(self.extra_create_kwargs)
 
-            # create the service
-            self.log.warning(create_kwargs)
+            resp = yield self.docker('create_service', **create_kwargs)
 
-            container_spec = {k: v for k, v in create_kwargs.items() if k in self._container_spec_keys}
-            container_spec = ContainerSpec(**container_spec)
-            self.log.debug(container_spec)
-            resource_spec = {k: v for k, v in create_kwargs.items() if k in self._resource_spec_keys}
-            resource_spec = Resources(**resource_spec)
-            self.log.debug(resource_spec)
-            task_spec = {k: v for k, v in create_kwargs.items() if k in self._task_spec_keys}
-            task_spec = TaskTemplate(container_spec=container_spec, resources=resource_spec, force_update=1, **task_spec)
-            self.log.debug(task_spec)
-            endpoint_spec = {k: v for k, v in create_kwargs.items() if k in self._endpoint_spec_keys}
-            endpoint_spec = EndpointSpec(**endpoint_spec)
-            self.log.debug(endpoint_spec)
-
-            remaining_keys = set(create_kwargs.keys()) - set().union(self._container_spec_keys, self._resource_spec_keys, self._task_spec_keys, self._endpoint_spec_keys, {"name"})
-            if remaining_keys:
-                remaining_keys = {k: create_kwargs[k] for k in remaining_keys}
-                self.log.critical("Unused configuration keys: {}".format(pformat(remaining_keys)))
-
-            resp = yield self.docker('create_service', task_template=task_spec, endpoint_spec=endpoint_spec, name=create_kwargs['name'])
-
-            self.object_id = resp['ID']
+            self.object_id = resp['Id']
             self.log.info(
                 "Created service '%s' (id: %s) from image %s",
                 self.service_name, self.service_id[:7], self.image)
