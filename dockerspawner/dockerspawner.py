@@ -28,6 +28,7 @@ from traitlets import (
 
 from .volumenamingstrategy import default_format_volume_name
 
+
 class UnicodeOrFalse(Unicode):
     info_text = 'a unicode string or False'
     def validate(self, obj, value):
@@ -38,7 +39,9 @@ class UnicodeOrFalse(Unicode):
 import jupyterhub
 _jupyterhub_xy = '%i.%i' % (jupyterhub.version_info[:2])
 
+
 class DockerSpawner(Spawner):
+    """A Spawner for JupyterHub that runs each user's server in a separate docker container"""
 
     _executor = None
     @property
@@ -257,8 +260,8 @@ class DockerSpawner(Spawner):
     extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
     extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
 
-    _container_safe_chars = set(string.ascii_letters + string.digits + '-')
-    _container_escape_char = '_'
+    _docker_safe_chars = set(string.ascii_letters + string.digits + '-')
+    _docker_escape_char = '_'
 
     hub_ip_connect = Unicode(
         config=True,
@@ -368,8 +371,8 @@ class DockerSpawner(Spawner):
     def escaped_name(self):
         if self._escaped_name is None:
             self._escaped_name = escape(self.user.name,
-                safe=self._container_safe_chars,
-                escape_char=self._container_escape_char,
+                safe=self._docker_safe_chars,
+                escape_char=self._docker_escape_char,
             )
         return self._escaped_name
 
@@ -668,5 +671,3 @@ class DockerSpawner(Spawner):
                 v = v['bind']
             binds[_fmt(k)] = {'bind': _fmt(v), 'mode': m}
         return binds
-
-
