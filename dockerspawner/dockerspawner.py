@@ -75,7 +75,19 @@ class DockerSpawner(Spawner):
     def _cmd_changed(self, change):
         self._user_set_cmd = True
 
-    container_id = Unicode()
+    object_id = Unicode()
+    # thee type of object we create
+    object_type = 'container'
+
+    @property
+    def container_id(self):
+        """alias for object_id"""
+        return self.object_id
+
+    @property
+    def container_name(self):
+        """alias for object_name"""
+        return self.object_name
 
     # deprecate misleading container_ip, since
     # it is not the ip in the container,
@@ -148,23 +160,38 @@ class DockerSpawner(Spawner):
     )
 
     container_prefix = Unicode(
+        config=True,
+        help="DEPRECATED in 0.10. Use prefix",
+    )
+
+    container_name_template = Unicode(
+        config=True,
+        help="DEPRECATED in 0.10. Use name_template",
+    )
+
+    @observe('container_name_template', 'container_prefix')
+    def _deprecate_container_alias(self, change):
+        new_name = change.name[len('container_'):]
+        setattr(self, new_name, change.new)
+
+    prefix = Unicode(
         "jupyter",
         config=True,
         help=dedent(
             """
-            Prefix for container names. See container_name_template for full container name for a particular
-            user.
+            Prefix for container names. See name_template for full container name for a particular
+            user's server.
             """
         )
     )
 
-    container_name_template = Unicode(
+    name_template = Unicode(
         "{prefix}-{username}",
         config=True,
         help=dedent(
             """
-            Name of the container: with {username}, {imagename}, {prefix} replacements.
-            The default container_name_template is <prefix>-<username> for backward compatibility
+            Name of the container or service: with {username}, {imagename}, {prefix} replacements.
+            The default name_template is <prefix>-<username> for backward compatibility.
             """
         )
     )
@@ -387,6 +414,7 @@ class DockerSpawner(Spawner):
     _escaped_name = None
     @property
     def escaped_name(self):
+        """Escape the username so it's safe for docker objects"""
         if self._escaped_name is None:
             self._escaped_name = escape(self.user.name,
                 safe=self._docker_safe_chars,
@@ -394,21 +422,41 @@ class DockerSpawner(Spawner):
             )
         return self._escaped_name
 
+    object_id = Unicode(allow_none=True)
+    @property
+    def object_name(self):
+        """Render the name of our container/service using name_template"""
+        escaped_image = self.image.replace("/", "_")
+        server_name = getattr(self, 'name', '')
+        d = {
+            'username': self.escaped_name,
+            'imagename' : escaped_image,
+            'servername' : server_name,
+            'prefix' : self.prefix,
+        }
+        return self.name_template.format(**d)
+
+    # container_ prefixes for our object
+    @property
+    def container_id(self):
+        return self.object_id
+
     @property
     def container_name(self):
-        escaped_container_image = self.image.replace("/", "_")
-        server_name = getattr(self, 'name', '')
-        d = {'username' : self.escaped_name, 'imagename' : escaped_container_image, 'servername' : server_name, 'prefix' : self.container_prefix}
-        return self.container_name_template.format(**d)
+        return self.object_name
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
-        self.container_id = state.get('container_id', '')
+        if 'container_id' in state:
+            # backward-compatibility for dockerspawner < 0.10
+            self.object_id = state.get('container_id')
+        else:
+            self.object_id = state.get('object_id', '')
 
     def get_state(self):
         state = super(DockerSpawner, self).get_state()
-        if self.container_id:
-            state['container_id'] = self.container_id
+        if self.object_id:
+            state['object_id'] = self.object_id
         return state
 
     def _public_hub_api_url(self):
@@ -454,9 +502,9 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def poll(self):
         """Check for my id in `docker ps`"""
-        container = yield self.get_container()
+        container = yield self.get_object()
         if not container:
-            self.log.warn("container not found")
+            self.log.warning("Container not found: %s", self.container_name)
             return 0
 
         container_state = container['State']
@@ -476,27 +524,35 @@ class DockerSpawner(Spawner):
             )
 
     @gen.coroutine
-    def get_container(self):
-        self.log.debug("Getting container '%s'", self.container_name)
+    def get_object(self):
+        self.log.debug("Getting container '%s'", self.object_name)
         try:
-            container = yield self.docker(
-                'inspect_container', self.container_name
+            obj = yield self.docker(
+                'inspect_%s' % self.object_type, self.object_name
             )
-            self.container_id = container['Id']
+            self.object_id = obj['Id']
         except APIError as e:
             if e.response.status_code == 404:
-                self.log.info("Container '%s' is gone", self.container_name)
-                container = None
+                self.log.info(
+                    "%s '%s' is gone",
+                    self.object_type.title(),
+                    self.object_name,
+                )
+                obj = None
                 # my container is gone, forget my id
-                self.container_id = ''
+                self.object_id = ''
             elif e.response.status_code == 500:
-                self.log.info("Container '%s' is on unhealthy node", self.container_name)
-                container = None
+                self.log.info(
+                    "%s '%s' is on unhealthy node",
+                    self.object_type.title(),
+                    self.object_name,
+                )
+                obj = None
                 # my container is unhealthy, forget my id
-                self.container_id = ''
+                self.object_id = ''
             else:
                 raise
-        return container
+        return obj
 
     @gen.coroutine
     def start(self, image=None, extra_create_kwargs=None, extra_host_config=None):
@@ -510,13 +566,13 @@ class DockerSpawner(Spawner):
         precedence over their global counterparts.
 
         """
-        container = yield self.get_container()
+        container = yield self.get_object()
         if container and self.remove:
             self.log.warning(
                 "Removing container that should have been cleaned up: %s (id: %s)",
                 self.container_name, self.container_id[:7])
             # remove the container, as well as any associated volumes
-            yield self.docker('remove_container', self.container_id, v=True)
+            yield self.docker('remove_container', container["Id"], v=True)
             container = None
 
         if container is None:
@@ -547,7 +603,7 @@ class DockerSpawner(Spawner):
             # build the dictionary of keyword arguments for host_config
             host_config = dict(binds=self.volume_binds, links=self.links)
 
-            if hasattr(self, 'mem_limit') and self.mem_limit is not None:
+            if getattr(self, 'mem_limit', None) is not None:
                 # If jupyterhub version > 0.7, mem_limit is a traitlet that can
                 # be directly configured. If so, use it to set mem_limit.
                 # this will still be overriden by extra_host_config
@@ -568,15 +624,15 @@ class DockerSpawner(Spawner):
 
             # create the container
             resp = yield self.docker('create_container', **create_kwargs)
-            self.container_id = resp['Id']
+            self.object_id = resp['Id']
             self.log.info(
                 "Created container '%s' (id: %s) from image %s",
-                self.container_name, self.container_id[:7], image)
+                self.container_name, self.object_id[:7], image)
 
         else:
             self.log.info(
                 "Found existing container '%s' (id: %s)",
-                self.container_name, self.container_id[:7])
+                self.container_name, self.object_id[:7])
             # Handle re-using API token.
             # Get the API token from the environment variables
             # of the running container:
@@ -659,15 +715,15 @@ class DockerSpawner(Spawner):
         """
         self.log.info(
             "Stopping container %s (id: %s)",
-            self.container_name, self.container_id[:7])
-        yield self.docker('stop', self.container_id)
+            self.container_name, self.object_id[:7])
+        yield self.docker('stop', self.object_id)
 
         if self.remove:
             self.log.info(
                 "Removing container %s (id: %s)",
-                self.container_name, self.container_id[:7])
+                self.container_name, self.object_id[:7])
             # remove the container, as well as any associated volumes
-            yield self.docker('remove_container', self.container_id, v=True)
+            yield self.docker('remove_container', self.object_id, v=True)
 
         self.clear_state()
 

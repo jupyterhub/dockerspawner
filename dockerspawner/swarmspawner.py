@@ -24,37 +24,18 @@ import jupyterhub
 
 class SwarmSpawner(DockerSpawner):
     """A Spawner for JupyterHub that runs each user's server in a separate docker service"""
-    service_id = Unicode()
 
-    service_prefix = Unicode(
-        "jupyter",
-        config=True,
-        help=dedent(
-            """
-            Prefix for service names. See service_name_template for full service name for a particular
-            user.
-            """
-        )
-    )
+    object_type = 'service'
 
-    service_name_template = Unicode(
-        "{prefix}-{username}",
-        config=True,
-        help=dedent(
-            """
-            Name of the service: with {username}, {imagename}, {prefix} replacements.
-            The default service_name_template is <prefix>-<username> for backward compatibility
-            """
-        )
-    )
+    @property
+    def service_id(self):
+        """alias for object_id"""
+        return self.object_id
 
     @property
     def service_name(self):
-        escaped_service_image = self.image.replace("/", "_")
-        server_name = getattr(self, 'name', '')
-        d = {'username': self.escaped_name, 'imagename': escaped_service_image, 'servername': server_name,
-             'prefix': self.service_prefix}
-        return self.service_name_template.format(**d)
+        """alias for object_name"""
+        return self.object_name
 
     volume_driver = Unicode(
         "",
@@ -94,16 +75,6 @@ class SwarmSpawner(DockerSpawner):
         else:
             return []
 
-    def load_state(self, state):
-        super(SwarmSpawner, self).load_state(state)
-        self.service_id = state.get('service_id', '')
-
-    def get_state(self):
-        state = super(SwarmSpawner, self).get_state()
-        if self.service_id:
-            state['service_id'] = self.service_id
-        return state
-
     @gen.coroutine
     def poll(self):
         """Check for my id in `docker ps`"""
@@ -124,29 +95,6 @@ class SwarmSpawner(DockerSpawner):
         else:
             return {k: pformat(v) for k, v in service.items()}
 
-    @gen.coroutine
-    def get_service(self):
-        self.log.debug("Getting service '%s'", self.service_name)
-        try:
-            service = yield self.docker(
-                'inspect_service', self.service_name
-            )
-            self.service_id = service['ID']
-            # self.log.critical(pformat(service))
-        except APIError as e:
-            if e.response.status_code == 404:
-                self.log.info("Service '%s' is gone", self.service_name)
-                service = None
-                # my service is gone, forget my id
-                self.service_id = ''
-            elif e.response.status_code == 500:
-                self.log.info("Service '%s' is on unhealthy node", self.service_name)
-                service = None
-                # my service is unhealthy, forget my id
-                self.service_id = ''
-            else:
-                raise
-        return service
 
     @gen.coroutine
     def get_task(self):
@@ -191,20 +139,9 @@ class SwarmSpawner(DockerSpawner):
         return ["ports"]
 
     @gen.coroutine
-    def start(self, image=None, extra_create_kwargs=None,
-              extra_start_kwargs=None, extra_host_config=None):
-        """Start the single-user server in a docker service. You can override
-        the default parameters passed to `create_service` through the
-        `extra_create_kwargs` dictionary and passed to `start` through the
-        `extra_start_kwargs` dictionary.  You can also override the
-        'host_config' parameter passed to `create_service` through the
-        `extra_host_config` dictionary.
-
-        Per-instance `extra_create_kwargs`, `extra_start_kwargs`, and
-        `extra_host_config` take precedence over their global counterparts.
-
-        """
-        service = yield self.get_service()
+    def start(self):
+        """Start the single-user server in a docker service."""
+        service = yield self.get_object()
         if service and self.remove:
             self.log.warning(
                 "Removing service that should have been cleaned up: %s (id: %s)",
@@ -214,14 +151,13 @@ class SwarmSpawner(DockerSpawner):
             service = None
 
         if service is None:
-            image = image or self.image
             cmd = None
             if self._user_set_cmd:
                 cmd = self.cmd
 
             # build the dictionary of keyword arguments for create_service
             create_kwargs = dict(
-                image=image,
+                image=self.image,
                 env=self.get_env(),
                 mounts=self.mounts,
                 name=self.service_name,
@@ -239,8 +175,6 @@ class SwarmSpawner(DockerSpawner):
 
 
             create_kwargs.update(self.extra_create_kwargs)
-            if extra_create_kwargs:
-                create_kwargs.update(extra_create_kwargs)
 
             # create the service
             self.log.warning(create_kwargs)
@@ -264,10 +198,11 @@ class SwarmSpawner(DockerSpawner):
                 self.log.critical("Unused configuration keys: {}".format(pformat(remaining_keys)))
 
             resp = yield self.docker('create_service', task_template=task_spec, endpoint_spec=endpoint_spec, name=create_kwargs['name'])
-            self.service_id = resp['ID']
+
+            self.object_id = resp['ID']
             self.log.info(
                 "Created service '%s' (id: %s) from image %s",
-                self.service_name, self.service_id[:7], image)
+                self.service_name, self.service_id[:7], self.image)
 
         else:
             self.log.info(
@@ -289,8 +224,6 @@ class SwarmSpawner(DockerSpawner):
         # build the dictionary of keyword arguments for start
         start_kwargs = {}
         start_kwargs.update(self.extra_start_kwargs)
-        if extra_start_kwargs:
-            start_kwargs.update(extra_start_kwargs)
 
         # start the service
         # TODO: service equivalent for this?
