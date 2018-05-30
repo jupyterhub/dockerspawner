@@ -122,8 +122,7 @@ class SwarmSpawner(DockerSpawner):
         if service_state['State'] == 'running':
             return None
         else:
-            return {k: pformat(v) for k, v in service.items()}
-
+            return pformat(service_state)
 
     @gen.coroutine
     def get_task(self):
