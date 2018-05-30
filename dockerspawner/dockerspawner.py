@@ -555,19 +555,28 @@ class DockerSpawner(Spawner):
         return obj
 
     @gen.coroutine
+
+    @gen.coroutine
     def start(self, image=None, extra_create_kwargs=None, extra_host_config=None):
-        """Start the single-user server in a docker container. You can override
-        the default parameters passed to `create_container` through the
-        `extra_create_kwargs` dictionary. You can also override the
-        'host_config' parameter passed to `create_container` through the
-        `extra_host_config` dictionary.
+        """Start the single-user server in a docker container.
 
-        Per-instance `extra_create_kwargs`, and `extra_host_config` take
-        precedence over their global counterparts.
-
+        Additional arguments to create/host config/etc. can be specified
+        via .extra_create_kwargs and .extra_host_config attributes.
         """
         container = yield self.get_object()
         if container and self.remove:
+        if image:
+            self.log.warning("Specifying image via .start args is deprecated")
+            self.image = image
+        if extra_create_kwargs:
+            self.log.warning("Specifying extra_create_kwargs via .start args is deprecated")
+            self.extra_create_kwargs.update(extra_create_kwargs)
+        if extra_host_config:
+            self.log.warning("Specifying extra_host_config via .start args is deprecated")
+            self.extra_host_config.update(extra_host_config)
+
+        image = self.image
+
             self.log.warning(
                 "Removing container that should have been cleaned up: %s (id: %s)",
                 self.container_name, self.container_id[:7])
@@ -576,7 +585,6 @@ class DockerSpawner(Spawner):
             container = None
 
         if container is None:
-            image = image or self.image
             if self._user_set_cmd:
                 cmd = self.cmd
             else:
@@ -597,8 +605,6 @@ class DockerSpawner(Spawner):
             create_kwargs['ports'] = {'%i/tcp' % self.port: None}
 
             create_kwargs.update(self.extra_create_kwargs)
-            if extra_create_kwargs:
-                create_kwargs.update(extra_create_kwargs)
 
             # build the dictionary of keyword arguments for host_config
             host_config = dict(binds=self.volume_binds, links=self.links)
@@ -613,9 +619,6 @@ class DockerSpawner(Spawner):
                 host_config['port_bindings'] = {self.port: (self.host_ip,)}
             host_config.update(self.extra_host_config)
             host_config.setdefault('network_mode', self.network_name)
-
-            if extra_host_config:
-                host_config.update(extra_host_config)
 
             self.log.debug("Starting host with config: %s", host_config)
 
