@@ -3,6 +3,7 @@ A Spawner for JupyterHub that runs each user's server in a separate docker conta
 """
 
 from concurrent.futures import ThreadPoolExecutor
+import os
 from pprint import pformat
 import string
 from textwrap import dedent
@@ -116,6 +117,14 @@ class DockerSpawner(Spawner):
         """,
         config=True,
     )
+    @default('host_ip')
+    def _default_host_ip(self):
+        docker_host = os.getenv('DOCKER_HOST')
+        if docker_host:
+            urlinfo = urlparse(docker_host)
+            if urlinfo.scheme == 'tcp':
+                return urlinfo.hostname
+        return '127.0.0.1'
 
     # unlike container_ip, container_port is the internal port
     # on which the server is bound.
