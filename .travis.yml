@@ -1,13 +1,20 @@
 sudo: required
 language: python
 python:
-    - 3.5
+  - 3.5
+env:
+  - JUPYTERHUB=0.8
+  - JUPYTERHUB=0.9
 services:
   - docker
 before_install:
   - pip install -v --pre -r dev-requirements.txt
+  - pip install --pre jupyterhub==${JUPYTERHUB}.*
 install:
   - pip install -e .
 script:
-  - pyflakes dockerspawner
+  - pyflakes dockerspawner tests
+  - docker swarm init
+  - docker pull jupyterhub/singleuser:$JUPYTERHUB
+  - docker swarm init
   - travis_retry py.test --cov dockerspawner tests -v
