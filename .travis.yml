@@ -8,14 +8,14 @@ env:
 services:
   - docker
 before_install:
+  - docker swarm init
   - nvm install 10; nvm use 10
   - npm install -g configurable-http-proxy
-  - pip install -v --pre -r dev-requirements.txt jupyterhub==${JUPYTERHUB}.* ${EXTRA_PIP}
+  - pip install --pre -r dev-requirements.txt jupyterhub==${JUPYTERHUB}.* ${EXTRA_PIP}
 install:
   - pip install -e .
+  - pip freeze
 script:
-  - pyflakes dockerspawner tests
-  - docker swarm init
+  - pyflakes dockerspawner
   - docker pull jupyterhub/singleuser:$JUPYTERHUB
-  - docker swarm init
   - travis_retry py.test --cov dockerspawner tests -v
