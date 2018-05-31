@@ -31,6 +31,12 @@ class SwarmSpawner(DockerSpawner):
         """alias for object_name"""
         return self.object_name
 
+    @default("network_name")
+    def _default_network_name(self):
+        # no default network for swarm
+        # use internal networking by default
+        return ""
+
     extra_resources_spec = Dict(
         config=True,
         help="""
