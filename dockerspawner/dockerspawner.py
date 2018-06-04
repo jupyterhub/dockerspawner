@@ -3,6 +3,7 @@ A Spawner for JupyterHub that runs each user's server in a separate docker conta
 """
 
 from concurrent.futures import ThreadPoolExecutor
+import os
 from pprint import pformat
 import string
 from textwrap import dedent
@@ -16,31 +17,31 @@ from tornado import gen
 
 from escapism import escape
 from jupyterhub.spawner import Spawner
-from traitlets import (
-    Dict,
-    Unicode,
-    Bool,
-    Int,
-    Any,
-    default,
-    observe,
-)
+from traitlets import Dict, Unicode, Bool, Int, Any, default, observe
 
 from .volumenamingstrategy import default_format_volume_name
 
+
 class UnicodeOrFalse(Unicode):
-    info_text = 'a unicode string or False'
+    info_text = "a unicode string or False"
+
     def validate(self, obj, value):
         if value is False:
             return value
+
         return super(UnicodeOrFalse, self).validate(obj, value)
 
+
 import jupyterhub
-_jupyterhub_xy = '%i.%i' % (jupyterhub.version_info[:2])
+
+_jupyterhub_xy = "%i.%i" % (jupyterhub.version_info[:2])
+
 
 class DockerSpawner(Spawner):
+    """A Spawner for JupyterHub that runs each user's server in a separate docker container"""
 
     _executor = None
+
     @property
     def executor(self):
         """single global executor"""
@@ -50,14 +51,15 @@ class DockerSpawner(Spawner):
         return cls._executor
 
     _client = None
+
     @property
     def client(self):
         """single global client instance"""
         cls = self.__class__
         if cls._client is None:
-            kwargs = {'version':'auto'}
+            kwargs = {"version": "auto"}
             if self.tls_config:
-                kwargs['tls'] = docker.tls.TLSConfig(**self.tls_config)
+                kwargs["tls"] = docker.tls.TLSConfig(**self.tls_config)
             kwargs.update(kwargs_from_env())
             kwargs.update(self.client_kwargs)
             client = docker.APIClient(**kwargs)
@@ -68,18 +70,34 @@ class DockerSpawner(Spawner):
     # default command is that of the container,
     # but user can override it via config
     _user_set_cmd = False
-    @observe('cmd')
+
+    @observe("cmd")
     def _cmd_changed(self, change):
         self._user_set_cmd = True
 
-    container_id = Unicode()
+    object_id = Unicode()
+    # the type of object we create
+    object_type = "container"
+    # the field containing the object id
+    object_id_key = "Id"
+
+    @property
+    def container_id(self):
+        """alias for object_id"""
+        return self.object_id
+
+    @property
+    def container_name(self):
+        """alias for object_name"""
+        return self.object_name
 
     # deprecate misleading container_ip, since
     # it is not the ip in the container,
     # but the host ip of the port forwarded to the container
     # when use_internal_ip is False
-    container_ip = Unicode('127.0.0.1', config=True)
-    @observe('container_ip')
+    container_ip = Unicode("127.0.0.1", config=True)
+
+    @observe("container_ip")
     def _container_ip_deprecated(self, change):
         self.log.warning(
             "DockerSpawner.container_ip is deprecated in dockerspawner-0.9."
@@ -87,7 +105,8 @@ class DockerSpawner(Spawner):
         )
         self.host_ip = change.new
 
-    host_ip = Unicode('127.0.0.1',
+    host_ip = Unicode(
+        "127.0.0.1",
         help="""The ip address on the host on which to expose the container's port
 
         Typically 127.0.0.1, but can be public interfaces as well
@@ -98,11 +117,20 @@ class DockerSpawner(Spawner):
         """,
         config=True,
     )
+    @default('host_ip')
+    def _default_host_ip(self):
+        docker_host = os.getenv('DOCKER_HOST')
+        if docker_host:
+            urlinfo = urlparse(docker_host)
+            if urlinfo.scheme == 'tcp':
+                return urlinfo.hostname
+        return '127.0.0.1'
 
     # unlike container_ip, container_port is the internal port
     # on which the server is bound.
     container_port = Int(8888, min=1, max=65535, config=True)
-    @observe('container_port')
+
+    @observe("container_port")
     def _container_port_changed(self, change):
         self.log.warning(
             "DockerSpawner.container_port is deprecated in dockerspawner 0.9."
@@ -111,17 +139,20 @@ class DockerSpawner(Spawner):
         self.port = change.new
 
     # fix default port to 8888, used in the container
-    @default('port')
+
+    @default("port")
     def _port_default(self):
         return 8888
 
     # default to listening on all-interfaces in the container
-    @default('ip')
+
+    @default("ip")
     def _ip_default(self):
-        return '0.0.0.0'
+        return "0.0.0.0"
 
     container_image = Unicode("jupyterhub/singleuser:%s" % _jupyterhub_xy, config=True)
-    @observe('container_image')
+
+    @observe("container_image")
     def _container_image_changed(self, change):
         self.log.warning(
             "DockerSpawner.container_image is deprecated in dockerspawner 0.9."
@@ -129,7 +160,9 @@ class DockerSpawner(Spawner):
         )
         self.image = change.new
 
-    image = Unicode("jupyterhub/singleuser:%s" % _jupyterhub_xy, config=True,
+    image = Unicode(
+        "jupyterhub/singleuser:%s" % _jupyterhub_xy,
+        config=True,
         help="""The image to use for single-user servers.
 
         This image should have the same version of jupyterhub as
@@ -141,29 +174,40 @@ class DockerSpawner(Spawner):
 
         Any of the jupyter docker-stacks should work without additional config,
         as long as the version of jupyterhub in the image is compatible.
-        """
+        """,
     )
 
-    container_prefix = Unicode(
+    container_prefix = Unicode(config=True, help="DEPRECATED in 0.10. Use prefix")
+
+    container_name_template = Unicode(
+        config=True, help="DEPRECATED in 0.10. Use name_template"
+    )
+
+    @observe("container_name_template", "container_prefix")
+    def _deprecate_container_alias(self, change):
+        new_name = change.name[len("container_"):]
+        setattr(self, new_name, change.new)
+
+    prefix = Unicode(
         "jupyter",
         config=True,
         help=dedent(
             """
-            Prefix for container names. See container_name_template for full container name for a particular
-            user.
+            Prefix for container names. See name_template for full container name for a particular
+            user's server.
             """
-        )
+        ),
     )
 
-    container_name_template = Unicode(
+    name_template = Unicode(
         "{prefix}-{username}",
         config=True,
         help=dedent(
             """
-            Name of the container: with {username}, {imagename}, {prefix} replacements.
-            The default container_name_template is <prefix>-<username> for backward compatibility
+            Name of the container or service: with {username}, {imagename}, {prefix} replacements.
+            The default name_template is <prefix>-<username> for backward compatibility.
             """
-        )
+        ),
     )
 
     client_kwargs = Dict(
@@ -191,7 +235,7 @@ class DockerSpawner(Spawner):
             file/directory path, it will be replaced with the current
             user's name.
             """
-        )
+        ),
     )
 
     read_only_volumes = Dict(
@@ -207,7 +251,7 @@ class DockerSpawner(Spawner):
             file/directory path, it will be replaced with the current
             user's name.
             """
-        )
+        ),
     )
 
     format_volume_name = Any(
@@ -215,50 +259,86 @@ class DockerSpawner(Spawner):
 
         Reusable implementations should go in dockerspawner.VolumeNamingStrategy, tests should go in ...
         """
-    ).tag(config=True)
+    ).tag(
+        config=True
+    )
 
     def default_format_volume_name(template, spawner):
         return template.format(username=spawner.user.name)
 
-    @default('format_volume_name')
+    @default("format_volume_name")
     def _get_default_format_volume_name(self):
         return default_format_volume_name
 
-    use_docker_client_env = Bool(True, config=True,
-        help="DEPRECATED. Docker env variables are always used if present.")
-    @observe('use_docker_client_env')
+    use_docker_client_env = Bool(
+        True,
+        config=True,
+        help="DEPRECATED. Docker env variables are always used if present.",
+    )
+
+    @observe("use_docker_client_env")
     def _client_env_changed(self):
-        self.log.warning("DockerSpawner.use_docker_client_env is deprecated and ignored."
-        "  Docker environment variables are always used if defined.")
-    tls_config = Dict(config=True,
+        self.log.warning(
+            "DockerSpawner.use_docker_client_env is deprecated and ignored."
+            "  Docker environment variables are always used if defined."
+        )
+
+    tls_config = Dict(
+        config=True,
         help="""Arguments to pass to docker TLS configuration.
 
         See docker.client.TLSConfig constructor for options.
-        """
+        """,
     )
-    tls = tls_verify = tls_ca = tls_cert = \
-    tls_key = tls_assert_hostname = Any(config=True,
-        help="""DEPRECATED. Use DockerSpawner.tls_config dict to set any TLS options."""
+    tls = tls_verify = tls_ca = tls_cert = tls_key = tls_assert_hostname = Any(
+        config=True,
+        help="""DEPRECATED. Use DockerSpawner.tls_config dict to set any TLS options.""",
     )
-    @observe('tls', 'tls_verify', 'tls_ca', 'tls_cert', 'tls_key', 'tls_assert_hostname')
+
+    @observe(
+        "tls", "tls_verify", "tls_ca", "tls_cert", "tls_key", "tls_assert_hostname"
+    )
     def _tls_changed(self, change):
-        self.log.warning("%s config ignored, use %s.tls_config dict to set full TLS configuration.",
-            change.name, self.__class__.__name__,
+        self.log.warning(
+            "%s config ignored, use %s.tls_config dict to set full TLS configuration.",
+            change.name,
+            self.__class__.__name__,
         )
 
-    remove_containers = Bool(False, config=True, help="If True, delete containers after they are stopped.")
+    remove_containers = Bool(
+        False, config=True, help="DEPRECATED in DockerSpawner 0.10. Use .remove"
+    )
+
+    @observe("remove_containers")
+    def _deprecate_remove_containers(self, change):
+        # preserve remove_containers alias to .remove
+        self.remove = change.new
+
+    remove = Bool(
+        False,
+        config=True,
+        help="""
+        If True, delete containers when servers are stopped.
+
+        This will destroy any data in the container not stored in mounted volumes.
+        """,
+    )
 
     @property
     def will_resume(self):
         # indicate that we will resume,
         # so JupyterHub >= 0.7.1 won't cleanup our API token
-        return not self.remove_containers
+        return not self.remove
 
-    extra_create_kwargs = Dict(config=True, help="Additional args to pass for container create")
-    extra_host_config = Dict(config=True, help="Additional args to create_host_config for container create")
+    extra_create_kwargs = Dict(
+        config=True, help="Additional args to pass for container create"
+    )
+    extra_host_config = Dict(
+        config=True, help="Additional args to create_host_config for container create"
+    )
 
-    _container_safe_chars = set(string.ascii_letters + string.digits + '-')
-    _container_escape_char = '_'
+    _docker_safe_chars = set(string.ascii_letters + string.digits + "-")
+    _docker_escape_char = "_"
 
     hub_ip_connect = Unicode(
         config=True,
@@ -269,9 +349,10 @@ class DockerSpawner(Spawner):
             when the hub_api is bound to listen on all ports or is
             running inside of a container.
             """
-        )
+        ),
     )
-    @observe('hub_ip_connect')
+
+    @observe("hub_ip_connect")
     def _ip_connect_changed(self, change):
         if jupyterhub.version_info >= (0, 8):
             warnings.warn(
@@ -280,7 +361,8 @@ class DockerSpawner(Spawner):
                 DeprecationWarning,
             )
 
-    use_internal_ip = Bool(False,
+    use_internal_ip = Bool(
+        False,
         config=True,
         help=dedent(
             """
@@ -289,13 +371,15 @@ class DockerSpawner(Spawner):
             E.g. by mounting the docker socket of the host into the jupyterhub container.
             Default is True if using a docker network, False if bridge or host networking is used.
             """
-        )
+        ),
     )
-    @default('use_internal_ip')
+
+    @default("use_internal_ip")
     def _default_use_ip(self):
         # setting network_name to something other than bridge or host implies use_internal_ip
-        if self.network_name not in {'bridge', 'host'}:
+        if self.network_name not in {"bridge", "host"}:
             return True
+
         else:
             return False
 
@@ -310,7 +394,7 @@ class DockerSpawner(Spawner):
             If the Hub is running in a Docker container,
             this can simplify routing because all traffic will be using docker hostnames.
             """
-        )
+        ),
     )
 
     network_name = Unicode(
@@ -323,7 +407,7 @@ class DockerSpawner(Spawner):
             as internal docker IP addresses will be used.
             For bridge networking, external ports will be bound.
             """
-        )
+        ),
     )
 
     @property
@@ -334,6 +418,7 @@ class DockerSpawner(Spawner):
         """
         if self.tls_cert and self.tls_key:
             return (self.tls_cert, self.tls_key)
+
         return None
 
     @property
@@ -345,7 +430,7 @@ class DockerSpawner(Spawner):
         Returns a sorted list of all the values in self.volumes or
         self.read_only_volumes.
         """
-        return sorted([value['bind'] for value in self.volume_binds.values()])
+        return sorted([value["bind"] for value in self.volume_binds.values()])
 
     @property
     def volume_binds(self):
@@ -361,42 +446,55 @@ class DockerSpawner(Spawner):
 
         """
         binds = self._volumes_to_binds(self.volumes, {})
-        return self._volumes_to_binds(self.read_only_volumes, binds, mode='ro')
+        return self._volumes_to_binds(self.read_only_volumes, binds, mode="ro")
 
     _escaped_name = None
+
     @property
     def escaped_name(self):
+        """Escape the username so it's safe for docker objects"""
         if self._escaped_name is None:
-            self._escaped_name = escape(self.user.name,
-                safe=self._container_safe_chars,
-                escape_char=self._container_escape_char,
+            self._escaped_name = escape(
+                self.user.name,
+                safe=self._docker_safe_chars,
+                escape_char=self._docker_escape_char,
             )
         return self._escaped_name
 
+    object_id = Unicode(allow_none=True)
+
     @property
-    def container_name(self):
-        escaped_container_image = self.image.replace("/", "_")
-        server_name = getattr(self, 'name', '')
-        d = {'username' : self.escaped_name, 'imagename' : escaped_container_image, 'servername' : server_name, 'prefix' : self.container_prefix}
-        return self.container_name_template.format(**d)
+    def object_name(self):
+        """Render the name of our container/service using name_template"""
+        escaped_image = self.image.replace("/", "_")
+        server_name = getattr(self, "name", "")
+        d = {
+            "username": self.escaped_name,
+            "imagename": escaped_image,
+            "servername": server_name,
+            "prefix": self.prefix,
+        }
+        return self.name_template.format(**d)
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
-        self.container_id = state.get('container_id', '')
+        if "container_id" in state:
+            # backward-compatibility for dockerspawner < 0.10
+            self.object_id = state.get("container_id")
+        else:
+            self.object_id = state.get("object_id", "")
 
     def get_state(self):
         state = super(DockerSpawner, self).get_state()
-        if self.container_id:
-            state['container_id'] = self.container_id
+        if self.object_id:
+            state["object_id"] = self.object_id
         return state
 
     def _public_hub_api_url(self):
-        proto, path = self.hub.api_url.split('://', 1)
-        ip, rest = path.split(':', 1)
-        return '{proto}://{ip}:{rest}'.format(
-            proto = proto,
-            ip = self.hub_ip_connect,
-            rest = rest
+        proto, path = self.hub.api_url.split("://", 1)
+        ip, rest = path.split(":", 1)
+        return "{proto}://{ip}:{rest}".format(
+            proto=proto, ip=self.hub_ip_connect, rest=rest
         )
 
     def _env_keep_default(self):
@@ -409,10 +507,11 @@ class DockerSpawner(Spawner):
             # JupyterHub 0.7 specifies --hub-api-url
             # on the command-line, which is hard to update
             for idx, arg in enumerate(list(args)):
-                if arg.startswith('--hub-api-url='):
+                if arg.startswith("--hub-api-url="):
                     args.pop(idx)
                     break
-            args.append('--hub-api-url=%s' % self._public_hub_api_url())
+
+            args.append("--hub-api-url=%s" % self._public_hub_api_url())
         return args
 
     def _docker(self, method, *args, **kwargs):
@@ -433,20 +532,19 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def poll(self):
         """Check for my id in `docker ps`"""
-        container = yield self.get_container()
+        container = yield self.get_object()
         if not container:
-            self.log.warn("container not found")
+            self.log.warning("Container not found: %s", self.container_name)
             return 0
 
-        container_state = container['State']
+        container_state = container["State"]
         self.log.debug(
-            "Container %s status: %s",
-            self.container_id[:7],
-            pformat(container_state),
+            "Container %s status: %s", self.container_id[:7], pformat(container_state)
         )
 
         if container_state["Running"]:
             return None
+
         else:
             return (
                 "ExitCode={ExitCode}, "
@@ -455,125 +553,179 @@ class DockerSpawner(Spawner):
             )
 
     @gen.coroutine
-    def get_container(self):
-        self.log.debug("Getting container '%s'", self.container_name)
+    def get_object(self):
+        self.log.debug("Getting container '%s'", self.object_name)
         try:
-            container = yield self.docker(
-                'inspect_container', self.container_name
-            )
-            self.container_id = container['Id']
+            obj = yield self.docker("inspect_%s" % self.object_type, self.object_name)
+            self.object_id = obj[self.object_id_key]
         except APIError as e:
             if e.response.status_code == 404:
-                self.log.info("Container '%s' is gone", self.container_name)
-                container = None
+                self.log.info(
+                    "%s '%s' is gone", self.object_type.title(), self.object_name
+                )
+                obj = None
                 # my container is gone, forget my id
-                self.container_id = ''
+                self.object_id = ""
             elif e.response.status_code == 500:
-                self.log.info("Container '%s' is on unhealthy node", self.container_name)
-                container = None
+                self.log.info(
+                    "%s '%s' is on unhealthy node",
+                    self.object_type.title(),
+                    self.object_name,
+                )
+                obj = None
                 # my container is unhealthy, forget my id
-                self.container_id = ''
+                self.object_id = ""
             else:
                 raise
-        return container
+
+        return obj
+
+    @gen.coroutine
+    def get_command(self):
+        """Get the command to run (full command + args)"""
+        if self._user_set_cmd:
+            cmd = self.cmd
+        else:
+            image_info = yield self.docker("inspect_image", self.image)
+            cmd = image_info["Config"]["Cmd"]
+        return cmd + self.get_args()
+
+    @gen.coroutine
+    def remove_object(self):
+        self.log.info("Removing %s %s", self.object_type, self.object_id)
+        # remove the container, as well as any associated volumes
+        yield self.docker("remove_" + self.object_type, self.object_id, v=True)
+
+    @gen.coroutine
+    def create_object(self):
+        """Create the container/service object"""
+        create_kwargs = dict(
+            image=self.image,
+            environment=self.get_env(),
+            volumes=self.volume_mount_points,
+            name=self.container_name,
+            command=(yield self.get_command()),
+        )
+
+        # ensure internal port is exposed
+        create_kwargs["ports"] = {"%i/tcp" % self.port: None}
+
+        create_kwargs.update(self.extra_create_kwargs)
+
+        # build the dictionary of keyword arguments for host_config
+        host_config = dict(binds=self.volume_binds, links=self.links)
+
+        if getattr(self, "mem_limit", None) is not None:
+            # If jupyterhub version > 0.7, mem_limit is a traitlet that can
+            # be directly configured. If so, use it to set mem_limit.
+            # this will still be overriden by extra_host_config
+            host_config["mem_limit"] = self.mem_limit
+
+        if not self.use_internal_ip:
+            host_config["port_bindings"] = {self.port: (self.host_ip,)}
+        host_config.update(self.extra_host_config)
+        host_config.setdefault("network_mode", self.network_name)
+
+        self.log.debug("Starting host with config: %s", host_config)
+
+        host_config = self.client.create_host_config(**host_config)
+        create_kwargs.setdefault("host_config", {}).update(host_config)
+
+        # create the container
+        obj = yield self.docker("create_container", **create_kwargs)
+        return obj
+
+    @gen.coroutine
+    def start_object(self):
+        """Actually start the container/service
+
+        e.g. calling `docker start`
+        """
+        return self.docker("start", self.container_id)
+
+    @gen.coroutine
+    def stop_object(self):
+        """Actually start the container/service
+
+        e.g. calling `docker start`
+        """
+        return self.docker("stop", self.container_id)
 
     @gen.coroutine
     def start(self, image=None, extra_create_kwargs=None, extra_host_config=None):
-        """Start the single-user server in a docker container. You can override
-        the default parameters passed to `create_container` through the
-        `extra_create_kwargs` dictionary. You can also override the
-        'host_config' parameter passed to `create_container` through the
-        `extra_host_config` dictionary.
+        """Start the single-user server in a docker container.
 
-        Per-instance `extra_create_kwargs`, and `extra_host_config` take
-        precedence over their global counterparts.
-
+        Additional arguments to create/host config/etc. can be specified
+        via .extra_create_kwargs and .extra_host_config attributes.
         """
-        container = yield self.get_container()
-        if container and self.remove_containers:
+
+        if image:
+            self.log.warning("Specifying image via .start args is deprecated")
+            self.image = image
+        if extra_create_kwargs:
             self.log.warning(
-                "Removing container that should have been cleaned up: %s (id: %s)",
-                self.container_name, self.container_id[:7])
-            # remove the container, as well as any associated volumes
-            yield self.docker('remove_container', self.container_id, v=True)
-            container = None
-
-        if container is None:
-            image = image or self.image
-            if self._user_set_cmd:
-                cmd = self.cmd
-            else:
-                image_info = yield self.docker('inspect_image', image)
-                cmd = image_info['Config']['Cmd']
-            cmd = cmd + self.get_args()
-
-            # build the dictionary of keyword arguments for create_container
-            create_kwargs = dict(
-                image=image,
-                environment=self.get_env(),
-                volumes=self.volume_mount_points,
-                name=self.container_name,
-                command=cmd,
+                "Specifying extra_create_kwargs via .start args is deprecated"
             )
+            self.extra_create_kwargs.update(extra_create_kwargs)
+        if extra_host_config:
+            self.log.warning(
+                "Specifying extra_host_config via .start args is deprecated"
+            )
+            self.extra_host_config.update(extra_host_config)
 
-            # ensure internal port is exposed
-            create_kwargs['ports'] = {'%i/tcp' % self.port: None}
+        image = self.image
 
-            create_kwargs.update(self.extra_create_kwargs)
-            if extra_create_kwargs:
-                create_kwargs.update(extra_create_kwargs)
+        obj = yield self.get_object()
+        if obj and self.remove:
+            self.log.warning(
+                "Removing %s that should have been cleaned up: %s (id: %s)",
+                self.object_type,
+                self.object_name,
+                self.object_id[:7],
+            )
+            yield self.remove_object()
 
-            # build the dictionary of keyword arguments for host_config
-            host_config = dict(binds=self.volume_binds, links=self.links)
+            obj = None
 
-            if hasattr(self, 'mem_limit') and self.mem_limit is not None:
-                # If jupyterhub version > 0.7, mem_limit is a traitlet that can
-                # be directly configured. If so, use it to set mem_limit.
-                # this will still be overriden by extra_host_config
-                host_config['mem_limit'] = self.mem_limit
-
-            if not self.use_internal_ip:
-                host_config['port_bindings'] = {self.port: (self.host_ip,)}
-            host_config.update(self.extra_host_config)
-            host_config.setdefault('network_mode', self.network_name)
-
-            if extra_host_config:
-                host_config.update(extra_host_config)
-
-            self.log.debug("Starting host with config: %s", host_config)
-
-            host_config = self.client.create_host_config(**host_config)
-            create_kwargs.setdefault('host_config', {}).update(host_config)
-
-            # create the container
-            resp = yield self.docker('create_container', **create_kwargs)
-            self.container_id = resp['Id']
+        if obj is None:
+            obj = yield self.create_object()
+            self.object_id = obj[self.object_id_key]
             self.log.info(
-                "Created container '%s' (id: %s) from image %s",
-                self.container_name, self.container_id[:7], image)
+                "Created %s %s (id: %s) from image %s",
+                self.object_type,
+                self.object_name,
+                self.object_id[:7],
+                self.image,
+            )
 
         else:
             self.log.info(
-                "Found existing container '%s' (id: %s)",
-                self.container_name, self.container_id[:7])
+                "Found existing %s %s (id: %s)",
+                self.object_type,
+                self.object_name,
+                self.object_id[:7],
+            )
             # Handle re-using API token.
             # Get the API token from the environment variables
             # of the running container:
-            for line in container['Config']['Env']:
-                if line.startswith(('JPY_API_TOKEN=', 'JUPYTERHUB_API_TOKEN=')):
-                    self.api_token = line.split('=', 1)[1]
+            for line in obj["Config"]["Env"]:
+                if line.startswith(("JPY_API_TOKEN=", "JUPYTERHUB_API_TOKEN=")):
+                    self.api_token = line.split("=", 1)[1]
                     break
 
         # TODO: handle unpause
         self.log.info(
-            "Starting container '%s' (id: %s)",
-            self.container_name, self.container_id[:7])
+            "Starting %s %s (id: %s)",
+            self.object_type,
+            self.object_name,
+            self.container_id[:7],
+        )
 
         # start the container
-        yield self.docker('start', self.container_id)
+        yield self.start_object()
 
         ip, port = yield self.get_ip_and_port()
-        if jupyterhub.version_info < (0,7):
+        if jupyterhub.version_info < (0, 7):
             # store on user for pre-jupyterhub-0.7:
             self.user.server.ip = ip
             self.user.server.port = port
@@ -596,29 +748,30 @@ class DockerSpawner(Spawner):
         and the port it opens.
         """
         if self.use_internal_ip:
-            resp = yield self.docker('inspect_container', self.container_id)
-            network_settings = resp['NetworkSettings']
-            if 'Networks' in network_settings:
+            resp = yield self.docker("inspect_container", self.container_id)
+            network_settings = resp["NetworkSettings"]
+            if "Networks" in network_settings:
                 ip = self.get_network_ip(network_settings)
             else:  # Fallback for old versions of docker (<1.9) without network management
-                ip = network_settings['IPAddress']
+                ip = network_settings["IPAddress"]
             port = self.port
         else:
-            resp = yield self.docker('port', self.container_id, self.port)
+            resp = yield self.docker("port", self.container_id, self.port)
             if resp is None:
                 raise RuntimeError("Failed to get port info for %s" % self.container_id)
-            ip = resp[0]['HostIp']
-            port = int(resp[0]['HostPort'])
 
-        if ip == '0.0.0.0':
+            ip = resp[0]["HostIp"]
+            port = int(resp[0]["HostPort"])
+
+        if ip == "0.0.0.0":
             ip = urlparse(self.client.base_url).hostname
-            if ip == 'localnpipe':
-                ip = 'localhost'
+            if ip == "localnpipe":
+                ip = "localhost"
 
         return ip, port
 
     def get_network_ip(self, network_settings):
-        networks = network_settings['Networks']
+        networks = network_settings["Networks"]
         if self.network_name not in networks:
             raise Exception(
                 "Unknown docker network '{network}'."
@@ -626,8 +779,9 @@ class DockerSpawner(Spawner):
                     network=self.network_name
                 )
             )
+
         network = networks[self.network_name]
-        ip = network['IPAddress']
+        ip = network["IPAddress"]
         return ip
 
     @gen.coroutine
@@ -637,36 +791,31 @@ class DockerSpawner(Spawner):
         Consider using pause/unpause when docker-py adds support
         """
         self.log.info(
-            "Stopping container %s (id: %s)",
-            self.container_name, self.container_id[:7])
-        yield self.docker('stop', self.container_id)
+            "Stopping %s %s (id: %s)", self.object_type, self.object_name, self.object_id[:7]
+        )
+        yield self.stop_object()
 
-        if self.remove_containers:
-            self.log.info(
-                "Removing container %s (id: %s)",
-                self.container_name, self.container_id[:7])
-            # remove the container, as well as any associated volumes
-            yield self.docker('remove_container', self.container_id, v=True)
+        if self.remove:
+            yield self.remove_object()
 
         self.clear_state()
 
-    def _volumes_to_binds(self, volumes, binds, mode='rw'):
+    def _volumes_to_binds(self, volumes, binds, mode="rw"):
         """Extract the volume mount points from volumes property.
 
         Returns a dict of dict entries of the form::
 
             {'/host/dir': {'bind': '/guest/dir': 'mode': 'rw'}}
         """
+
         def _fmt(v):
             return self.format_volume_name(v, self)
 
         for k, v in volumes.items():
             m = mode
             if isinstance(v, dict):
-                if 'mode' in v:
-                    m = v['mode']
-                v = v['bind']
-            binds[_fmt(k)] = {'bind': _fmt(v), 'mode': m}
+                if "mode" in v:
+                    m = v["mode"]
+                v = v["bind"]
+            binds[_fmt(k)] = {"bind": _fmt(v), "mode": m}
         return binds
-
-

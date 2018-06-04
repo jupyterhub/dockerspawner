@@ -104,11 +104,11 @@ class SystemUserSpawner(DockerSpawner):
             HOME=self.homedir,
         ))
         return env
-    
+
     def _user_id_default(self):
         """
         Get user_id from pwd lookup by name
-        
+
         If the authenticator stores user_id in the user state dict,
         this will never be called, which is necessary if
         the system users are not on the Hub system (i.e. Hub itself is in a container).
@@ -127,20 +127,22 @@ class SystemUserSpawner(DockerSpawner):
             state['user_id'] = self.user_id
         return state
 
-    def start(self, image=None, extra_create_kwargs=None,
-        extra_start_kwargs=None, extra_host_config=None):
+    def start(self, *, image=None, extra_create_kwargs=None,
+        extra_host_config=None):
         """start the single-user server in a docker container"""
-        if extra_create_kwargs is None:
-            extra_create_kwargs = {}
+        if image:
+            self.log.warning("Specifying image via .start args is deprecated")
+            self.image = image
+        if extra_create_kwargs:
+            self.log.warning("Specifying extra_create_kwargs via .start args is deprecated")
+            self.extra_create_kwargs.update(extra_create_kwargs)
+        if extra_host_config:
+            self.log.warning("Specifying extra_host_config via .start kwargs is deprecated")
+            self.extra_host_config.update(extra_host_config)
 
-        extra_create_kwargs.setdefault('working_dir', self.homedir)
+        self.extra_create_kwargs.setdefault('working_dir', self.homedir)
         # systemuser image must be started as root
         # relies on NB_UID and NB_USER handling in docker-stacks
-        extra_create_kwargs.setdefault('user', '0')
+        self.extra_create_kwargs.setdefault('user', '0')
 
-        return super(SystemUserSpawner, self).start(
-            image=image,
-            extra_create_kwargs=extra_create_kwargs,
-            extra_start_kwargs=extra_start_kwargs,
-            extra_host_config=extra_host_config
-        )
+        return super(SystemUserSpawner, self).start()

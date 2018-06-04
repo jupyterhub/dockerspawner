@@ -1,13 +1,24 @@
 sudo: required
 language: python
 python:
-    - 3.5
+  - 3.5
+env:
+  global:
+    - ASYNC_TEST_TIMEOUT=30
+  matrix:
+    - JUPYTERHUB=0.8 EXTRA_PIP='tornado<5'
+    - JUPYTERHUB=0.9
 services:
   - docker
 before_install:
-  - pip install -v --pre -r dev-requirements.txt
+  - docker swarm init
+  - nvm install 10; nvm use 10
+  - npm install -g configurable-http-proxy
+  - pip install --pre -r dev-requirements.txt jupyterhub==${JUPYTERHUB}.* ${EXTRA_PIP}
 install:
   - pip install -e .
+  - pip freeze
 script:
   - pyflakes dockerspawner
+  - docker pull jupyterhub/singleuser:$JUPYTERHUB
   - travis_retry py.test --cov dockerspawner tests -v
