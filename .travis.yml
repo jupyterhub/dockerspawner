@@ -3,8 +3,11 @@ language: python
 python:
   - 3.5
 env:
-  - JUPYTERHUB=0.8 EXTRA_PIP='tornado<5'
-  - JUPYTERHUB=0.9
+  global:
+    - ASYNC_TEST_TIMEOUT=30
+  matrix:
+    - JUPYTERHUB=0.8 EXTRA_PIP='tornado<5'
+    - JUPYTERHUB=0.9
 services:
   - docker
 before_install:
