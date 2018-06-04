@@ -43,5 +43,4 @@ def docker():
 
         for c in d.services.list():
             if c.name.startswith("dockerspawner-test"):
-                c.stop()
                 c.remove()
