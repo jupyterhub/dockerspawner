@@ -32,20 +32,24 @@ pip install dockerspawner
 
 Three basic types of spawners are available for dockerspawner:
 
-- [DockerSpawner](#DockerSpawner): useful if you would like to spawn 
+- [DockerSpawner][ln-spawner-docker]: useful if you would like to spawn 
   single user notebook servers on the fly. It will take an
   authenticated user and spawn a notebook server in a Docker container
   for the user.
 
-- [SwarmSpawner](#SwarmSpawner): same behavior as DockerSpawner, but
+- [SwarmSpawner][ln-spawner-swarm]: same behavior as DockerSpawner, but
   launches single user notebook servers as Docker Swarm mode services
   instead of as individual containers. This allows for running JupyerHub
   in a swarm so that notebook containers can be run on any of multiple
   servers.
 
-- [SystemUserSpawner](#SystemUserSpawner): useful if you would like to
+- [SystemUserSpawner][ln-spawner-sysusr]: useful if you would like to
   spawn single user notebook servers that correspond to the system's 
   users.
+  
+[ln-spawner-docker]: #dockerspawner
+[ln-spawner-swarm]: #swarmspawner
+[ln-spawner-sysusr]: #systemuserspawner
 
 In most cases, we recommend using DockerSpawner. Use cases where you
 may wish to use SystemUserSpawner are:
@@ -155,7 +159,7 @@ container, and authenticates users using GitHub OAuth).
 ### Using Docker Swarm (not swarm mode!)
 
 **Note:** This is the older Docker Swarm, which makes a swarm look like a single docker instance.
-For the newer Docker Swarm Mode, see [SwarmSpawner](#SwarmSpawner). This used to be supported by
+For the newer Docker Swarm Mode, see [SwarmSpawner][ln-spawner-swarm]. This used to be supported by
 [cassinyio](https://github.com/cassinyio/SwarmSpawner), but this repository has been deprecated.
 
 Both `DockerSpawner` and `SystemUserSpawner` are compatible with
