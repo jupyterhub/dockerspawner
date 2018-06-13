@@ -190,13 +190,23 @@ class DockerSpawner(Spawner):
     )
 
     image_whitelist = Union(
-        [Dict(), List()],
+        [Any(), Dict(), List()],
         config=True,
         help="""
         List or dict of images that users can run.
 
         If specified, users will be presented with a form
         from which they can select an image to run.
+
+        If a dictionary, the keys will be the options presented to users
+        and the values the actual images that will be launched.
+
+        If a list, will be cast to a dictionary where keys and values are the same
+        (i.e. a shortcut for presenting the actual images directly to users).
+
+        If a callable, will be called with the Spawner instance as its only argument.
+        The user is accessible as spawner.user.
+        The callable should return a dict or list as above.
         """,
     )
 
@@ -208,13 +218,27 @@ class DockerSpawner(Spawner):
         dict where the keys and values are the same.
         """
         whitelist = proposal.value
-        if not isinstance(whitelist, dict):
+        if isinstance(whitelist, list):
             whitelist = {item: item for item in whitelist}
         return whitelist
 
+    def _get_image_whitelist(self):
+        """Evaluate image_whitelist callable
+
+        Or return the whitelist as-is if it's already a dict
+        """
+        if callable(self.image_whitelist):
+            whitelist = self.image_whitelist(self)
+            if not isinstance(whitelist, dict):
+                # always return a dict
+                whitelist = {item: item for item in whitelist}
+            return whitelist
+        return self.image_whitelist
+
     @default('options_form')
     def _default_options_form(self):
-        if len(self.image_whitelist) <= 1:
+        image_whitelist = self._get_image_whitelist()
+        if len(image_whitelist) <= 1:
             # default form only when there are images to choose from
             return ''
         # form derived from wrapspawner.ProfileSpawner
@@ -223,7 +247,7 @@ class DockerSpawner(Spawner):
             option_t.format(
                 image=image, selected='selected' if image == self.image else ''
             )
-            for image in self.image_whitelist
+            for image in image_whitelist
         ]
         return """
         <label for="image">Select an image:</label>
@@ -237,7 +261,6 @@ class DockerSpawner(Spawner):
     def options_from_form(self, formdata):
         """Turn options formdata into user_options"""
         options = {}
-        print(formdata)
         if 'image' in formdata:
             options['image'] = formdata['image'][0]
         return options
@@ -660,29 +683,31 @@ class DockerSpawner(Spawner):
         yield self.docker("remove_" + self.object_type, self.object_id, v=True)
 
     @gen.coroutine
+    def check_image_whitelist(self, image):
+        image_whitelist = self._get_image_whitelist()
+        if not image_whitelist:
+            return image
+        if image not in image_whitelist:
+            raise web.HTTPError(
+                400,
+                "Image %s not in whitelist: %s" % (image, ', '.join(image_whitelist)),
+            )
+        # resolve image alias to actual image name
+        return image_whitelist[image]
+
+    @gen.coroutine
     def create_object(self):
         """Create the container/service object"""
         # image priority:
-        # 1. explicit argument
-        #    (this never happens when DockerSpawner is used directly,
-        #    but can be used by subclasses)
-        # 2. user options (from spawn options form)
-        # 3. self.image from config
-        image = self.user_options.get('image') or self.image
-        if self.image_whitelist:
-            if image not in self.image_whitelist:
-                raise web.HTTPError(
-                    400,
-                    "Image %s not in whitelist: %s"
-                    % (image, ', '.join(self.image_whitelist)),
-                )
-            # resolve image alias to actual image name
-            image = self.image_whitelist[image]
-        # save choice in self.image
-        self.image = image
+        # 1. user options (from spawn options form)
+        # 2. self.image from config
+        image_option = self.user_options.get('image')
+        if image_option:
+            # save choice in self.image
+            self.image = yield self.check_image_whitelist(image_option)
 
         create_kwargs = dict(
-            image=image,
+            image=self.image,
             environment=self.get_env(),
             volumes=self.volume_mount_points,
             name=self.container_name,
