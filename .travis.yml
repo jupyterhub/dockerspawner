@@ -20,5 +20,6 @@ install:
   - pip freeze
 script:
   - pyflakes dockerspawner
-  - docker pull jupyterhub/singleuser:$JUPYTERHUB
+  - docker pull jupyterhub/singleuser:0.8
+  - docker pull jupyterhub/singleuser:0.9
   - travis_retry py.test --cov dockerspawner tests -v
