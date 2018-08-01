@@ -458,7 +458,7 @@ class DockerSpawner(Spawner):
                 self.user.name,
                 safe=self._docker_safe_chars,
                 escape_char=self._docker_escape_char,
-            )
+            ).lower()
         return self._escaped_name
 
     object_id = Unicode(allow_none=True)
