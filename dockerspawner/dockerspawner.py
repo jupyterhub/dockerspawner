@@ -264,7 +264,7 @@ class DockerSpawner(Spawner):
     )
 
     def default_format_volume_name(template, spawner):
-        return template.format(username=spawner.user.name)
+        return template.format(username=spawner.escaped_name)
 
     @default("format_volume_name")
     def _get_default_format_volume_name(self):
