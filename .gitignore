@@ -58,6 +58,7 @@ userlist
 ssl.cert
 ssl.key
 env
+venv
 oauthenticator.py
 jupyterhub.sqlite
 src
