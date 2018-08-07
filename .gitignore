@@ -38,6 +38,7 @@ htmlcov/
 .tox/
 .coverage
 .cache
+.pytest_cache
 nosetests.xml
 coverage.xml
 
@@ -58,8 +59,10 @@ userlist
 ssl.cert
 ssl.key
 env
+venv
 oauthenticator.py
 jupyterhub.sqlite
+jupyterhub_cookie_secret
 src
 
 # Pycharm

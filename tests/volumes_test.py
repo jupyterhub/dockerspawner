@@ -66,10 +66,10 @@ def test_escaped_format_volume_name(monkeypatch):
     assert (
         d.volume_binds
         == {
-            "data/user_40email_2Ecom": {"bind": "/home/user_40email_2Ecom", "mode": "z"}
+            "data/user_40email_2ecom": {"bind": "/home/user_40email_2ecom", "mode": "z"}
         }
     )
-    assert d.volume_mount_points == ["/home/user_40email_2Ecom"]
+    assert d.volume_mount_points == ["/home/user_40email_2ecom"]
 
 
 class _MockSpawner(LoggingConfigurable):

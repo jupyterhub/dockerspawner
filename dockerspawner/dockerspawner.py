@@ -264,7 +264,7 @@ class DockerSpawner(Spawner):
     )
 
     def default_format_volume_name(template, spawner):
-        return template.format(username=spawner.user.name)
+        return template.format(username=spawner.escaped_name)
 
     @default("format_volume_name")
     def _get_default_format_volume_name(self):
@@ -458,7 +458,7 @@ class DockerSpawner(Spawner):
                 self.user.name,
                 safe=self._docker_safe_chars,
                 escape_char=self._docker_escape_char,
-            )
+            ).lower()
         return self._escaped_name
 
     object_id = Unicode(allow_none=True)
