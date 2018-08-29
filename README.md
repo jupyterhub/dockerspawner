@@ -300,7 +300,7 @@ For a **development install**, clone the [repository](https://github.com/jupyter
 and then install from source:
 
 ```bash
-git clone https://github.com/jupyterhub/dockerspaawner
+git clone https://github.com/jupyterhub/dockerspawner
 cd dockerspawner
 pip3 install -r dev-requirements.txt -e .
 ```
