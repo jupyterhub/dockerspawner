@@ -1,0 +1,29 @@
+version: "3"
+services:
+  proxy:
+    env_file: .env
+    image: jupyterhub/configurable-http-proxy:3.1.1
+    networks:
+      - jupyterhub-net
+    # expose the proxy to the world
+    ports:
+      - "80:8000"
+    command:
+      - configurable-http-proxy
+      - '--error-target'
+      - 'http://hub/hub/error'
+
+  hub:
+    # build an image with SwarmSpawner and our jupyterhub_config.py
+    env_file: .env
+    build:
+      context: "../.."
+      dockerfile: "examples/swarm/Dockerfile"
+    # mount the docker socket
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - jupyterhub-net
+networks:
+  jupyterhub-net:
+    driver: overlay
