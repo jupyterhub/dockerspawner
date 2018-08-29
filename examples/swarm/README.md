@@ -6,16 +6,20 @@ If you already have a swarm cluster, skip this section.
 
 To make this a complete example,
 let's create a local swarm cluster with virtualbox.
+We will have one master and two workers.
 
 ```bash
 docker-machine create --driver virtualbox swarm-master
 docker-machine create --driver virtualbox swarm1
+docker-machine create --driver virtualbox swarm2
 ```
 
 Make `swarm-master` the master
 
 ```bash
-docker-machine ssh swarm-master "docker swarm init --advertise-addr $(docker-machine ip swarm-master)"
+MASTER_IP=$(docker-machine ip swarm-master)
+docker-machine ssh swarm-master "docker swarm init --advertise-addr $MASTER_IP"
+docker_join_command=$(docker-machine ssh swarm-master "docker swarm join-token worker" | grep "^\s*docker")
 ```
 
 which will have output like:
@@ -26,13 +30,14 @@ To add a worker to this swarm, run the following command:
     docker swarm join --token SWMTKN-1-67asaufw4gdn7tclwwvs09xyytc12alwgf1qdozlcjyp4og5ps-cqpokgek9ml3gahxv7cvz0rm9 192.168.99.101:2377
 ```
 
-Copy that `docker swarm join` command and run it on `swarm1`:
+Copy that `docker swarm join` command and run it on on your workers:
 
 ```bash
-docker-machine ssh swarm1 "$docker_swarm_command"
+docker-machine ssh swarm1 "$docker_join_command"
+docker-machine ssh swarm2 "$docker_join_command"
 ```
 
-output:
+You should see the output:
 
 ```
 This node joined a swarm as a worker.
@@ -47,8 +52,9 @@ docker node ls
 
 ```
 ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS      ENGINE VERSION
-olkg0hco093mwols6g7z5a9el     swarm1              Ready               Active                                  18.06.1-ce
-wv3un4p7m19ntq5t5va9qdkjv *   swarm-master        Ready               Active              Leader              18.06.1-ce
+vnvw9ym4n7fxsqmzx1ut9z23h     swarm1              Ready               Active                                  18.06.1-ce
+m3a1as22uoavuf5jayy24hx87     swarm2              Ready               Active                                  18.06.1-ce
+vz8n6gw6m0ve1a7gk0micxa4n *   swarm-master        Ready               Active              Leader              18.06.1-ce
 ```
 
 ## Using SwarmSpawner
@@ -100,12 +106,6 @@ Build the jupyterhub image:
 
 ```bash
 docker-compose build
-```
-
-Pull the singleuser image:
-
-```bash
-docker pull jupyterhub/singleuser:0.9
 ```
 
 Finally, start jupyterhub:
