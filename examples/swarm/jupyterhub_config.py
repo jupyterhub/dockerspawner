@@ -13,3 +13,10 @@ c.JupyterHub.hub_connect_ip = 'hub'
 # this is the network name for jupyterhub in docker-compose.yml
 # with a leading 'swarm_' that docker-compose adds
 c.SwarmSpawner.network_name = 'swarm_jupyterhub-net'
+
+# start jupyterlab
+c.Spawner.cmd = ["jupyter", "labhub"]
+
+# debug-logging for testing
+import logging
+c.JupyterHub.log_level = logging.DEBUG
