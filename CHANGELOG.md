@@ -7,6 +7,15 @@ command line for details.
 ## [Unreleased]
 
 
+## 0.10
+
+### [0.10.0] - 2018-09-03
+
+- Add `dockerspawner.SwarmSpawner` for spawning with Docker Swarm
+- Removed deprecated `extra_start_kwargs`
+- `host_ip` is configurable
+- Added `container_name_template` configuration for custom container naming
+
 ## 0.9
 
 ### [0.9.1] - 2017-08-23
@@ -123,7 +132,8 @@ Some configuration has been cleaned up to be clearer and more concise:
 First release
 
 
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.9.1...HEAD
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.10.0...HEAD
+[0.10.0]: https://github.com/jupyterhub/dockerspawner/compare/0.9.1...0.10.0
 [0.9.1]: https://github.com/jupyterhub/dockerspawner/compare/0.9.0...0.9.1
 [0.9.0]: https://github.com/jupyterhub/dockerspawner/compare/0.8.0...0.9.0
 [0.8]: https://github.com/jupyterhub/dockerspawner/compare/0.7.0...0.8.0
