@@ -309,6 +309,8 @@ class DockerSpawner(Spawner):
         help=dedent(
             """
             Name of the container or service: with {username}, {imagename}, {prefix} replacements.
+            {raw_username} can be used for the original, not escaped username
+            (may contain uppercase, special characters).
             The default name_template is <prefix>-<username> for backward compatibility.
             """
         ),
@@ -364,9 +366,6 @@ class DockerSpawner(Spawner):
         Reusable implementations should go in dockerspawner.VolumeNamingStrategy, tests should go in ...
         """
     ).tag(config=True)
-
-    def default_format_volume_name(template, spawner):
-        return template.format(username=spawner.user.name)
 
     @default("format_volume_name")
     def _get_default_format_volume_name(self):
@@ -556,27 +555,35 @@ class DockerSpawner(Spawner):
     def escaped_name(self):
         """Escape the username so it's safe for docker objects"""
         if self._escaped_name is None:
-            self._escaped_name = escape(
-                self.user.name,
-                safe=self._docker_safe_chars,
-                escape_char=self._docker_escape_char,
-            )
+            self._escaped_name = self._escape(self.user.name)
         return self._escaped_name
+
+    def _escape(self, s):
+        """Escape a string to docker-safe characters"""
+        return escape(
+            s,
+            safe=self._docker_safe_chars,
+            escape_char=self._docker_escape_char,
+        )
 
     object_id = Unicode(allow_none=True)
 
     @property
-    def object_name(self):
-        """Render the name of our container/service using name_template"""
+    def template_namespace(self):
         escaped_image = self.image.replace("/", "_")
         server_name = getattr(self, "name", "")
-        d = {
+        return {
             "username": self.escaped_name,
+            "raw_username": self.user.name,
             "imagename": escaped_image,
             "servername": server_name,
             "prefix": self.prefix,
         }
-        return self.name_template.format(**d)
+
+    @property
+    def object_name(self):
+        """Render the name of our container/service using name_template"""
+        return self.name_template.format(**self.template_namespace)
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
