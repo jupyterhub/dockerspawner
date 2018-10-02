@@ -344,6 +344,101 @@ class DockerSpawner(Spawner):
         ),
     )
 
+    move_certs_image = Unicode(
+        "busybox:1.29.2",
+        config=True,
+        help="""The image used to stage internal SSL certificates.
+
+        This image must have `sh` in it, but that's about it.
+        The only reason to change this image should be
+        to pin a local image to avoid dealing with the docker registry.
+        """
+    )
+
+    @gen.coroutine
+    def move_certs(self, paths):
+        self.log.info("Staging internal ssl certs for %s", self._log_name)
+        images = yield self.docker('images', self.move_certs_image)
+        if not images:
+            self.log.debug("Pulling image %s", self.move_certs_image)
+            yield self.docker('pull', self.move_certs_image)
+        # create the volume
+        volume_name = self.format_volume_name(self.certs_volume_name, self)
+        # create volume passes even if it already exists
+        self.log.info("Creating ssl volume %s for %s", volume_name, self._log_name)
+        yield self.docker('create_volume', volume_name)
+        # run a container to stage the certs:
+        keys = list(paths)
+        nb_paths = {}
+        for key, hub_path in paths.items():
+            nb_paths[key] = '/certs/' + os.path.basename(hub_path)
+
+        env = {
+            'CERT_PATH': '/certs',
+            'FILES': ','.join(key.replace('-', '_') for key in paths),
+        }
+        # put file contents in env as well
+        for key, hub_path in paths.items():
+            env_key = key.replace('-', '_')
+            with open(hub_path) as f:
+                env['PATH_' + env_key] = nb_paths[key]
+                env['CONTENT_' + env_key] = f.read()
+
+        cmd = r"""
+        set -euo pipefail
+        rm -rf "$CERT_PATH/*"
+        IFS=,
+        for f in $FILES; do
+          eval content="\$CONTENT_$f"
+          eval dest="\$PATH_$f"
+          echo "creating $f: $dest"
+          echo $content > "$dest"
+        done
+        """
+        host_config = self.client.create_host_config(
+            binds={
+                volume_name: {"bind": "/certs", "mode": "rw"},
+            },
+        )
+        container = yield self.docker('create_container',
+            self.move_certs_image,
+            volumes=["/certs"],
+            host_config=host_config,
+            command=["sh", "-c", cmd],
+            environment=env,
+        )
+        container_id = container['Id']
+        self.log.debug(
+            "Container %s is creating ssl certs for %s",
+            container_id[:12], self._log_name,
+        )
+        # start the container
+        yield self.docker('start', container_id)
+        # collect logs. This will return when the container exits
+        logs = yield self.docker('logs', container_id, follow=True)
+        logs = logs.decode('utf8', 'replace').rstrip()
+        self.log.debug(logs)
+        container = yield self.docker("inspect_container", container_id)
+        if container['State'].get('ExitCode', None) != 0:
+            self.log.error("SSL container %s for %s didn't exit cleanly:\nstate=%s\nlogs:\n%s",
+                container_id[:12],
+                self._log_name,
+                container['State'],
+                logs,
+            )
+            raise RuntimeError("Failed to generate internal SSL certs for %s" % self._log_name)
+        return nb_paths
+
+    certs_volume_name = Unicode(
+        "{prefix}ssl-{username}",
+        config=True,
+        help="""Volume name
+
+        The same string-templating applies to this
+        as other volume names.
+        """
+    )
+
     read_only_volumes = Dict(
         config=True,
         help=dedent(
@@ -484,6 +579,28 @@ class DockerSpawner(Spawner):
         else:
             return False
 
+    use_internal_hostname = Bool(
+        False,
+        config=True,
+        help=dedent(
+            """
+            Use the docker hostname for connecting.
+
+            instead of an IP address.
+            This should work in general when using docker networks,
+            and must be used when internal_ssl is enabled.
+            It is enabled by default if internal_ssl is enabled.
+            """
+        ),
+    )
+
+    @default("use_internal_hostname")
+    def _default_use_hostname(self):
+        if self.internal_ssl:
+            return True
+        else:
+            return False
+
     links = Dict(
         config=True,
         help=dedent(
@@ -547,7 +664,12 @@ class DockerSpawner(Spawner):
 
         """
         binds = self._volumes_to_binds(self.volumes, {})
-        return self._volumes_to_binds(self.read_only_volumes, binds, mode="ro")
+        read_only_volumes = {}
+        if self.internal_ssl:
+            # add SSL volume as read-only
+            read_only_volumes[self.certs_volume_name] = '/certs'
+        read_only_volumes.update(self.read_only_volumes)
+        return self._volumes_to_binds(read_only_volumes, binds, mode="ro")
 
     _escaped_name = None
 
@@ -723,6 +845,10 @@ class DockerSpawner(Spawner):
             )
         # resolve image alias to actual image name
         return image_whitelist[image]
+
+    @default('ssl_alt_names')
+    def _get_ssl_alt_names(self):
+        return ['DNS:' + self.internal_hostname]
 
     @gen.coroutine
     def create_object(self):
@@ -909,6 +1035,14 @@ class DockerSpawner(Spawner):
         # jupyterhub 0.7 prefers returning ip, port:
         return (ip, port)
 
+    @property
+    def internal_hostname(self):
+        """Return our hostname
+
+        used with internal SSL
+        """
+        return self.container_name
+
     @gen.coroutine
     def get_ip_and_port(self):
         """Queries Docker daemon for container's IP and port.
@@ -924,7 +1058,15 @@ class DockerSpawner(Spawner):
         are correct, which depends on the route to the container
         and the port it opens.
         """
-        if self.use_internal_ip:
+        if self.use_internal_hostname:
+            # internal ssl uses hostnames,
+            # required for domain-name matching with internal SSL
+            # TODO: should we always do this?
+            # are there any cases where internal_ip works
+            # and internal_hostname doesn't?
+            ip = self.internal_hostname
+            port = self.port
+        elif self.use_internal_ip:
             resp = yield self.docker("inspect_container", self.container_id)
             network_settings = resp["NetworkSettings"]
             if "Networks" in network_settings:
