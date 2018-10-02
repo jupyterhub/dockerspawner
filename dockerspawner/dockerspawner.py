@@ -3,9 +3,11 @@ A Spawner for JupyterHub that runs each user's server in a separate docker conta
 """
 
 from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
 import os
 from pprint import pformat
 import string
+from tarfile import TarFile, TarInfo
 from textwrap import dedent
 from urllib.parse import urlparse
 import warnings
@@ -349,9 +351,8 @@ class DockerSpawner(Spawner):
         config=True,
         help="""The image used to stage internal SSL certificates.
 
-        This image must have `sh` in it, but that's about it.
-        The only reason to change this image should be
-        to pin a local image to avoid dealing with the docker registry.
+        Busybox is used because we just need an empty container
+        that waits while we stage files into the volume via .put_archive.
         """
     )
 
@@ -367,34 +368,28 @@ class DockerSpawner(Spawner):
         # create volume passes even if it already exists
         self.log.info("Creating ssl volume %s for %s", volume_name, self._log_name)
         yield self.docker('create_volume', volume_name)
-        # run a container to stage the certs:
-        keys = list(paths)
+
+        # create a tar archive of the internal cert files
+        # docker.put_archive takes a tarfile and a running container
+        # and unpacks the archive into the container
         nb_paths = {}
+        tar_buf = BytesIO()
+        archive = TarFile(fileobj=tar_buf, mode='w')
         for key, hub_path in paths.items():
-            nb_paths[key] = '/certs/' + os.path.basename(hub_path)
+            fname = os.path.basename(hub_path)
+            nb_paths[key] = '/certs/' + fname
+            with open(hub_path, 'rb') as f:
+                content = f.read()
+            tarinfo = TarInfo(name=fname)
+            tarinfo.size = len(content)
+            tarinfo.mtime = os.stat(hub_path).st_mtime
+            tarinfo.mode = 0o644
+            archive.addfile(tarinfo, BytesIO(content))
+        archive.close()
+        tar_buf.seek(0)
 
-        env = {
-            'CERT_PATH': '/certs',
-            'FILES': ','.join(key.replace('-', '_') for key in paths),
-        }
-        # put file contents in env as well
-        for key, hub_path in paths.items():
-            env_key = key.replace('-', '_')
-            with open(hub_path) as f:
-                env['PATH_' + env_key] = nb_paths[key]
-                env['CONTENT_' + env_key] = f.read()
-
-        cmd = r"""
-        set -euo pipefail
-        rm -rf "$CERT_PATH/*"
-        IFS=,
-        for f in $FILES; do
-          eval content="\$CONTENT_$f"
-          eval dest="\$PATH_$f"
-          echo "creating $f: $dest"
-          echo $content > "$dest"
-        done
-        """
+        # run a container to stage the certs,
+        # mounting the volume at /certs/
         host_config = self.client.create_host_config(
             binds={
                 volume_name: {"bind": "/certs", "mode": "rw"},
@@ -404,9 +399,8 @@ class DockerSpawner(Spawner):
             self.move_certs_image,
             volumes=["/certs"],
             host_config=host_config,
-            command=["sh", "-c", cmd],
-            environment=env,
         )
+
         container_id = container['Id']
         self.log.debug(
             "Container %s is creating ssl certs for %s",
@@ -414,19 +408,16 @@ class DockerSpawner(Spawner):
         )
         # start the container
         yield self.docker('start', container_id)
-        # collect logs. This will return when the container exits
-        logs = yield self.docker('logs', container_id, follow=True)
-        logs = logs.decode('utf8', 'replace').rstrip()
-        self.log.debug(logs)
-        container = yield self.docker("inspect_container", container_id)
-        if container['State'].get('ExitCode', None) != 0:
-            self.log.error("SSL container %s for %s didn't exit cleanly:\nstate=%s\nlogs:\n%s",
-                container_id[:12],
-                self._log_name,
-                container['State'],
-                logs,
+        # stage the archive to the container
+        try:
+            yield self.docker(
+                'put_archive',
+                container=container_id,
+                path='/certs',
+                data=tar_buf,
             )
-            raise RuntimeError("Failed to generate internal SSL certs for %s" % self._log_name)
+        finally:
+            yield self.docker('remove_container', container_id)
         return nb_paths
 
     certs_volume_name = Unicode(
