@@ -241,7 +241,7 @@ can be used with JupyterHub, provided that the version of JupyterHub in the imag
 and are encouraged as the image of choice. Make sure to pick a tag!
 
 ```python
-c.DockerSpawner.image = 'jupyter/scipy-notebook:8f56e3c47fec'
+c.DockerSpawner.container_image = 'jupyter/scipy-notebook:8f56e3c47fec'
 ```
 
 The docker-stacks are moving targets with always changing versions.
