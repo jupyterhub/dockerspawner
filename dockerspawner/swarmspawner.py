@@ -6,7 +6,7 @@ from pprint import pformat
 from textwrap import dedent
 
 from docker.types import (
-    ContainerSpec, TaskTemplate, Resources, EndpointSpec, Mount, DriverConfig
+    ContainerSpec, TaskTemplate, Resources, EndpointSpec, Mount, DriverConfig, Placement
 )
 from docker.errors import APIError
 from tornado import gen
@@ -48,6 +48,13 @@ class SwarmSpawner(DockerSpawner):
         config=True,
         help="""
         Keyword arguments to pass to the ContainerSpec constructor
+        """,
+    )
+
+    extra_placement_spec = Dict(
+        config=True,
+        help="""
+        Keyword arguments to pass to the Placement constructor
         """,
     )
 
@@ -186,10 +193,19 @@ class SwarmSpawner(DockerSpawner):
         resources_kwargs.update(self.extra_resources_spec)
         resources_spec = Resources(**resources_kwargs)
 
+        placement_kwargs = dict(
+            constraints=None,
+            preferences=None,
+            platforms=None,
+        )
+        placement_kwargs.update(self.extra_placement_spec)
+        placement_spec = Placement(**placement_kwargs)
+
         task_kwargs = dict(
             container_spec=container_spec,
             resources=resources_spec,
             networks=[self.network_name] if self.network_name else [],
+            placement=placement_spec,
         )
         task_kwargs.update(self.extra_task_spec)
         task_spec = TaskTemplate(**task_kwargs)
