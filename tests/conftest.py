@@ -3,6 +3,7 @@
 from unittest import mock
 
 from docker import from_env as docker_from_env
+from docker.errors import APIError
 import pytest
 
 from jupyterhub.tests.mocking import MockHub
@@ -40,7 +41,12 @@ def docker():
             if c.name.startswith("dockerspawner-test"):
                 c.stop()
                 c.remove()
-
-        for c in d.services.list():
-            if c.name.startswith("dockerspawner-test"):
-                c.remove()
+        try:
+            services = d.services.list()
+        except APIError:
+            # e.g. services not available
+            return
+        else:
+            for s in services:
+                if s.name.startswith("dockerspawner-test"):
+                    s.remove()
