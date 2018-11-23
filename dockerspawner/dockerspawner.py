@@ -191,6 +191,7 @@ class DockerSpawner(Spawner):
 
     image_whitelist = Union(
         [Any(), Dict(), List()],
+        default_value={},
         config=True,
         help="""
         List or dict of images that users can run.
