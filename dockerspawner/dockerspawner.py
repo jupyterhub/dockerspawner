@@ -753,9 +753,9 @@ class DockerSpawner(Spawner):
 
     @gen.coroutine
     def stop_object(self):
-        """Actually start the container/service
+        """Stop the container/service
 
-        e.g. calling `docker start`
+        e.g. calling `docker stop`. Does not remove the container.
         """
         return self.docker("stop", self.container_id)
 
@@ -765,6 +765,10 @@ class DockerSpawner(Spawner):
 
         Additional arguments to create/host config/etc. can be specified
         via .extra_create_kwargs and .extra_host_config attributes.
+
+        If the container exists and `c.DockerSpawner.remove` is true, then
+        the container is removed first. Otherwise, the existing containers
+        will be restarted.
         """
 
         if image:
@@ -896,7 +900,9 @@ class DockerSpawner(Spawner):
     def stop(self, now=False):
         """Stop the container
 
-        Consider using pause/unpause when docker-py adds support
+        Will remove the container if `c.DockerSpawner.remove` is `True`.
+
+        Consider using pause/unpause when docker-py adds support.
         """
         self.log.info(
             "Stopping %s %s (id: %s)",
