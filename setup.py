@@ -74,6 +74,13 @@ setup_args = dict(
         'Programming Language :: Python :: 3',
     ],
     install_requires = install_requires,
+    entry_points={
+        'jupyterhub.spawners': [
+            'docker = dockerspawner:DockerSpawner',
+            'docker-system-user = dockerspawner:SystemUserSpawner',
+            'docker-swarm = dockerspawner:SwarmSpawner',
+        ],
+    },
     cmdclass = {
         'bdist_egg': bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
     }
