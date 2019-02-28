@@ -88,7 +88,7 @@ def test_image_pull_policy(app):
     try:
         yield spawner.docker("remove_image", "{}:{}".format(repo, tag))
     except docker.errors.ImageNotFound:
-        raise
+        pass
 
     spawner.pull_policy = "ifnotpresent"
     image = "{}:{}".format(repo, tag)
