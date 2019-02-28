@@ -45,10 +45,10 @@ def test_default_format_volume_name(monkeypatch):
 
     d = DockerSpawner()
     d.user = types.SimpleNamespace(name="user@email.com")
-    d.volumes = {"data/{username}": {"bind": "/home/{username}", "mode": "z"}}
+    d.volumes = {"data/{username}": {"bind": "/home/{raw_username}", "mode": "z"}}
     assert (
         d.volume_binds
-        == {"data/user@email.com": {"bind": "/home/user@email.com", "mode": "z"}}
+        == {"data/user_40email_2Ecom": {"bind": "/home/user@email.com", "mode": "z"}}
     )
     assert d.volume_mount_points == ["/home/user@email.com"]
 

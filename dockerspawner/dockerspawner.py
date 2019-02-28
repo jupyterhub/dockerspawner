@@ -685,6 +685,7 @@ class DockerSpawner(Spawner):
         server_name = getattr(self, "name", "")
         return {
             "username": self.escaped_name,
+            "safe_username": self.user.name,
             "raw_username": self.user.name,
             "imagename": escaped_image,
             "servername": server_name,
