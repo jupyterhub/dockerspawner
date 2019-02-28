@@ -587,10 +587,9 @@ class DockerSpawner(Spawner):
 
     @default("use_internal_hostname")
     def _default_use_hostname(self):
-        if self.internal_ssl:
-            return True
-        else:
-            return False
+        # FIXME: replace getattr with self.internal_ssl
+        # when minimum jupyterhub is 1.0
+        return getattr(self, 'internal_ssl', False)
 
     links = Dict(
         config=True,
@@ -656,7 +655,9 @@ class DockerSpawner(Spawner):
         """
         binds = self._volumes_to_binds(self.volumes, {})
         read_only_volumes = {}
-        if self.internal_ssl:
+        # FIXME: replace getattr with self.internal_ssl
+        # when minimum jupyterhub is 1.0
+        if getattr(self, 'internal_ssl', False):
             # add SSL volume as read-only
             read_only_volumes[self.certs_volume_name] = '/certs'
         read_only_volumes.update(self.read_only_volumes)
