@@ -20,6 +20,13 @@ install:
   - pip freeze
 script:
   - pyflakes dockerspawner
-  - docker pull jupyterhub/singleuser:0.8
-  - docker pull jupyterhub/singleuser:0.9
+  - |
+    # pre-pull images to avoid long wait times in tests
+    for v in 0.8 0.9; do
+      docker pull jupyterhub/singleuser:$v
+      # preserve the layers with a different tag
+      docker tag jupyterhub/singleuser:$v jupyterhub/singleuser:${v}-cache
+      # untag so that pull actions are still required
+      docker rmi jupyterhub/singleuser:$v
+    done
   - travis_retry py.test --cov dockerspawner tests -v

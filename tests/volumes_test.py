@@ -3,12 +3,10 @@
 from __future__ import absolute_import, division, print_function
 
 import types
-import pytest
 from traitlets.config import LoggingConfigurable
 
 
 def test_binds(monkeypatch):
-    import jupyterhub
 
     monkeypatch.setattr("jupyterhub.spawner.Spawner", _MockSpawner)
     from dockerspawner.dockerspawner import DockerSpawner

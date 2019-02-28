@@ -20,6 +20,7 @@ from jupyterhub.spawner import Spawner
 from traitlets import (
     Any,
     Bool,
+    CaselessStrEnum,
     Dict,
     List,
     Int,
@@ -265,6 +266,20 @@ class DockerSpawner(Spawner):
         if 'image' in formdata:
             options['image'] = formdata['image'][0]
         return options
+
+    pull_policy = CaselessStrEnum(
+        ["always", "ifnotpresent", "never"],
+        default_value="ifnotpresent",
+        config=True,
+        help="""The policy for pulling the user docker image.
+
+        Choices:
+
+        - ifnotpresent: pull if the image is not already present (default)
+        - always: always pull the image to check for updates, even if it is present
+        - never: never perform a pull
+        """
+    )
 
     container_prefix = Unicode(config=True, help="DEPRECATED in 0.10. Use prefix")
 
@@ -681,7 +696,13 @@ class DockerSpawner(Spawner):
     def remove_object(self):
         self.log.info("Removing %s %s", self.object_type, self.object_id)
         # remove the container, as well as any associated volumes
-        yield self.docker("remove_" + self.object_type, self.object_id, v=True)
+        try:
+            yield self.docker("remove_" + self.object_type, self.object_id, v=True)
+        except docker.errors.APIError as e:
+            if e.status_code == 409:
+                self.log.debug("Already removing %s: %s", self.object_type, self.object_id)
+            else:
+                raise
 
     @gen.coroutine
     def check_image_whitelist(self, image):
@@ -699,13 +720,6 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def create_object(self):
         """Create the container/service object"""
-        # image priority:
-        # 1. user options (from spawn options form)
-        # 2. self.image from config
-        image_option = self.user_options.get('image')
-        if image_option:
-            # save choice in self.image
-            self.image = yield self.check_image_whitelist(image_option)
 
         create_kwargs = dict(
             image=self.image,
@@ -759,6 +773,41 @@ class DockerSpawner(Spawner):
         """
         return self.docker("stop", self.container_id)
 
+
+    @gen.coroutine
+    def pull_image(self, image):
+        """Pull the image, if needed
+
+        - pulls it unconditionally if pull_policy == 'always'
+        - otherwise, checks if it exists, and
+          - raises if pull_policy == 'never'
+          - pulls if pull_policy == 'ifnotpresent'
+        """
+        # docker wants to split repo:tag
+        if ':' in image:
+            repo, tag = image.split(':', 1)
+        else:
+            repo = image
+            tag = 'latest'
+
+        if self.pull_policy.lower() == 'always':
+            # always pull
+            self.log.info("pulling %s", image)
+            yield self.docker('pull', repo, tag)
+            # done
+            return
+        try:
+            # check if the image is present
+            yield self.docker('inspect_image', image)
+        except docker.errors.NotFound:
+            if self.pull_policy == "never":
+                # never pull, raise because there is no such image
+                raise
+            elif self.pull_policy == "ifnotpresent":
+                # not present, pull it for the first time
+                self.log.info("pulling image %s", image)
+                yield self.docker('pull', repo, tag)
+
     @gen.coroutine
     def start(self, image=None, extra_create_kwargs=None, extra_host_config=None):
         """Start the single-user server in a docker container.
@@ -785,7 +834,16 @@ class DockerSpawner(Spawner):
             )
             self.extra_host_config.update(extra_host_config)
 
+        # image priority:
+        # 1. user options (from spawn options form)
+        # 2. self.image from config
+        image_option = self.user_options.get('image')
+        if image_option:
+            # save choice in self.image
+            self.image = yield self.check_image_whitelist(image_option)
+
         image = self.image
+        yield self.pull_image(image)
 
         obj = yield self.get_object()
         if obj and self.remove:
