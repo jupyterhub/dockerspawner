@@ -798,7 +798,7 @@ class DockerSpawner(Spawner):
             return
         try:
             # check if the image is present
-            _image = yield self.docker('inspect_image', image)
+            yield self.docker('inspect_image', image)
         except docker.errors.NotFound:
             if self.pull_policy == "never":
                 # never pull, raise because there is no such image
