@@ -347,7 +347,7 @@ class DockerSpawner(Spawner):
     )
 
     move_certs_image = Unicode(
-        "busybox:1.29.2",
+        "busybox:1.30.1",
         config=True,
         help="""The image used to stage internal SSL certificates.
 
@@ -359,10 +359,7 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def move_certs(self, paths):
         self.log.info("Staging internal ssl certs for %s", self._log_name)
-        images = yield self.docker('images', self.move_certs_image)
-        if not images:
-            self.log.debug("Pulling image %s", self.move_certs_image)
-            yield self.docker('pull', self.move_certs_image)
+        yield self.pull_image(self.move_certs_image)
         # create the volume
         volume_name = self.format_volume_name(self.certs_volume_name, self)
         # create volume passes even if it already exists
