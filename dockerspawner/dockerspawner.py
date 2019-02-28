@@ -714,13 +714,6 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def create_object(self):
         """Create the container/service object"""
-        # image priority:
-        # 1. user options (from spawn options form)
-        # 2. self.image from config
-        image_option = self.user_options.get('image')
-        if image_option:
-            # save choice in self.image
-            self.image = yield self.check_image_whitelist(image_option)
 
         create_kwargs = dict(
             image=self.image,
@@ -834,6 +827,14 @@ class DockerSpawner(Spawner):
                 "Specifying extra_host_config via .start args is deprecated"
             )
             self.extra_host_config.update(extra_host_config)
+
+        # image priority:
+        # 1. user options (from spawn options form)
+        # 2. self.image from config
+        image_option = self.user_options.get('image')
+        if image_option:
+            # save choice in self.image
+            self.image = yield self.check_image_whitelist(image_option)
 
         image = self.image
         yield self.pull_image(image)
