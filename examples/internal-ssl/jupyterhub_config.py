@@ -1,6 +1,6 @@
 import os
 c = get_config() # noqa
-c.JupyterHub.authenticator_class = 'dummyauthenticator.DummyAuthenticator'
+c.JupyterHub.authenticator_class = 'dummy'
 
 from dockerspawner import DockerSpawner
 c.JupyterHub.spawner_class = DockerSpawner

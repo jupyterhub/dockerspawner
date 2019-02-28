@@ -1,6 +1,4 @@
-FROM jupyterhub
-RUN pip install jupyterhub-dummyauthenticator
-RUN npm i -g https://github.com/jupyterhub/configurable-http-proxy/archive/master.tar.gz
+FROM jupyterhub/jupyterhub:1.0.dev
 COPY setup.py /src/dockerspawner/setup.py
 COPY requirements.txt /src/dockerspawner/requirements.txt
 RUN pip install -r /src/dockerspawner/requirements.txt
