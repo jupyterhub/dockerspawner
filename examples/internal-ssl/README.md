@@ -10,6 +10,9 @@ with configurable-http-proxy and total internal encryption.
 
 To use it:
 
+    docker network create jupyterhub
+    docker volume create jupyterhub-ssl  jupyterhub-data
+
     docker-compose build
     docker-compose up
 
