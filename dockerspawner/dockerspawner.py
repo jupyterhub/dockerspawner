@@ -696,7 +696,13 @@ class DockerSpawner(Spawner):
     def remove_object(self):
         self.log.info("Removing %s %s", self.object_type, self.object_id)
         # remove the container, as well as any associated volumes
-        yield self.docker("remove_" + self.object_type, self.object_id, v=True)
+        try:
+            yield self.docker("remove_" + self.object_type, self.object_id, v=True)
+        except docker.errors.APIError as e:
+            if e.status_code == 409:
+                self.log.debug("Already removing %s: %s", self.object_type, self.object_id)
+            else:
+                raise
 
     @gen.coroutine
     def check_image_whitelist(self, image):
