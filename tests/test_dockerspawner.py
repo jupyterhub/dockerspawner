@@ -8,6 +8,7 @@ from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.tests.mocking import public_url
 from jupyterhub.tests.utils import async_requests
 from jupyterhub.utils import url_path_join
+from tornado import gen
 
 from dockerspawner import DockerSpawner
 
@@ -26,6 +27,7 @@ def test_start_stop(app):
     while r.status_code == 202:
         # request again
         r = yield api_request(app, "users", name, "server", method="post")
+        yield gen.sleep(0.1)
     assert r.status_code == 201, r.text
     url = url_path_join(public_url(app, user), "api/status")
     r = yield async_requests.get(url, headers={"Authorization": "token %s" % token})
@@ -59,6 +61,7 @@ def test_image_whitelist(app, image):
     while r.status_code == 202:
         # request again
         r = yield api_request(app, "users", name, "server", method="post")
+        yield gen.sleep(0.1)
     assert r.status_code == 201, r.text
     url = url_path_join(public_url(app, user), "api/status")
     r = yield async_requests.get(url, headers={"Authorization": "token %s" % token})
