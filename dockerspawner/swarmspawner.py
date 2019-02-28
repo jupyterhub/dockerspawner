@@ -231,11 +231,36 @@ class SwarmSpawner(DockerSpawner):
 
     @gen.coroutine
     def start_object(self):
-        """Nothing to do here
+        """Not actually starting anything
 
-        There is no separate start action for services
+        but use this to wait for the container to be running.
+
+        Spawner.start shouldn't return until the Spawner
+        believes a server is *running* somewhere,
+        not just requested.
         """
-        pass
+
+        dt = 1.0
+
+        while True:
+            service = yield self.get_task()
+            if not service:
+                raise RuntimeError("Service %s not found" % self.service_name)
+
+            status = service["Status"]
+            state = status["State"].lower()
+            self.log.debug("Service %s state: %s", self.service_id[:7], state)
+            if state in {"starting", "pending", "preparing"}:
+                # not ready yet, wait before checking again
+                yield gen.sleep(dt)
+                # exponential backoff
+                dt = min(dt * 1.5, 11)
+            else:
+                break
+        if state != "running":
+            raise RuntimeError(
+                "Service %s not running: %s" % (self.service_name, pformat(status))
+            )
 
     @gen.coroutine
     def stop_object(self):
