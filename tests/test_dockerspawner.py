@@ -15,7 +15,7 @@ from dockerspawner import DockerSpawner
 pytestmark = pytest.mark.usefixtures("dockerspawner")
 
 
-@pytest.mark.gen_test
+@pytest.mark.gen_test(timeout=90)
 def test_start_stop(app):
     name = "has@"
     add_user(app.db, app, name=name)
@@ -37,7 +37,7 @@ def test_start_stop(app):
     assert "kernels" in r.json()
 
 
-@pytest.mark.gen_test
+@pytest.mark.gen_test(timeout=90)
 @pytest.mark.parametrize("image", ["0.8", "0.9", "nomatch"])
 def test_image_whitelist(app, image):
     name = "checker"
@@ -73,7 +73,7 @@ def test_image_whitelist(app, image):
     r.raise_for_status()
 
 
-@pytest.mark.gen_test
+@pytest.mark.gen_test(timeout=90)
 def test_image_pull_policy(app):
     name = "gumby"
     add_user(app.db, app, name=name)
