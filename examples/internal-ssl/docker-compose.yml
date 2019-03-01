@@ -1,0 +1,89 @@
+# Copyright (c) Jupyter Development Team.
+# Distributed under the terms of the Modified BSD License.
+
+# JupyterHub docker-compose configuration file
+version: "3"
+
+services:
+  proxy:
+    restart: always
+    container_name: proxy
+    image: jupyterhub/configurable-http-proxy:4.0.1
+    restart: always
+    environment:
+      CONFIGPROXY_AUTH_TOKEN: ${CONFIGPROXY_AUTH_TOKEN}
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - "ssl:${SSL_VOLUME_CONTAINER}:ro"
+    environment:
+      CONFIGPROXY_AUTH_TOKEN: ${CONFIGPROXY_AUTH_TOKEN}
+    user: "0:0"
+    ports:
+      - "8000:8000"
+    networks:
+      default:
+        aliases:
+          - proxy
+    command: >
+       configurable-http-proxy
+       --port 8000
+       --api-ip 0.0.0.0
+       --api-port 8001
+       --error-target https://jupyterhub:8081/hub/error
+       --api-ssl-key ${SSL_VOLUME_CONTAINER}/certs/proxy-api/proxy-api.key
+       --api-ssl-cert ${SSL_VOLUME_CONTAINER}/certs/proxy-api/proxy-api.crt
+       --api-ssl-ca ${SSL_VOLUME_CONTAINER}/certs/proxy-api-ca_trust.crt
+       --api-ssl-request-cert
+       --api-ssl-reject-unauthorized
+       --client-ssl-key ${SSL_VOLUME_CONTAINER}/certs/proxy-client/proxy-client.key
+       --client-ssl-cert ${SSL_VOLUME_CONTAINER}/certs/proxy-client/proxy-client.crt
+       --client-ssl-ca ${SSL_VOLUME_CONTAINER}/certs/proxy-client-ca_trust.crt
+       --client-ssl-request-cert
+       --client-ssl-reject-unauthorized
+
+  hub:
+    user: "0:0"
+    depends_on:
+      - proxy
+    build:
+      context: ../..
+      dockerfile: examples/internal-ssl/Dockerfile
+    restart: always
+    image: jupyterhub:internal-ssl
+    container_name: jupyterhub
+    networks:
+      default:
+        aliases:
+          - jupyterhub
+    volumes:
+      # Bind Docker socket on the host so we can connect to the daemon from
+      # within the container
+      - "/var/run/docker.sock:/var/run/docker.sock:rw"
+      # Bind Docker volume on host for JupyterHub database and cookie secrets
+      - "data:${DATA_VOLUME_CONTAINER}:rw"
+      - "ssl:${SSL_VOLUME_CONTAINER}:rw"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      CONFIGPROXY_AUTH_TOKEN: ${CONFIGPROXY_AUTH_TOKEN}
+      # All containers will join this network
+      DOCKER_NETWORK_NAME: ${DOCKER_NETWORK_NAME}
+      # JupyterHub will spawn this Notebook image for users
+      DOCKER_NOTEBOOK_IMAGE: ${DOCKER_NOTEBOOK_IMAGE}
+      # SSL path
+      INTERNAL_SSL_PATH: ${SSL_VOLUME_CONTAINER}/certs
+    working_dir: ${DATA_VOLUME_CONTAINER}
+    command: >
+      jupyterhub -f /srv/jupyterhub/jupyterhub_config.py
+
+volumes:
+  data:
+    external:
+      name: ${DATA_VOLUME_HOST}
+  ssl:
+    external:
+      name: ${SSL_VOLUME_HOST}
+
+networks:
+  default:
+    external:
+      name: ${DOCKER_NETWORK_NAME}

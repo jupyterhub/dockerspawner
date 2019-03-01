@@ -223,6 +223,10 @@ class SwarmSpawner(DockerSpawner):
 
         return (yield self.docker("create_service", **create_kwargs))
 
+    @property
+    def internal_hostname(self):
+        return self.service_name
+
     @gen.coroutine
     def remove_object(self):
         self.log.info("Removing %s %s", self.object_type, self.object_id)
@@ -285,7 +289,7 @@ class SwarmSpawner(DockerSpawner):
         are correct, which depends on the route to the service
         and the port it opens.
         """
-        if self.use_internal_ip:
+        if self.use_internal_hostname or self.use_internal_ip:
             ip = self.service_name
             port = self.port
         else:
