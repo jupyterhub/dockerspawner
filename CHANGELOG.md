@@ -6,6 +6,29 @@ command line for details.
 
 ## [Unreleased]
 
+## 0.11 - 2019-03-01
+
+### New features:
+
+- Support selecting docker spawner via JupyterHub 1.0's entrypoints:
+
+  ```python
+  c.JupyterHub.spawner_class = 'docker' # or 'docker-swarm' or 'docker-system-user'
+  ```
+- Support total internal SSL encryption with JupyterHub 1.0
+- Add new `DockerSpawner.pull_policy` to configure pulling of images.
+  Values are inspired by Kubernetes, and case-insensitive. Can be any of
+  "IfNotPresent" (new default), "Always", and "Never" (pre-0.11 behavior).
+  Now the image will be pulled by default if it is not present.
+- Add `image_whitelist` configuration which, if set, defines a default options
+  form for users to pick the desired image.
+  `image_whitelist` is a dict of `{'descriptive key': 'image:tag'}`.
+- Add `SwarmSpawner.extra_placement_spec` configuration for setting service placement
+
+### Fixes:
+
+- Slow startup in SwarmSpawner could be treated as failures.
+
 
 ## 0.10
 
@@ -123,7 +146,7 @@ Some configuration has been cleaned up to be clearer and more concise:
 
 ## [0.2] - 2016-02-16
 
-- Add `DockerSpawner.links` 
+- Add `DockerSpawner.links`
 - Use HostIp from docker port output
 - Make user home string template configurable
 
@@ -132,7 +155,8 @@ Some configuration has been cleaned up to be clearer and more concise:
 First release
 
 
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.10.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.11.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/jupyterhub/dockerspawner/compare/0.9.1...0.10.0
 [0.9.1]: https://github.com/jupyterhub/dockerspawner/compare/0.9.0...0.9.1
 [0.9.0]: https://github.com/jupyterhub/dockerspawner/compare/0.8.0...0.9.0
