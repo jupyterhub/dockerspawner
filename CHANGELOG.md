@@ -6,9 +6,11 @@ command line for details.
 
 ## [Unreleased]
 
-## 0.11 - 2019-03-01
+## 0.11
 
-### New features:
+### [0.11.0] - 2019-03-01
+
+#### New features:
 
 - Support selecting docker spawner via JupyterHub 1.0's entrypoints:
 
@@ -25,7 +27,7 @@ command line for details.
   `image_whitelist` is a dict of `{'descriptive key': 'image:tag'}`.
 - Add `SwarmSpawner.extra_placement_spec` configuration for setting service placement
 
-### Fixes:
+#### Fixes:
 
 - Slow startup in SwarmSpawner could be treated as failures.
 
@@ -156,7 +158,7 @@ First release
 
 
 [Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.11.0...HEAD
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.10.0...0.11.0
+[0.11.0]: https://github.com/jupyterhub/dockerspawner/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/jupyterhub/dockerspawner/compare/0.9.1...0.10.0
 [0.9.1]: https://github.com/jupyterhub/dockerspawner/compare/0.9.0...0.9.1
 [0.9.0]: https://github.com/jupyterhub/dockerspawner/compare/0.8.0...0.9.0
