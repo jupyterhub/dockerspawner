@@ -254,7 +254,7 @@ class SwarmSpawner(DockerSpawner):
             status = service["Status"]
             state = status["State"].lower()
             self.log.debug("Service %s state: %s", self.service_id[:7], state)
-            if state in {"starting", "pending", "preparing"}:
+            if state in {"new", "assigned", "accepted", "starting", "pending", "preparing"}:
                 # not ready yet, wait before checking again
                 yield gen.sleep(dt)
                 # exponential backoff
