@@ -8,6 +8,11 @@ command line for details.
 
 ## 0.11
 
+### [0.11.1] - 2019-04-25
+
+- Fix some compatibility issues
+- Add more states to be recognized as pending for SwarmSpawner
+
 ### [0.11.0] - 2019-03-01
 
 #### New features:
@@ -157,7 +162,8 @@ Some configuration has been cleaned up to be clearer and more concise:
 First release
 
 
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.11.0...HEAD
+[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.11.1...HEAD
+[0.11.1]: https://github.com/jupyterhub/dockerspawner/compare/0.11.0...0.11.1
 [0.11.0]: https://github.com/jupyterhub/dockerspawner/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/jupyterhub/dockerspawner/compare/0.9.1...0.10.0
 [0.9.1]: https://github.com/jupyterhub/dockerspawner/compare/0.9.0...0.9.1
