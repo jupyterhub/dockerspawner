@@ -16,6 +16,9 @@ class SystemUserSpawner(DockerSpawner):
             Format string for the path to the user's home directory on the host.
             The format string should include a `username` variable, which will
             be formatted with the user's username.
+            
+            If the string is empty or `None`, the user's home directory will
+            be looked up via the `pwd` database.
             """
         )
     )
@@ -51,8 +54,14 @@ class SystemUserSpawner(DockerSpawner):
     def host_homedir(self):
         """
         Path to the volume containing the user's home directory on the host.
+        Looked up from `pwd` if an empty format string or `None` has been specified.
         """
-        return self.host_homedir_format_string.format(username=self.user.name)
+        if self.host_homedir_format_string is not None and self.host_homedir_format_string != "":
+            homedir = self.host_homedir_format_string.format(username=self.user.name)
+        else:
+            import pwd
+            homedir = pwd.getpwnam(self.user.name).pw_dir
+        return homedir
 
     @property
     def homedir(self):
