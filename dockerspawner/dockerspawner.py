@@ -632,12 +632,16 @@ class DockerSpawner(Spawner):
         e.g. calling 'docker exec'
         """
 
-        yield self.get_object()
+        container = yield self.get_object()
+        container_id = container[self.object_id_key]
+
         exec_kwargs = {
             'cmd': self.post_start_cmd,
-            'container': self.container_id
+            'container': container_id
         }
+        
         exec_id = yield self.docker("exec_create", **exec_kwargs)
+
         return self.docker("exec_start", exec_id=exec_id)
 
     @property
