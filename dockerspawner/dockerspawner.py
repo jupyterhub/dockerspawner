@@ -679,7 +679,6 @@ class DockerSpawner(Spawner):
 
     object_id = Unicode(allow_none=True)
 
-    @property
     def template_namespace(self):
         escaped_image = self.image.replace("/", "_")
         server_name = getattr(self, "name", "")
@@ -695,7 +694,7 @@ class DockerSpawner(Spawner):
     @property
     def object_name(self):
         """Render the name of our container/service using name_template"""
-        return self.name_template.format(**self.template_namespace)
+        return self.name_template.format(**self.template_namespace())
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
