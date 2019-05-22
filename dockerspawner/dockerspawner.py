@@ -866,6 +866,10 @@ class DockerSpawner(Spawner):
             # this will still be overriden by extra_host_config
             host_config["mem_limit"] = self.mem_limit
 
+        if getattr(self, "cpu_limit", None) is not None:
+            host_config["cpu_period"] = 100000
+            host_config["cpu_quota"] = 50000 * self.cpu_limit
+
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}
         self.log.debug('extra_host_config', self.extra_host_config)
