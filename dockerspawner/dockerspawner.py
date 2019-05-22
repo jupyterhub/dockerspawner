@@ -868,6 +868,7 @@ class DockerSpawner(Spawner):
 
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}
+        self.log.debug('extra_host_config', self.extra_host_config)
         host_config.update(self.extra_host_config)
         host_config.setdefault("network_mode", self.network_name)
 
