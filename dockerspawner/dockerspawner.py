@@ -858,7 +858,8 @@ class DockerSpawner(Spawner):
 
         # build the dictionary of keyword arguments for host_config
         host_config = dict(binds=self.volume_binds, links=self.links)
-
+        self.log.debug('extra_host_config: %s', self.extra_host_config)
+        host_config.update(self.extra_host_config)
         if getattr(self, "mem_limit", None) is not None:
             # If jupyterhub version > 0.7, mem_limit is a traitlet that can
             # be directly configured. If so, use it to set mem_limit.
@@ -868,7 +869,7 @@ class DockerSpawner(Spawner):
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}
         self.log.debug('extra_host_config', self.extra_host_config)
-        host_config.update(self.extra_host_config)
+
         host_config.setdefault("network_mode", self.network_name)
 
         self.log.debug("Starting host with config: %s", host_config)
