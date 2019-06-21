@@ -969,7 +969,10 @@ class DockerSpawner(Spawner):
 
         # build the dictionary of keyword arguments for host_config
         host_config = dict(
-            binds=self.volume_binds, mounts=self.mount_binds, links=self.links
+            auto_remove=self.remove,
+            binds=self.volume_binds,
+            links=self.links,
+            mounts=self.mount_binds,
         )
 
         if getattr(self, "mem_limit", None) is not None:
