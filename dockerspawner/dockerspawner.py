@@ -734,6 +734,11 @@ class DockerSpawner(Spawner):
             args.append("--hub-api-url=%s" % self._public_hub_api_url())
         return args
 
+    def get_env(self):
+        env = super().get_env()
+        env['JUPYTER_IMAGE_SPEC'] = self.image
+        return env
+
     def _docker(self, method, *args, **kwargs):
         """wrapper for calling docker methods
 
