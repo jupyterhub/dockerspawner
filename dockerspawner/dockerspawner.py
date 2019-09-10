@@ -911,8 +911,12 @@ class DockerSpawner(Spawner):
           - pulls if pull_policy == 'ifnotpresent'
         """
         # docker wants to split repo:tag
-        if ':' in image:
-            repo, tag = image.split(':', 1)
+        # the part split("/")[-1] allows having an image from a custom repo
+        # with port but without tag. For example: my.docker.repo:51150/foo would not 
+        # pass this test, resulting in image=my.docker.repo:51150/foo and tag=latest
+        if ':' in image.split("/")[-1]:
+            # rsplit splits from right to left, allowing to have a custom image repo with port
+            repo, tag = image.rsplit(':', 1)
         else:
             repo = image
             tag = 'latest'
