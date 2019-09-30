@@ -3,6 +3,7 @@ A Spawner for JupyterHub that runs each user's server in a separate docker conta
 """
 
 from concurrent.futures import ThreadPoolExecutor
+from copy import copy
 from io import BytesIO
 import os
 from pprint import pformat
@@ -635,7 +636,7 @@ class DockerSpawner(Spawner):
         Returns a sorted list of all the values in self.volumes or
         self.read_only_volumes.
         """
-        return sorted([value["bind"] for value in self.volume_binds.values()])
+        return sorted([v["target"] for v in self._format_volumes(self.volumes)])
 
     @property
     def volume_binds(self):
@@ -650,7 +651,8 @@ class DockerSpawner(Spawner):
         mode may be 'ro', 'rw', 'z', or 'Z'.
 
         """
-        binds = self._volumes_to_binds(self.volumes, {})
+        binds = self._volumes_to_binds(self.volumes)
+
         read_only_volumes = {}
         # FIXME: replace getattr with self.internal_ssl
         # when minimum jupyterhub is 1.0
@@ -658,7 +660,9 @@ class DockerSpawner(Spawner):
             # add SSL volume as read-only
             read_only_volumes[self.certs_volume_name] = '/certs'
         read_only_volumes.update(self.read_only_volumes)
-        return self._volumes_to_binds(read_only_volumes, binds, mode="ro")
+        read_only_binds = self._volumes_to_binds(read_only_volumes, mode="ro")
+
+        return {**binds, **read_only_binds}
 
     _escaped_name = None
 
@@ -847,6 +851,14 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def create_object(self):
         """Create the container/service object"""
+
+        # ensure all Docker volumes exist prior
+        docker_volumes = [
+            v for v in self._format_volumes(self.volumes) 
+            if not v['source'].startswith('/')
+        ]
+        for vol in docker_volumes:
+            yield self.ensure_volume(vol)
 
         create_kwargs = dict(
             image=self.image,
@@ -1118,22 +1130,73 @@ class DockerSpawner(Spawner):
 
         self.clear_state()
 
-    def _volumes_to_binds(self, volumes, binds, mode="rw"):
+    @gen.coroutine
+    def ensure_volume(self, volume):
+        """Create a Docker volume with the configured driver, if it doesn't exist.
+        """
+        existing = yield self.docker('volumes')
+
+        if volume['source'] not in [v['Name'] for v in existing['Volumes']]:
+            self.log.info("Creating volume %s", volume['source'])
+            yield self.docker(
+                'create_volume',
+                name=volume['source'],
+                driver=volume.get('driver'),
+                driver_opts=volume.get('driver_opts')
+            )
+
+    def _volumes_to_binds(self, volumes, mode="rw"):
         """Extract the volume mount points from volumes property.
 
         Returns a dict of dict entries of the form::
 
             {'/host/dir': {'bind': '/guest/dir': 'mode': 'rw'}}
         """
+        return {
+            v['source']: {
+                'bind': v['target'], 
+                'mode': v.get('mode', mode)
+            }
+            for v in self._format_volumes(volumes)
+        }
 
+    def _format_volumes(self, volumes):
+        """Constructs a normalized representation of volumes from the volumes property.
+
+        The 'source' and 'target' are formatted using format_volume_name.
+
+        Returns a list of volumes of the form::
+
+            {
+                'source': volume_or_hostdir_name, 
+                'target': container_mountpoint,
+                'mode': readwrite_mode,
+                'driver': volume_driver,
+                'driver_opts': {**volume_driver_options},
+            }
+        """
         def _fmt(v):
             return self.format_volume_name(v, self)
 
+        formatted = []
         for k, v in volumes.items():
-            m = mode
             if isinstance(v, dict):
-                if "mode" in v:
-                    m = v["mode"]
-                v = v["bind"]
-            binds[_fmt(k)] = {"bind": _fmt(v), "mode": m}
-        return binds
+                v = copy(v)
+            else:
+                # support simple format like {source: target}
+                v = {'target': v}
+
+            if not 'target' in v:
+                raise Exception(
+                    "Missing volume 'target' attribute. Make sure "
+                    "your volume definitions include this attribute "
+                    "when using the dictionary-style syntax."
+                )
+
+            v['source'] = _fmt(k)
+            v['target'] = _fmt(v['target'])
+
+            formatted.append(v)
+        
+        return formatted
+            
