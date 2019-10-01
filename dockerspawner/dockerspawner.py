@@ -615,6 +615,35 @@ class DockerSpawner(Spawner):
         ),
     )
 
+    post_start_cmd = UnicodeOrFalse(
+        False,
+        config=True,
+        help=""" If specified, the command will be executed inside the container
+        after starting.
+        Similar to using 'docker exec'
+        """
+    )
+
+    @gen.coroutine
+    def post_start_exec(self):
+        """
+        Execute additional command inside the container after starting it.
+
+        e.g. calling 'docker exec'
+        """
+
+        container = yield self.get_object()
+        container_id = container[self.object_id_key]
+
+        exec_kwargs = {
+            'cmd': self.post_start_cmd,
+            'container': container_id
+        }
+        
+        exec_id = yield self.docker("exec_create", **exec_kwargs)
+
+        return self.docker("exec_start", exec_id=exec_id)
+
     @property
     def tls_client(self):
         """A tuple consisting of the TLS client certificate and key if they
@@ -1020,6 +1049,9 @@ class DockerSpawner(Spawner):
 
         # start the container
         yield self.start_object()
+
+        if self.post_start_cmd:
+            yield self.post_start_exec()
 
         ip, port = yield self.get_ip_and_port()
         if jupyterhub.version_info < (0, 7):
