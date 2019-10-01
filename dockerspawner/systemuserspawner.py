@@ -124,9 +124,10 @@ class SystemUserSpawner(DockerSpawner):
             NB_USER=self.user.name,
             USER_ID=self.user_id, # deprecated
             NB_UID=self.user_id,
-            NB_GID=self.group_id,
             HOME=self.homedir,
         ))
+        if self.group_id >= 0:
+            env.update(dict(NB_GID=self.group_id))
         return env
 
     def _user_id_default(self):
