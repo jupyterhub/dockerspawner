@@ -521,7 +521,7 @@ class DockerSpawner(Spawner):
         config=True, help="Additional args to create_host_config for container create"
     )
 
-    _docker_safe_chars = set(string.ascii_letters + string.digits + "-")
+    _docker_safe_chars = set(string.ascii_letters + string.digits + "-_")
     _docker_escape_char = "_"
 
     hub_ip_connect = Unicode(
