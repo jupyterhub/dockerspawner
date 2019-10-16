@@ -737,7 +737,7 @@ class DockerSpawner(Spawner):
     def object_name(self):
         """Render the name of our container/service using name_template"""
         rendered_name = self.name_template.format(**self.template_namespace())
-        if lowercase_service:
+        if self.lowercase_service:
             rendered_name = rendered_name.lower()
         return self.name_template.format(**self.template_namespace())
 
