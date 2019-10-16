@@ -739,7 +739,7 @@ class DockerSpawner(Spawner):
         rendered_name = self.name_template.format(**self.template_namespace())
         if self.lowercase_service:
             rendered_name = rendered_name.lower()
-        return self.name_template.format(**self.template_namespace())
+        return rendered_name
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
