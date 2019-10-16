@@ -623,6 +623,19 @@ class DockerSpawner(Spawner):
         Similar to using 'docker exec'
         """
     )
+    
+    lowercase_service = Bool(
+        False,
+        config=True,
+        help=dedent(
+            """
+            Lowercase service name
+            
+            Set the generated service name to lowercase to avoid conflict in certain situations.
+            This is disabled by default to avoid duplicate usernames.
+            """
+        ),
+    )
 
     @gen.coroutine
     def post_start_exec(self):
@@ -723,6 +736,9 @@ class DockerSpawner(Spawner):
     @property
     def object_name(self):
         """Render the name of our container/service using name_template"""
+        rendered_name = self.name_template.format(**self.template_namespace())
+        if lowercase_service:
+            rendered_name = rendered_name.lower()
         return self.name_template.format(**self.template_namespace())
 
     def load_state(self, state):
