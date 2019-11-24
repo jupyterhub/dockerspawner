@@ -1,7 +1,7 @@
 **[Prerequisites](#prerequisites)** |
 **[Installation](#installation)** |
 **[Configuration](#configuration)** |
-**[Building the Docker images](#building-the-docker-images)** |
+**[Building the Docker images](#picking-or-building-a-docker-image)** |
 **[Contributing](#contributing)** |
 **[License](#license)** |
 **[Getting help](#getting-help)**
