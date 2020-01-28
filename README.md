@@ -9,6 +9,13 @@
 
 # DockerSpawner
 
+[![TravisCI (.org) build status](https://img.shields.io/travis/jupyterhub/dockerspawner/master?logo=travis)](https://travis-ci.org/jupyterhub/dockerspawner)
+[![Latest PyPI version](https://img.shields.io/pypi/v/dockerspawner?logo=pypi)](https://pypi.org/project/dockerspawner/)
+[![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/dockerspawner/issues)
+[![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
+[![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
+
+
 **DockerSpawner** enables [JupyterHub](https://github.com/jupyterhub/jupyterhub) 
 to spawn single user notebook servers in Docker containers.
 
