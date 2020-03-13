@@ -323,6 +323,17 @@ class DockerSpawner(Spawner):
         help="Extra keyword arguments to pass to the docker.Client constructor.",
     )
 
+    label_templates = Dict(
+        config=True,
+        help=dedent(
+            """
+            Labels to be applied to the new container, with {username}, {imagename}, {prefix} replacements.
+            {raw_username} can be used for the original, not escaped username
+            (may contain uppercase, special characters).
+            """
+        ),
+    )
+
     volumes = Dict(
         config=True,
         help=dedent(
@@ -725,6 +736,17 @@ class DockerSpawner(Spawner):
         """Render the name of our container/service using name_template"""
         return self.name_template.format(**self.template_namespace())
 
+    @property
+    def labels(self):
+        if self.labels:
+            """Render the labels of our container/service using label_templates"""
+            return {
+                key.format(**self.template_namespace()):
+                    value.format(**self.template_namespace())
+                for (key, value) in self.label_templates.items()
+            }
+        return {}
+
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
         if "container_id" in state:
@@ -882,6 +904,7 @@ class DockerSpawner(Spawner):
             environment=self.get_env(),
             volumes=self.volume_mount_points,
             name=self.container_name,
+            labels=self.labels,
             command=(yield self.get_command()),
         )
 
