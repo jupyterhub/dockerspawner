@@ -639,7 +639,7 @@ class DockerSpawner(Spawner):
             'cmd': self.post_start_cmd,
             'container': container_id
         }
-        
+
         exec_id = yield self.docker("exec_create", **exec_kwargs)
 
         return self.docker("exec_start", exec_id=exec_id)
@@ -888,7 +888,14 @@ class DockerSpawner(Spawner):
         # ensure internal port is exposed
         create_kwargs["ports"] = {"%i/tcp" % self.port: None}
 
-        create_kwargs.update(self.extra_create_kwargs)
+        # ensure we only update environment variables and not overwrite them
+        extra_create_kwargs = self.extra_create_kwargs
+        extra_environment = extra_create_kwargs.get('environment')
+
+        if extra_environment:
+          extra_create_kwargs['environment'] = {**create_kwargs['environment'], **extra_environment}
+
+        create_kwargs.update(extra_create_kwargs)
 
         # build the dictionary of keyword arguments for host_config
         host_config = dict(binds=self.volume_binds, links=self.links)
@@ -941,7 +948,7 @@ class DockerSpawner(Spawner):
         """
         # docker wants to split repo:tag
         # the part split("/")[-1] allows having an image from a custom repo
-        # with port but without tag. For example: my.docker.repo:51150/foo would not 
+        # with port but without tag. For example: my.docker.repo:51150/foo would not
         # pass this test, resulting in image=my.docker.repo:51150/foo and tag=latest
         if ':' in image.split("/")[-1]:
             # rsplit splits from right to left, allowing to have a custom image repo with port
