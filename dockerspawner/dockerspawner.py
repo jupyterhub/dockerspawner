@@ -971,7 +971,7 @@ class DockerSpawner(Spawner):
         # ensure internal port is exposed
         create_kwargs["ports"] = {"%i/tcp" % self.port: None}
 
-        create_kwargs.update(self.extra_create_kwargs)
+        create_kwargs.update(self._extra_create_kwargs_subs())
 
         # build the dictionary of keyword arguments for host_config
         host_config = dict(
@@ -1267,6 +1267,25 @@ class DockerSpawner(Spawner):
                 v = v["bind"]
             binds[_fmt(k)] = {"bind": _fmt(v), "mode": m}
         return binds
+
+    def _extra_create_kwargs_subs(self):
+        """
+        Substitutes values from template_namespace() for extra docker create kwargs.
+        """
+        subs = {}
+
+        def _fmt(v):
+            return v.format(**self.template_namespace())
+
+        for k, v in self.extra_create_kwargs.items():
+            if isinstance(v, dict):
+                subs[_fmt(k)] = {}
+                for k1, v1 in v.items():
+                    subs[_fmt(k)].update({_fmt(k1): _fmt(v1)})
+            else:
+                subs[_fmt(k)] = _fmt(v)
+
+        return subs
 
 
 def _deprecated_method(old_name, new_name, version):
