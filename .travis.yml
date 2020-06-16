@@ -1,23 +1,22 @@
-sudo: required
 language: python
-python:
-  - 3.5
 env:
   global:
     - ASYNC_TEST_TIMEOUT=30
-  matrix:
-    - JUPYTERHUB=0.8 EXTRA_PIP='tornado<5'
-    - JUPYTERHUB=0.9
+
+# request additional services for the jobs to access
 services:
   - docker
+
 before_install:
   - docker swarm init
   - nvm install 10; nvm use 10
   - npm install -g configurable-http-proxy
   - pip install --upgrade -r dev-requirements.txt jupyterhub==${JUPYTERHUB:-0}.* ${EXTRA_PIP}
+
 install:
   - pip install -e .
   - pip freeze
+
 script:
   - pyflakes dockerspawner
   - |
@@ -41,7 +40,22 @@ script:
       pytest -vsx
     fi
 
-matrix:
+jobs:
   include:
-    - python: 3.6
+    - name: internal-ssl test
+      python: 3.6
       env: TEST=internal-ssl
+    - name: python:3.5 + jupyterhub 0.8 + tornado < 5
+      python: 3.5
+      env: JUPYTERHUB=0.8 EXTRA_PIP='tornado<5'
+    - name: python:3.6 + jupyterhub 0.8 + tornado < 5
+      python: 3.6
+      env: JUPYTERHUB=0.8 EXTRA_PIP='tornado<5'
+    - name: python:3.7 + jupyterhub 0.9
+      python: 3.7
+      env: JUPYTERHUB=0.9
+    - name: python:3.8 + jupyterhub 0.9
+      python: 3.8
+      env: JUPYTERHUB=0.9
+  fast_finish: true
+
