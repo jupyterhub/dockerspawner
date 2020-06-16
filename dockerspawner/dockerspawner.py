@@ -15,6 +15,7 @@ import warnings
 import docker
 from docker.errors import APIError
 from docker.utils import kwargs_from_env
+from docker.types import Mount
 from tornado import gen, web
 
 from escapism import escape
@@ -342,6 +343,18 @@ class DockerSpawner(Spawner):
             In this case, if you use {username} in either the host or guest
             file/directory path, it will be replaced with the current
             user's name.
+            """
+        ),
+    )
+
+    mounts = List(
+        config=True,
+        help=dedent(
+            """
+            List of dict with keys to match docker.types.Mount for more advanced 
+            configuration of mouted volumes.  As with volumes, if the default
+            format_volume_name is in use, you can use {username} in the source or 
+            target paths, and it will be replaced with the current user's name.
             """
         ),
     )
@@ -689,6 +702,23 @@ class DockerSpawner(Spawner):
         read_only_volumes.update(self.read_only_volumes)
         return self._volumes_to_binds(read_only_volumes, binds, mode="ro")
 
+    @property
+    def mount_binds(self):
+        """
+        A different way of specifying docker volumes using more advanced spec.
+        Converts mounts list of dict to a list of docker.types.Mount
+        """
+        def _fmt(v):
+            return self.format_volume_name(v, self)
+
+        mounts = []
+        for mount in self.mounts:
+            args = dict(mount)
+            args["source"] = _fmt(mount["source"])
+            args["target"] = _fmt(mount["target"])
+            mounts.append(Mount(**args))
+        return mounts
+
     _escaped_name = None
 
     @property
@@ -891,7 +921,8 @@ class DockerSpawner(Spawner):
         create_kwargs.update(self.extra_create_kwargs)
 
         # build the dictionary of keyword arguments for host_config
-        host_config = dict(binds=self.volume_binds, links=self.links)
+        host_config = dict(binds=self.volume_binds, mounts=self.mount_binds, 
+                           links=self.links)
 
         if getattr(self, "mem_limit", None) is not None:
             # If jupyterhub version > 0.7, mem_limit is a traitlet that can
