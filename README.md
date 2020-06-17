@@ -2,6 +2,7 @@
 
 [![TravisCI (.org) build status](https://img.shields.io/travis/jupyterhub/dockerspawner/master?logo=travis)](https://travis-ci.org/jupyterhub/dockerspawner)
 [![Latest PyPI version](https://img.shields.io/pypi/v/dockerspawner?logo=pypi)](https://pypi.org/project/dockerspawner/)
+[![Documentation build status](https://img.shields.io/readthedocs/jupyterhub?logo=read-the-docs)](https://jupyterhub-dockerspawner.readthedocs.org/en/latest/)
 [![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/dockerspawner/issues)
 [![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
 [![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
@@ -20,7 +21,7 @@ There are three basic types of spawners available for dockerspawner:
 - SystemUserSpawner: spawns single user notebook servers
   that correspond to system users.
 
-See the [DockerSpawner documentation](https://jupyterhub-dockerspawner.readthedocs.io/en/latest/)
+See the [DockerSpawner documentation](https://jupyterhub-dockerspawner.readthedocs.org/en/latest/)
 for more information about features and usage.
 
 ## Prerequisites
