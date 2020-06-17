@@ -1,3 +1,4 @@
+autodoc-traits
 pydata-sphinx-theme
 recommonmark
 sphinx
