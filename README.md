@@ -44,7 +44,7 @@ pip install dockerspawner
 
 ## Contributing
 
-If you would like to contribute to the project (:heart), please read our 
+If you would like to contribute to the project (:heart:), please read our 
 [contributor documentation](http://jupyterhub-dockerspawner/en/latest/contributing.html)
 and the [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
@@ -59,8 +59,7 @@ All code is licensed under the terms of the revised BSD license.
 ## Getting help
 
 We encourage you to ask questions on the [Discourse community forum](https://discourse.jupyter.org/),
-and you may participate in development discussions or get live help on 
-[Gitter](https://gitter.im/jupyterhub/jupyterhub).
+or [Gitter](https://gitter.im/jupyterhub/jupyterhub).
 
 
 ## Resources
