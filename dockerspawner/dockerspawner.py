@@ -671,6 +671,7 @@ class DockerSpawner(Spawner):
         Volumes are declared in docker-py in two stages.  First, you declare
         all the locations where you're going to mount volumes when you call
         create_container.
+
         Returns a sorted list of all the values in self.volumes or
         self.read_only_volumes.
         """
@@ -680,14 +681,12 @@ class DockerSpawner(Spawner):
     def volume_binds(self):
         """
         The second half of declaring a volume with docker-py happens when you
-        actually call start().  The required format is a dict of dicts that
+        actually call start(). The required format is a dict of dicts that
         looks like:
 
-        {
-            host_location: {'bind': container_location, 'mode': 'rw'}
-        }
-        mode may be 'ro', 'rw', 'z', or 'Z'.
+        {host_location: {'bind': container_location, 'mode': 'rw'}}
 
+        Mode may be 'ro', 'rw', 'z', or 'Z'.
         """
         binds = self._volumes_to_binds(self.volumes, {})
         read_only_volumes = {}
