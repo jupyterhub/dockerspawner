@@ -1,0 +1,31 @@
+version: 2
+jobs:
+  build_docs:
+    docker:
+      - image: circleci/python:3.6-stretch
+    steps:
+      - checkout
+
+      # Install documentation requirements
+      - run:
+          name: Install docs dependencies
+          command: |
+            sudo pip install -r docs/requirements.txt
+
+      # Build the docs
+      - run:
+          name: Build docs to store
+          command: |
+            cd docs
+            make html
+
+      - store_artifacts:
+          path: docs/build/html/
+          destination: html
+
+workflows:
+  version: 2
+  default:
+    jobs:
+      - build_docs
+
