@@ -1,10 +1,3 @@
-**[Prerequisites](#prerequisites)** |
-**[Installation](#installation)** |
-**[Contributing](#contributing)** |
-**[License](#license)** |
-**[Getting help](#getting-help)**
-
-
 # DockerSpawner
 
 [![TravisCI (.org) build status](https://img.shields.io/travis/jupyterhub/dockerspawner/master?logo=travis)](https://travis-ci.org/jupyterhub/dockerspawner)
