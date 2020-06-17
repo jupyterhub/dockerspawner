@@ -1,0 +1,4 @@
+pydata-sphinx-theme
+recommonmark
+sphinx
+sphinx-copybutton
