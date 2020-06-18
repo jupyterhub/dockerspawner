@@ -2,3 +2,4 @@ autodoc-traits
 pydata-sphinx-theme
 myst_parser[sphinx]
 sphinx-copybutton
+sphinx<3
