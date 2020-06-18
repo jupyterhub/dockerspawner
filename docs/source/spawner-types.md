@@ -1,4 +1,4 @@
-## Choosing a spawner
+# Choosing a spawner
 
 Three basic types of spawners are available for dockerspawner:
 
@@ -33,14 +33,12 @@ may wish to use SystemUserSpawner are:
 - You are using an external service, such as nbgrader, that relies on 
   distinct unix user ownership and permissions.
   
----
-**Note:**
+```{note}
 If neither of those cases applies, DockerSpawner is probably the right
 choice.
+```
 
----
-
-### DockerSpawner
+## DockerSpawner
 
 Tell JupyterHub to use DockerSpawner by adding the following line to 
 your `jupyterhub_config.py`:
@@ -52,7 +50,7 @@ c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
 There is a complete example in [examples/oauth](https://github.com/jupyterhub/dockerspawner/tree/master/examples/oauth)
 for using GitHub OAuth to authenticate users, and spawn containers with docker.
 
-### SwarmSpawner
+## SwarmSpawner
 
 Tell JupyterHub to use SwarmSpawner by adding the following line to
 your `jupyterhub_config.py`:
@@ -105,7 +103,7 @@ c.SwarmSpawner.extra_host_config = {'network_mode': network_name}
 
 Unless otherwise noted, SwarmSpawner supports the same configuration options as DockerSpawner.
 
-### SystemUserSpawner
+## SystemUserSpawner
 
 If you want to spawn notebook servers for users that correspond to system users,
 you can use the SystemUserSpawner instead. Add the following to your
@@ -130,11 +128,13 @@ For a full example of how `SystemUserSpawner` is used, see the
 repository (this additionally runs the JupyterHub server within a docker
 container, and authenticates users using GitHub OAuth).
 
-### Using Docker Swarm (not swarm mode!)
+## Using Docker Swarm (not swarm mode!)
 
-**Note:** This is the older Docker Swarm, which makes a swarm look like a single docker instance.
+```{note}
+This is the older Docker Swarm, which makes a swarm look like a single docker instance.
 For the newer Docker Swarm Mode, see [SwarmSpawner][ln-spawner-swarm]. This used to be supported by
 [cassinyio](https://github.com/cassinyio/SwarmSpawner), but this repository has been deprecated.
+```
 
 Both `DockerSpawner` and `SystemUserSpawner` are compatible with
 [Docker Swarm](https://docs.docker.com/swarm/) when multiple system

@@ -89,9 +89,11 @@ class SystemUserSpawner(DockerSpawner):
         """
         The second half of declaring a volume with docker-py happens when you
         actually call start().  The required format is a dict of dicts that
-        looks like:
+        looks like::
 
-        {host_location: {'bind': container_location, 'ro': True}}
+            {
+                host_location: {'bind': container_location, 'ro': True}
+            }
         """
         volumes = super(SystemUserSpawner, self).volume_binds
         volumes[self.host_homedir] = {

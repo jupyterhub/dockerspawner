@@ -1,4 +1,4 @@
-## Contributing
+# Contributing
 
 Thank you for thinking about contributing to dockerspawner! ✨
 
@@ -8,7 +8,7 @@ and our [Code of Conduct](https://github.com/jupyter/governance/blob/master/cond
 ([reporting guidelines](https://github.com/jupyter/governance/blob/master/conduct/reporting_online.md))
 as this helps keep our community welcoming to as many people as possible. 
 
-### Development install
+## Development install
 
 For a **development install**:
 

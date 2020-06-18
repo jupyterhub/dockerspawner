@@ -1,4 +1,4 @@
-## Data persistence
+# Data persistence
 
 With `DockerSpawner`, the user's home directory is **not** persistent by default,
 so some configuration is required to do so unless the directory is to be used
@@ -9,7 +9,7 @@ isolate users in the filesystem, but leave everything owned by the same
 'actual' user with DockerSpawner. That is, using **docker mounts** to
 isolate user files, not ownership or permissions on the host.
 
-### Volume mapping
+## Volume mapping
 
 Volume mapping for DockerSpawner in `jupyterhub_config.py`
 is required configuration for persistence. To map volumes from 
@@ -21,9 +21,10 @@ If you use `{username}` in either the host or guest file/directory path,
 username substitution will be done and `{username}` will be replaced with
 the current user's name.
 
-**Note:**
+```{note}
 The jupyter/docker-stacks notebook images run the Notebook server as user
 `jovyan` and set the user's notebook directory to `/home/jovyan/work`.
+```
 
 Example:
 
@@ -40,7 +41,7 @@ c.DockerSpawner.notebook_dir = notebook_dir
 c.DockerSpawner.volumes = { 'jupyterhub-user-{username}': notebook_dir }
 ```
 
-### Memory limits
+## Memory limits
 
 If you have `jupyterhub >= 0.7`, you can set a memory limit for each user's container easily.
 
@@ -50,7 +51,7 @@ c.Spawner.mem_limit = '2G'
 
 The value can either be an integer (bytes) or a string with a 'K', 'M', 'G' or 'T' prefix.
 
-### Resources
+## Resources
 The [`jupyterhub-deploy-docker`](https://github.com/jupyterhub/jupyterhub-deploy-docker) repo
 contains a reference deployment that persists the notebook directory; 
 see its [`jupyterhub_config.py`](https://github.com/jupyterhub/jupyterhub-deploy-docker/blob/master/jupyterhub_config.py)

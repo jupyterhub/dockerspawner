@@ -1,10 +1,10 @@
-## Picking or building a Docker image
+# Picking or building a Docker image
 
 By default, DockerSpawner uses the `jupyterhub/singleuser` image
 with the appropriate tag that pins the right version of JupyterHub,
 but you can also build your own image.
 
-### How to pick a Docker image
+## How to pick a Docker image
 Any of the existing Jupyter [docker stacks](https://github.com/jupyter/docker-stacks)
 can be used with JupyterHub, provided that the version of JupyterHub in the image matches,
 and are encouraged as the image of choice. Make sure to pick a tag!
@@ -19,7 +19,7 @@ Since you need to make sure that JupyterHub in the image is compatible with Jupy
 always include the `:hash` tag part when specifying the image.
 
 
-### Hot to build your own Docker image
+## Hot to build your own Docker image
 You can also build your own image.
 The only requirements for an image to be used with JupyterHub:
 

@@ -32,17 +32,15 @@ release = '2017'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode',
+    'sphinx_copybutton',
     'sphinx.ext.napoleon',
     'autodoc_traits',
-    'sphinx_copybutton',
+    'myst_parser'
 ]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
-source_parsers = {'.md': 'recommonmark.parser.CommonMarkParser'}
 source_suffix = ['.rst', '.md']
 
 # Add any paths that contain templates here, relative to this directory.

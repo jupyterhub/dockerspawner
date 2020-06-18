@@ -682,9 +682,11 @@ class DockerSpawner(Spawner):
         """
         The second half of declaring a volume with docker-py happens when you
         actually call start(). The required format is a dict of dicts that
-        looks like:
+        looks like::
 
-        {host_location: {'bind': container_location, 'mode': 'rw'}}
+            {
+                host_location: {'bind': container_location, 'mode': 'rw'}
+            }
 
         Mode may be 'ro', 'rw', 'z', or 'Z'.
         """
