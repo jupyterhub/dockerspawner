@@ -306,17 +306,27 @@ class DockerSpawner(Spawner):
     )
 
     name_template = Unicode(
-        "{prefix}-{username}",
         config=True,
         help=dedent(
             """
-            Name of the container or service: with {username}, {imagename}, {prefix} replacements.
+            Name of the container or service: with {username}, {imagename}, {prefix}, {servername} replacements.
             {raw_username} can be used for the original, not escaped username
             (may contain uppercase, special characters).
-            The default name_template is <prefix>-<username> for backward compatibility.
+            It is important to include {servername} if JupyterHub's "named
+            servers" are enabled (JupyterHub.allow_named_servers = True).
+            If the server is named, the default name_template is
+            "{prefix}-{username}-{servername}". If it is unnamed, the default
+            name_template is "{prefix}-{username}".
             """
         ),
     )
+
+    @default('name_template')
+    def _default_name_template(self):
+        if self.name:
+            return "{prefix}-{username}-{servername}"
+        else:
+            return "{prefix}-{username}"
 
     client_kwargs = Dict(
         config=True,
