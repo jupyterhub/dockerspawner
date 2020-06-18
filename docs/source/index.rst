@@ -27,7 +27,7 @@ Contents
 Installation Guide
 ------------------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    install
 
@@ -55,7 +55,7 @@ Picking or building a Docker image
 Contributing
 ------------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    contributing
 
@@ -63,7 +63,7 @@ API Reference
 -------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    api/index
 
