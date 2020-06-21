@@ -18,11 +18,18 @@
 # -- Project information -----------------------------------------------------
 
 project = 'DockerSpawner'
-copyright = '2020, Jupyter Contributors'
+copyright = '2016, Jupyter Contributors'
 author = 'Jupyter Contributors'
 
-# The full version, including alpha/beta/rc tags
-release = '2017'
+# The version info for the project you're documenting, acts as replacement for
+# |version| and |release|, also used in various other places throughout the
+# built documents.
+#
+import pkg_resources
+# The full version, including alpha/beta/rc tags.
+release = pkg_resources.get_distribution("dockerspawner").version
+# The short X.Y version.
+version = '.'.join(release.split('.')[:2])
 
 
 # -- General configuration ---------------------------------------------------
@@ -57,7 +64,7 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'pydata_sphinx_theme'
+html_theme = 'sphinx_book_theme'
 html_logo = '_static/images/logo/logo.png'
 html_favicon = '_static/images/logo/favicon.ico'
 
