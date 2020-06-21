@@ -10,7 +10,7 @@ jobs:
       - run:
           name: Install docs dependencies
           command: |
-            sudo pip install -r docs/requirements.txt
+            python3 -m pip install --user -r docs/requirements.txt
             sudo python3 -m pip install --editable .
 
       # Build the docs
