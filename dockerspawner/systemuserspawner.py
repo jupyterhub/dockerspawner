@@ -50,6 +50,20 @@ class SystemUserSpawner(DockerSpawner):
         )
     )
 
+    group_id = Integer(-1,
+        help=dedent(
+            """
+            If system users are being used, then we need to know their group id
+            in order to mount the home directory with correct group permissions.
+
+            Group IDs are looked up in two ways:
+
+            1. stored in the state dict (authenticator can write here)
+            2. lookup via pwd
+            """
+        )
+    )
+
     @property
     def host_homedir(self):
         """
@@ -112,6 +126,8 @@ class SystemUserSpawner(DockerSpawner):
             NB_UID=self.user_id,
             HOME=self.homedir,
         ))
+        if self.group_id >= 0:
+            env.update(NB_GID=self.group_id)
         return env
 
     def _user_id_default(self):
@@ -125,15 +141,30 @@ class SystemUserSpawner(DockerSpawner):
         import pwd
         return pwd.getpwnam(self.user.name).pw_uid
 
+    def _group_id_default(self):
+        """
+        Get group_id from pwd lookup by name
+
+        If the authenticator stores group_id in the user state dict,
+        this will never be called, which is necessary if
+        the system users are not on the Hub system (i.e. Hub itself is in a container).
+        """
+        import pwd
+        return pwd.getpwnam(self.user.name).pw_gid
+
     def load_state(self, state):
         super().load_state(state)
         if 'user_id' in state:
             self.user_id = state['user_id']
+        if 'group_id' in state:
+            self.group_id = state['group_id']
 
     def get_state(self):
         state = super().get_state()
         if self.user_id >= 0:
             state['user_id'] = self.user_id
+        if self.group_id >= 0:
+            state['group_id'] = self.group_id
         return state
 
     def start(self, *, image=None, extra_create_kwargs=None,
