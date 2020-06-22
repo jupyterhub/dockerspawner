@@ -127,7 +127,7 @@ class SystemUserSpawner(DockerSpawner):
             HOME=self.homedir,
         ))
         if self.group_id >= 0:
-            env.update(dict(NB_GID=self.group_id))
+            env.update(NB_GID=self.group_id)
         return env
 
     def _user_id_default(self):
