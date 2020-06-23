@@ -67,6 +67,7 @@ exclude_patterns = []
 html_theme = 'sphinx_book_theme'
 html_logo = '_static/images/logo/logo.png'
 html_favicon = '_static/images/logo/favicon.ico'
+html_title = ''
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
