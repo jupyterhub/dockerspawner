@@ -1,6 +1,6 @@
 codecov
 pytest>=3.6
 pytest-cov
-pytest-tornado
+pytest-asyncio
 pyflakes
 notebook
