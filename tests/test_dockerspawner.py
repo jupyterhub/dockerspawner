@@ -29,6 +29,7 @@ async def test_start_stop(dockerspawner_configured_app):
         r = await api_request(app, "users", name, "server", method="post")
     assert r.status_code == 201, r.text
 
+    url = url_path_join(public_url(app, user), "api/status")
     resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})
     assert resp.effective_url == url
     resp.rethrow()
@@ -60,6 +61,8 @@ async def test_allowed_image(dockerspawner_configured_app, image):
         # request again
         r = await api_request(app, "users", name, "server", method="post")
     assert r.status_code == 201, r.text
+
+    url = url_path_join(public_url(app, user), "api/status")
     resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})
     assert resp.effective_url == url
     resp.rethrow()
