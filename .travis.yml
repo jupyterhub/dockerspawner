@@ -53,12 +53,12 @@ jobs:
     - name: python:3.6 + jupyterhub 1.0
       python: 3.6
       env: JUPYTERHUB=1.0
-    - name: python:3.7 + jupyterhub 1.2.0dev
+    - name: python:3.7 + jupyterhub 1.1.0
       python: 3.7
-      env: JUPYTERHUB=1.2.0dev
-    - name: python:3.8 + jupyterhub 1.2.0dev
+      env: JUPYTERHUB=1.1.0
+    - name: python:3.8 + jupyterhub 1.1.0
       python: 3.8
-      env: JUPYTERHUB=1.2.0dev
+      env: JUPYTERHUB=1.1.0
 
     # Only deploy if all test jobs passed
     - stage: deploy

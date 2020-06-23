@@ -36,7 +36,7 @@ async def test_start_stop(dockerspawner_configured_app):
 
 
 @pytest.mark.parametrize("image", ["1.0", "1.2.0dev", "nomatch"])
-def test_allowed_image(dockerspawner_configured_app, image):
+async def test_allowed_image(dockerspawner_configured_app, image):
     app = dockerspawner_configured_app
     name = "checker"
     add_user(app.db, app, name=name)
@@ -71,7 +71,7 @@ def test_allowed_image(dockerspawner_configured_app, image):
     r.raise_for_status()
 
 
-def test_image_pull_policy(dockerspawner_configured_app):
+async def test_image_pull_policy(dockerspawner_configured_app):
     app = dockerspawner_configured_app
     name = "gumby"
     add_user(app.db, app, name=name)

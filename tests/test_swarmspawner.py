@@ -13,8 +13,7 @@ from dockerspawner import SwarmSpawner
 # Mark all tests in this file as asyncio
 pytestmark = pytest.mark.asyncio
 
-@pytest.mark.gen_test
-def test_start_stop(swarmspawner_configured_app):
+async def test_start_stop(swarmspawner_configured_app):
     app = swarmspawner_configured_app
     name = "somebody"
     add_user(app.db, app, name=name)

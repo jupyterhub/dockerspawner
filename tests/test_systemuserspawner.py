@@ -7,15 +7,14 @@ import pytest
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.tests.mocking import public_url
 from jupyterhub.utils import url_path_join
- from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from dockerspawner import SystemUserSpawner
 
 # Mark all tests in this file as asyncio
 pytestmark = pytest.mark.asyncio
 
-@pytest.mark.gen_test
-def test_start_stop(systemuserspawner_configured_app):
+async def test_start_stop(systemuserspawner_configured_app):
     app = systemuserspawner_configured_app
     name = getuser()
     add_user(app.db, app, name=name)
