@@ -1,7 +1,6 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
-
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 import os
@@ -15,6 +14,7 @@ import warnings
 import docker
 from docker.errors import APIError
 from docker.utils import kwargs_from_env
+from functools import partial
 from tornado import gen, web
 
 from escapism import escape
@@ -53,6 +53,39 @@ _jupyterhub_xy = "%i.%i" % (jupyterhub.version_info[:2])
 
 class DockerSpawner(Spawner):
     """A Spawner for JupyterHub that runs each user's server in a separate docker container"""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._init_deprecated_methods()
+
+    def _init_deprecated_methods(self):
+        # handles deprecated signature *and* name
+        # with correct subclass override priority!
+        old_name = 'check_image_whitelist'
+        new_name = 'check_allowed_images'
+
+        # allow old name to have higher priority
+        # if and only if it's defined in a later subclass
+        # than the new name
+        for cls in self.__class__.mro():
+            has_old_name = old_name in cls.__dict__
+            has_new_name = new_name in cls.__dict__
+            if has_new_name:
+                break
+            if has_old_name and not has_new_name:
+                warnings.warn(
+                    "{0}.{1} should be renamed to {0}.{2} for DockerSpawner >= 0.12.0".format(
+                        cls.__name__, old_name, new_name
+                    ),
+                    DeprecationWarning,
+                )
+                # use old name instead of new
+                # if old name is overridden in subclass
+                def _new_calls_old(old_name, *args, **kwargs):
+                    return getattr(self, old_name)(*args, **kwargs)
+
+                setattr(self, new_name, partial(_new_calls_old, old_name))
+                break
 
     _executor = None
 
@@ -192,7 +225,9 @@ class DockerSpawner(Spawner):
         """,
     )
 
-    image_whitelist = Union(
+    image_whitelist = Union([Any(), Dict(), List()], help="Deprecated, use `Spawner.allowed_images`", config=True,)
+
+    allowed_images = Union(
         [Any(), Dict(), List()],
         default_value={},
         config=True,
@@ -211,38 +246,66 @@ class DockerSpawner(Spawner):
         If a callable, will be called with the Spawner instance as its only argument.
         The user is accessible as spawner.user.
         The callable should return a dict or list as above.
+
+        .. versionchanged:: 0.12.0
+            `Spawner.image_whitelist` renamed to `allowed_images`
+
         """,
     )
 
-    @validate('image_whitelist')
-    def _image_whitelist_dict(self, proposal):
-        """cast image_whitelist to a dict
+    _deprecated_aliases = {
+        "image_whitelist": ("allowed_images", "0.12.0"),
+    }
+
+    @observe(*list(_deprecated_aliases))
+    def _deprecated_trait(self, change):
+        """observer for deprecated traits"""
+        old_attr = change.name
+        new_attr, version = self._deprecated_aliases.get(old_attr)
+        new_value = getattr(self, new_attr)
+        if new_value != change.new:
+            # only warn if different
+            # protects backward-compatible config from warnings
+            # if they set the same value under both names
+            self.log.warning(
+                "{cls}.{old} is deprecated in DockerSpawner {version}, use {cls}.{new} instead".format(
+                    cls=self.__class__.__name__,
+                    old=old_attr,
+                    new=new_attr,
+                    version=version,
+                )
+            )
+            setattr(self, new_attr, change.new)
+
+    @validate('allowed_images')
+    def _allowed_images_dict(self, proposal):
+        """cast allowed_images to a dict
 
         If passing a list, cast it to a {item:item}
         dict where the keys and values are the same.
         """
-        whitelist = proposal.value
-        if isinstance(whitelist, list):
-            whitelist = {item: item for item in whitelist}
-        return whitelist
+        allowed_images = proposal.value
+        if isinstance(allowed_images, list):
+            allowed_images = {item: item for item in allowed_images}
+        return allowed_images
 
-    def _get_image_whitelist(self):
-        """Evaluate image_whitelist callable
+    def _get_allowed_images(self):
+        """Evaluate allowed_images callable
 
-        Or return the whitelist as-is if it's already a dict
+        Or return the list as-is if it's already a dict
         """
-        if callable(self.image_whitelist):
-            whitelist = self.image_whitelist(self)
-            if not isinstance(whitelist, dict):
+        if callable(self.allowed_images):
+            allowed_images = self.allowed_images(self)
+            if not isinstance(allowed_images, dict):
                 # always return a dict
-                whitelist = {item: item for item in whitelist}
-            return whitelist
-        return self.image_whitelist
+                allowed_images = {item: item for item in allowed_images}
+            return allowed_images
+        return self.allowed_images
 
     @default('options_form')
     def _default_options_form(self):
-        image_whitelist = self._get_image_whitelist()
-        if len(image_whitelist) <= 1:
+        allowed_images = self._get_allowed_images()
+        if len(allowed_images) <= 1:
             # default form only when there are images to choose from
             return ''
         # form derived from wrapspawner.ProfileSpawner
@@ -251,7 +314,7 @@ class DockerSpawner(Spawner):
             option_t.format(
                 image=image, selected='selected' if image == self.image else ''
             )
-            for image in image_whitelist
+            for image in allowed_images
         ]
         return """
         <label for="image">Select an image:</label>
@@ -868,17 +931,17 @@ class DockerSpawner(Spawner):
                 raise
 
     @gen.coroutine
-    def check_image_whitelist(self, image):
-        image_whitelist = self._get_image_whitelist()
-        if not image_whitelist:
+    def check_allowed_images(self, image):
+        allowed_images = self._get_allowed_images()
+        if not allowed_images:
             return image
-        if image not in image_whitelist:
+        if image not in allowed_images:
             raise web.HTTPError(
                 400,
-                "Image %s not in whitelist: %s" % (image, ', '.join(image_whitelist)),
+                "Image %s not in allowed list: %s" % (image, ', '.join(allowed_images)),
             )
         # resolve image alias to actual image name
-        return image_whitelist[image]
+        return allowed_images[image]
 
     @default('ssl_alt_names')
     def _get_ssl_alt_names(self):
@@ -1011,7 +1074,7 @@ class DockerSpawner(Spawner):
         image_option = self.user_options.get('image')
         if image_option:
             # save choice in self.image
-            self.image = yield self.check_image_whitelist(image_option)
+            self.image = yield self.check_allowed_images(image_option)
 
         image = self.image
         yield self.pull_image(image)

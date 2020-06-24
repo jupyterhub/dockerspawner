@@ -39,13 +39,13 @@ def test_start_stop(app):
 
 @pytest.mark.gen_test(timeout=90)
 @pytest.mark.parametrize("image", ["0.8", "0.9", "nomatch"])
-def test_image_whitelist(app, image):
+def test_allowed_image(app, image):
     name = "checker"
     add_user(app.db, app, name=name)
     user = app.users[name]
     assert isinstance(user.spawner, DockerSpawner)
     user.spawner.remove_containers = True
-    user.spawner.image_whitelist = {
+    user.spawner.allowed_images = {
         "0.9": "jupyterhub/singleuser:0.9",
         "0.8": "jupyterhub/singleuser:0.8",
     }
@@ -54,7 +54,7 @@ def test_image_whitelist(app, image):
     r = yield api_request(
         app, "users", name, "server", method="post", data=json.dumps({"image": image})
     )
-    if image not in user.spawner.image_whitelist:
+    if image not in user.spawner.allowed_images:
         with pytest.raises(Exception):
             r.raise_for_status()
         return
