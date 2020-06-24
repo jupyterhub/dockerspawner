@@ -19,7 +19,7 @@ Since you need to make sure that JupyterHub in the image is compatible with Jupy
 always include the `:hash` tag part when specifying the image.
 
 
-## Hot to build your own Docker image
+## How to build your own Docker image
 You can also build your own image.
 The only requirements for an image to be used with JupyterHub:
 
