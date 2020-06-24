@@ -36,7 +36,7 @@ async def test_start_stop(dockerspawner_configured_app):
     assert "kernels" in resp.body.decode("utf-8")
 
 
-@pytest.mark.parametrize("image", ["1.0", "1.2.0dev", "nomatch"])
+@pytest.mark.parametrize("image", ["1.0", "1.1.0", "nomatch"])
 async def test_allowed_image(dockerspawner_configured_app, image):
     app = dockerspawner_configured_app
     name = "checker"
@@ -44,9 +44,9 @@ async def test_allowed_image(dockerspawner_configured_app, image):
     user = app.users[name]
     assert isinstance(user.spawner, DockerSpawner)
     user.spawner.remove_containers = True
-    user.spawner.image_whitelist = {
+    user.spawner.allowed_images = {
         "1.0": "jupyterhub/singleuser:1.0",
-        "1.2": "jupyterhub/singleuser:1.2.0dev",
+        "1.1": "jupyterhub/singleuser:1.1",
     }
     token = user.new_api_token()
     # start the server

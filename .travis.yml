@@ -21,7 +21,7 @@ script:
   - pyflakes dockerspawner
   - |
     # pre-pull images to avoid long wait times in tests
-    for v in 1.0 1.2.0dev; do
+    for v in 1.0 1.1; do
       docker pull jupyterhub/singleuser:$v
       # preserve the layers with a different tag
       docker tag jupyterhub/singleuser:$v jupyterhub/singleuser:${v}-cache
