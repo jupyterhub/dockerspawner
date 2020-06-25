@@ -1248,9 +1248,6 @@ def _deprecated_method(old_name, new_name, version):
 
     return deprecated
 
-
-import types
-
 # deprecate white/blacklist method names
 for _old_name, _new_name, _version in [
     ("check_image_whitelist", "check_allowed", "0.12.0")
