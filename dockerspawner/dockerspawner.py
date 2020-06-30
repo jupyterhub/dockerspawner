@@ -14,7 +14,6 @@ import warnings
 import docker
 from docker.errors import APIError
 from docker.utils import kwargs_from_env
-from functools import partial
 from tornado import gen, web
 
 from escapism import escape
@@ -53,39 +52,6 @@ _jupyterhub_xy = "%i.%i" % (jupyterhub.version_info[:2])
 
 class DockerSpawner(Spawner):
     """A Spawner for JupyterHub that runs each user's server in a separate docker container"""
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._init_deprecated_methods()
-
-    def _init_deprecated_methods(self):
-        # handles deprecated signature *and* name
-        # with correct subclass override priority!
-        old_name = 'check_image_whitelist'
-        new_name = 'check_allowed'
-
-        # allow old name to have higher priority
-        # if and only if it's defined in a later subclass
-        # than the new name
-        for cls in self.__class__.mro():
-            has_old_name = old_name in cls.__dict__
-            has_new_name = new_name in cls.__dict__
-            if has_new_name:
-                break
-            if has_old_name and not has_new_name:
-                warnings.warn(
-                    "{0}.{1} should be renamed to {0}.{2} for DockerSpawner >= 0.12.0".format(
-                        cls.__name__, old_name, new_name
-                    ),
-                    DeprecationWarning,
-                )
-                # use old name instead of new
-                # if old name is overridden in subclass
-                def _new_calls_old(old_name, *args, **kwargs):
-                    return getattr(self, old_name)(*args, **kwargs)
-
-                setattr(self, new_name, partial(_new_calls_old, old_name))
-                break
 
     _executor = None
 
