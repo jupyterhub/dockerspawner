@@ -716,7 +716,9 @@ class DockerSpawner(Spawner):
             args = dict(mount)
             args["source"] = _fmt(mount["source"])
             args["target"] = _fmt(mount["target"])
-            mounts.append(Mount(**args))
+            optional = args.pop("optional", False)
+            if not optional or os.path.exists(args["source"]):
+                mounts.append(Mount(**args))
         return mounts
 
     _escaped_name = None
