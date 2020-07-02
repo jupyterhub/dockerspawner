@@ -1,7 +1,6 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
-
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 import os
@@ -56,6 +55,37 @@ class DockerSpawner(Spawner):
 
     _executor = None
 
+    _deprecated_aliases = {
+        "container_ip": ("host_ip", "0.9.*"),
+        "container_port": ("port", "0.9.*"),
+        "container_image": ("image", "0.9.*"),
+        "container_prefix": ("prefix", "0.10.0"),
+        "container_name_template": ("name_template", "0.10.0*"),
+        "remove_containers": ("remove", "0.10.0"),
+        "image_whitelist": ("allowed_images", "0.12.0"),
+    }
+
+    @observe(*list(_deprecated_aliases))
+    def _deprecated_trait(self, change):
+        """observer for deprecated traits"""
+        old_attr = change.name
+        new_attr, version = self._deprecated_aliases.get(old_attr)
+        new_value = getattr(self, new_attr)
+        if new_value != change.new:
+            # only warn if different
+            # protects backward-compatible config from warnings
+            # if they set the same value under both names
+            self.log.warning(
+                "{cls}.{old} is deprecated in DockerSpawner {version}, use {cls}.{new} instead".format(
+                    cls=self.__class__.__name__,
+                    old=old_attr,
+                    new=new_attr,
+                    version=version,
+                )
+            )
+            setattr(self, new_attr, change.new)
+
+
     @property
     def executor(self):
         """single global executor"""
@@ -109,15 +139,7 @@ class DockerSpawner(Spawner):
     # it is not the ip in the container,
     # but the host ip of the port forwarded to the container
     # when use_internal_ip is False
-    container_ip = Unicode("127.0.0.1", config=True)
-
-    @observe("container_ip")
-    def _container_ip_deprecated(self, change):
-        self.log.warning(
-            "DockerSpawner.container_ip is deprecated in dockerspawner-0.9."
-            "  Use DockerSpawner.host_ip to specify the host ip that is forwarded to the container"
-        )
-        self.host_ip = change.new
+    container_ip = Unicode("127.0.0.1", help="Deprecated, use `DockerSpawner.host_ip`", config=True)
 
     host_ip = Unicode(
         "127.0.0.1",
@@ -143,15 +165,7 @@ class DockerSpawner(Spawner):
 
     # unlike container_ip, container_port is the internal port
     # on which the server is bound.
-    container_port = Int(8888, min=1, max=65535, config=True)
-
-    @observe("container_port")
-    def _container_port_changed(self, change):
-        self.log.warning(
-            "DockerSpawner.container_port is deprecated in dockerspawner 0.9."
-            "  Use DockerSpawner.port"
-        )
-        self.port = change.new
+    container_port = Int(8888, min=1, max=65535, help="Deprecated, use `DockerSpawner.port.`", config=True)
 
     # fix default port to 8888, used in the container
 
@@ -165,15 +179,11 @@ class DockerSpawner(Spawner):
     def _ip_default(self):
         return "0.0.0.0"
 
-    container_image = Unicode("jupyterhub/singleuser:%s" % _jupyterhub_xy, config=True)
-
-    @observe("container_image")
-    def _container_image_changed(self, change):
-        self.log.warning(
-            "DockerSpawner.container_image is deprecated in dockerspawner 0.9."
-            "  Use DockerSpawner.image"
-        )
-        self.image = change.new
+    container_image = Unicode(
+        "jupyterhub/singleuser:%s" % _jupyterhub_xy,
+        help="Deprecated, use `DockerSpawner.image.`",
+        config=True
+    )
 
     image = Unicode(
         "jupyterhub/singleuser:%s" % _jupyterhub_xy,
@@ -192,7 +202,9 @@ class DockerSpawner(Spawner):
         """,
     )
 
-    image_whitelist = Union(
+    image_whitelist = Union([Any(), Dict(), List()], help="Deprecated, use `DockerSpawner.allowed_images`.", config=True,)
+
+    allowed_images = Union(
         [Any(), Dict(), List()],
         default_value={},
         config=True,
@@ -211,38 +223,42 @@ class DockerSpawner(Spawner):
         If a callable, will be called with the Spawner instance as its only argument.
         The user is accessible as spawner.user.
         The callable should return a dict or list as above.
+
+        .. versionchanged:: 0.12.0
+            `DockerSpawner.image_whitelist` renamed to `allowed_images`
+
         """,
     )
 
-    @validate('image_whitelist')
-    def _image_whitelist_dict(self, proposal):
-        """cast image_whitelist to a dict
+    @validate('allowed_images')
+    def _allowed_images_dict(self, proposal):
+        """cast allowed_images to a dict
 
         If passing a list, cast it to a {item:item}
         dict where the keys and values are the same.
         """
-        whitelist = proposal.value
-        if isinstance(whitelist, list):
-            whitelist = {item: item for item in whitelist}
-        return whitelist
+        allowed_images = proposal.value
+        if isinstance(allowed_images, list):
+            allowed_images = {item: item for item in allowed_images}
+        return allowed_images
 
-    def _get_image_whitelist(self):
-        """Evaluate image_whitelist callable
+    def _get_allowed_images(self):
+        """Evaluate allowed_images callable
 
-        Or return the whitelist as-is if it's already a dict
+        Or return the list as-is if it's already a dict
         """
-        if callable(self.image_whitelist):
-            whitelist = self.image_whitelist(self)
-            if not isinstance(whitelist, dict):
+        if callable(self.allowed_images):
+            allowed_images = self.allowed_images(self)
+            if not isinstance(allowed_images, dict):
                 # always return a dict
-                whitelist = {item: item for item in whitelist}
-            return whitelist
-        return self.image_whitelist
+                allowed_images = {item: item for item in allowed_images}
+            return allowed_images
+        return self.allowed_images
 
     @default('options_form')
     def _default_options_form(self):
-        image_whitelist = self._get_image_whitelist()
-        if len(image_whitelist) <= 1:
+        allowed_images = self._get_allowed_images()
+        if len(allowed_images) <= 1:
             # default form only when there are images to choose from
             return ''
         # form derived from wrapspawner.ProfileSpawner
@@ -251,7 +267,7 @@ class DockerSpawner(Spawner):
             option_t.format(
                 image=image, selected='selected' if image == self.image else ''
             )
-            for image in image_whitelist
+            for image in allowed_images
         ]
         return """
         <label for="image">Select an image:</label>
@@ -283,16 +299,11 @@ class DockerSpawner(Spawner):
         """
     )
 
-    container_prefix = Unicode(config=True, help="DEPRECATED in 0.10. Use prefix")
+    container_prefix = Unicode(config=True, help="Deprecated, use `DockerSpawner.prefix`.")
 
     container_name_template = Unicode(
-        config=True, help="DEPRECATED in 0.10. Use name_template"
+        config=True, help="Deprecated, use `DockerSpawner.name_template`."
     )
-
-    @observe("container_name_template", "container_prefix")
-    def _deprecate_container_alias(self, change):
-        new_name = change.name[len("container_") :]
-        setattr(self, new_name, change.new)
 
     prefix = Unicode(
         "jupyter",
@@ -467,7 +478,7 @@ class DockerSpawner(Spawner):
     use_docker_client_env = Bool(
         True,
         config=True,
-        help="DEPRECATED. Docker env variables are always used if present.",
+        help="Deprecated. Docker env variables are always used if present.",
     )
 
     @observe("use_docker_client_env")
@@ -486,7 +497,7 @@ class DockerSpawner(Spawner):
     )
     tls = tls_verify = tls_ca = tls_cert = tls_key = tls_assert_hostname = Any(
         config=True,
-        help="""DEPRECATED. Use DockerSpawner.tls_config dict to set any TLS options.""",
+        help="""Deprecated, use `DockerSpawner.tls_config` dict to set any TLS options.""",
     )
 
     @observe(
@@ -500,13 +511,8 @@ class DockerSpawner(Spawner):
         )
 
     remove_containers = Bool(
-        False, config=True, help="DEPRECATED in DockerSpawner 0.10. Use .remove"
+        False, config=True, help="Deprecated, use `DockerSpawner.remove`."
     )
-
-    @observe("remove_containers")
-    def _deprecate_remove_containers(self, change):
-        # preserve remove_containers alias to .remove
-        self.remove = change.new
 
     remove = Bool(
         False,
@@ -868,17 +874,17 @@ class DockerSpawner(Spawner):
                 raise
 
     @gen.coroutine
-    def check_image_whitelist(self, image):
-        image_whitelist = self._get_image_whitelist()
-        if not image_whitelist:
+    def check_allowed(self, image):
+        allowed_images = self._get_allowed_images()
+        if not allowed_images:
             return image
-        if image not in image_whitelist:
+        if image not in allowed_images:
             raise web.HTTPError(
                 400,
-                "Image %s not in whitelist: %s" % (image, ', '.join(image_whitelist)),
+                "Image %s not in allowed list: %s" % (image, ', '.join(allowed_images)),
             )
         # resolve image alias to actual image name
-        return image_whitelist[image]
+        return allowed_images[image]
 
     @default('ssl_alt_names')
     def _get_ssl_alt_names(self):
@@ -1011,7 +1017,7 @@ class DockerSpawner(Spawner):
         image_option = self.user_options.get('image')
         if image_option:
             # save choice in self.image
-            self.image = yield self.check_image_whitelist(image_option)
+            self.image = yield self.check_allowed(image_option)
 
         image = self.image
         yield self.pull_image(image)
@@ -1184,3 +1190,34 @@ class DockerSpawner(Spawner):
                 v = v["bind"]
             binds[_fmt(k)] = {"bind": _fmt(v), "mode": m}
         return binds
+
+
+def _deprecated_method(old_name, new_name, version):
+    """Create a deprecated method wrapper for a deprecated method name"""
+
+    def deprecated(self, *args, **kwargs):
+        warnings.warn(
+            (
+                "{cls}.{old_name} is deprecated in DockerSpawner {version}."
+                " Please use {cls}.{new_name} instead."
+            ).format(
+                cls=self.__class__.__name__,
+                old_name=old_name,
+                new_name=new_name,
+                version=version,
+            ),
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        old_method = getattr(self, new_name)
+        return old_method(*args, **kwargs)
+
+    return deprecated
+
+# deprecate white/blacklist method names
+for _old_name, _new_name, _version in [
+    ("check_image_whitelist", "check_allowed", "0.12.0")
+]:
+    setattr(
+        DockerSpawner, _old_name, _deprecated_method(_old_name, _new_name, _version),
+    )
