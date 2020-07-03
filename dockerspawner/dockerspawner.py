@@ -750,10 +750,17 @@ class DockerSpawner(Spawner):
         else:
             self.object_id = state.get("object_id", "")
 
+        # override object_name from state if defined
+        # to avoid losing track of running servers
+        self.object_name = state.get("object_name", None) or self.object_name
+
     def get_state(self):
         state = super(DockerSpawner, self).get_state()
         if self.object_id:
             state["object_id"] = self.object_id
+            # persist object_name if running
+            # so that a change in the template doesn't lose track of running servers
+            state["object_name"] = self.object_name
         return state
 
     def _public_hub_api_url(self):
