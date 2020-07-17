@@ -326,8 +326,13 @@ class DockerSpawner(Spawner):
             It is important to include {servername} if JupyterHub's "named
             servers" are enabled (JupyterHub.allow_named_servers = True).
             If the server is named, the default name_template is
-            "{prefix}-{username}-{servername}". If it is unnamed, the default
+            "{prefix}-{username}.{servername}". If it is unnamed, the default
             name_template is "{prefix}-{username}".
+
+            Note: when using named servers,
+            it is important that the separator between {username} and {servername}
+            is not a character that can occur in an escaped {username},
+            and also not the single escape character '_'.
             """
         ),
     )
@@ -335,7 +340,7 @@ class DockerSpawner(Spawner):
     @default('name_template')
     def _default_name_template(self):
         if self.name:
-            return "{prefix}-{username}-{servername}"
+            return "{prefix}-{username}.{servername}"
         else:
             return "{prefix}-{username}"
 
@@ -728,17 +733,20 @@ class DockerSpawner(Spawner):
     def template_namespace(self):
         escaped_image = self.image.replace("/", "_")
         server_name = getattr(self, "name", "")
+        safe_server_name = self._escape(server_name.lower())
         return {
             "username": self.escaped_name,
-            "safe_username": self.user.name,
+            "safe_username": self.escaped_name,
             "raw_username": self.user.name,
             "imagename": escaped_image,
-            "servername": server_name,
+            "servername": safe_server_name,
+            "raw_servername": server_name,
             "prefix": self.prefix,
         }
 
-    @property
-    def object_name(self):
+    object_name = Unicode()
+    @default("object_name")
+    def _object_name_default(self):
         """Render the name of our container/service using name_template"""
         return self.name_template.format(**self.template_namespace())
 

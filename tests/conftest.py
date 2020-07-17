@@ -17,15 +17,25 @@ MockHub.hub_ip = "0.0.0.0"
 
 
 @pytest.fixture
-def dockerspawner_configured_app(app):
+def named_servers(app):
+    with mock.patch.dict(
+        app.tornado_settings,
+        {"allow_named_servers": True, "named_server_limit_per_user": 2},
+    ):
+        yield
+
+
+@pytest.fixture
+def dockerspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     app.config.DockerSpawner.prefix = "dockerspawner-test"
     # app.config.DockerSpawner.remove = True
     with mock.patch.dict(app.tornado_settings, {"spawner_class": DockerSpawner}):
         yield app
 
+
 @pytest.fixture
-def swarmspawner_configured_app(app):
+def swarmspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     app.config.SwarmSpawner.prefix = "dockerspawner-test"
     with mock.patch.dict(
@@ -37,9 +47,9 @@ def swarmspawner_configured_app(app):
 
 
 @pytest.fixture
-def systemuserspawner_configured_app(app):
+def systemuserspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
-    app.config.SwarmSpawner.prefix = "dockerspawner-test"
+    app.config.DockerSpawner.prefix = "dockerspawner-test"
     with mock.patch.dict(
         app.tornado_settings, {"spawner_class": SystemUserSpawner}
     ):

@@ -1,13 +1,12 @@
 """Tests for SwarmSpawner"""
 
 from getpass import getuser
-from unittest import mock
 
 import pytest
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.tests.mocking import public_url
 from jupyterhub.utils import url_path_join
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httpclient import AsyncHTTPClient
 
 from dockerspawner import SystemUserSpawner
 
