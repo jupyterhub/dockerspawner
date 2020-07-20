@@ -2,56 +2,55 @@
 
 import json
 
+import asyncio
 import docker
 import pytest
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.tests.mocking import public_url
-from jupyterhub.tests.utils import async_requests
 from jupyterhub.utils import url_path_join
-from tornado import gen
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from dockerspawner import DockerSpawner
 
-pytestmark = pytest.mark.usefixtures("dockerspawner")
+# Mark all tests in this file as asyncio
+pytestmark = pytest.mark.asyncio
 
-
-@pytest.mark.gen_test(timeout=90)
-def test_start_stop(app):
+async def test_start_stop(dockerspawner_configured_app):
+    app = dockerspawner_configured_app
     name = "has@"
     add_user(app.db, app, name=name)
     user = app.users[name]
     assert isinstance(user.spawner, DockerSpawner)
     token = user.new_api_token()
     # start the server
-    r = yield api_request(app, "users", name, "server", method="post")
+    r = await api_request(app, "users", name, "server", method="post")
     while r.status_code == 202:
         # request again
-        r = yield api_request(app, "users", name, "server", method="post")
-        yield gen.sleep(0.1)
+        r = await api_request(app, "users", name, "server", method="post")
     assert r.status_code == 201, r.text
+
     url = url_path_join(public_url(app, user), "api/status")
-    r = yield async_requests.get(url, headers={"Authorization": "token %s" % token})
-    assert r.url == url
-    r.raise_for_status()
-    print(r.text)
-    assert "kernels" in r.json()
+    resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})
+    assert resp.effective_url == url
+    resp.rethrow()
+    assert "kernels" in resp.body.decode("utf-8")
 
 
-@pytest.mark.gen_test(timeout=90)
-@pytest.mark.parametrize("image", ["0.8", "0.9", "nomatch"])
-def test_allowed_image(app, image):
+@pytest.mark.parametrize("image", ["1.0", "1.1.0", "nomatch"])
+async def test_allowed_image(dockerspawner_configured_app, image):
+    app = dockerspawner_configured_app
     name = "checker"
     add_user(app.db, app, name=name)
     user = app.users[name]
     assert isinstance(user.spawner, DockerSpawner)
     user.spawner.remove_containers = True
     user.spawner.allowed_images = {
-        "0.9": "jupyterhub/singleuser:0.9",
-        "0.8": "jupyterhub/singleuser:0.8",
+        "1.0": "jupyterhub/singleuser:1.0",
+        "1.1": "jupyterhub/singleuser:1.1",
     }
     token = user.new_api_token()
     # start the server
-    r = yield api_request(
+    r = await api_request(
         app, "users", name, "server", method="post", data=json.dumps({"image": image})
     )
     if image not in user.spawner.allowed_images:
@@ -60,21 +59,23 @@ def test_allowed_image(app, image):
         return
     while r.status_code == 202:
         # request again
-        r = yield api_request(app, "users", name, "server", method="post")
-        yield gen.sleep(0.1)
+        r = await api_request(app, "users", name, "server", method="post")
     assert r.status_code == 201, r.text
+
     url = url_path_join(public_url(app, user), "api/status")
-    r = yield async_requests.get(url, headers={"Authorization": "token %s" % token})
-    r.raise_for_status()
-    assert r.headers['x-jupyterhub-version'].startswith(image)
-    r = yield api_request(
+    resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})
+    assert resp.effective_url == url
+    resp.rethrow()
+
+    assert resp.headers['x-jupyterhub-version'].startswith(image)
+    r = await api_request(
         app, "users", name, "server", method="delete",
     )
     r.raise_for_status()
 
 
-@pytest.mark.gen_test(timeout=90)
-def test_image_pull_policy(app):
+async def test_image_pull_policy(dockerspawner_configured_app):
+    app = dockerspawner_configured_app
     name = "gumby"
     add_user(app.db, app, name=name)
     user = app.users[name]
@@ -83,40 +84,40 @@ def test_image_pull_policy(app):
     spawner.image = "jupyterhub/doesntexist:nosuchtag"
     with pytest.raises(docker.errors.NotFound):
         spawner.image_pull_policy = "never"
-        yield spawner.pull_image(spawner.image)
+        await spawner.pull_image(spawner.image)
 
     repo = "busybox"
     tag = "1.29.1"  # a version that's definitely not latest
     # ensure image isn't present
     try:
-        yield spawner.docker("remove_image", "{}:{}".format(repo, tag))
+        await asyncio.wrap_future(spawner.docker("remove_image", "{}:{}".format(repo, tag)))
     except docker.errors.ImageNotFound:
         pass
 
     spawner.pull_policy = "ifnotpresent"
     image = "{}:{}".format(repo, tag)
     # should trigger a pull
-    yield spawner.pull_image(image)
+    await spawner.pull_image(image)
     # verify that the image exists now
-    old_image_info = yield spawner.docker("inspect_image", image)
+    old_image_info = await asyncio.wrap_future(spawner.docker("inspect_image", image))
     print(old_image_info)
 
     # now tag busybox:latest as our current version
     # which is not latest!
-    yield spawner.docker("tag", image, repo)
+    await asyncio.wrap_future(spawner.docker("tag", image, repo))
 
     image = repo  # implicit :latest
     spawner.pull_policy = "ifnotpresent"
     # check with ifnotpresent shouldn't pull
-    yield spawner.pull_image(image)
-    image_info = yield spawner.docker("inspect_image", repo)
+    await spawner.pull_image(image)
+    image_info = await asyncio.wrap_future(spawner.docker("inspect_image", repo))
     assert image_info["Id"] == old_image_info["Id"]
 
     # run again with Always,
     # should trigger a pull even though the image is present
     spawner.pull_policy = "always"
     spawner.pull_image(image)
-    image_info = yield spawner.docker("inspect_image", repo)
+    image_info = await asyncio.wrap_future(spawner.docker("inspect_image", repo))
     assert image_info["Id"] != old_image_info["Id"]
 
     # run again with never, make sure it's still happy

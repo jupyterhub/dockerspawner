@@ -5,42 +5,30 @@ from unittest import mock
 import pytest
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.tests.mocking import public_url
-from jupyterhub.tests.utils import async_requests
 from jupyterhub.utils import url_path_join
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 
 from dockerspawner import SwarmSpawner
 
-pytestmark = pytest.mark.usefixtures("swarmspawner")
+# Mark all tests in this file as asyncio
+pytestmark = pytest.mark.asyncio
 
-
-@pytest.fixture
-def swarmspawner(app):
-    """Configure JupyterHub to use DockerSpawner"""
-    app.config.SwarmSpawner.prefix = "dockerspawner-test"
-    with mock.patch.dict(
-        app.tornado_settings, {"spawner_class": SwarmSpawner}
-    ), mock.patch.dict(
-        app.config.SwarmSpawner, {"network_name": "bridge"}
-    ):
-        yield
-
-
-@pytest.mark.gen_test
-def test_start_stop(app):
+async def test_start_stop(swarmspawner_configured_app):
+    app = swarmspawner_configured_app
     name = "somebody"
     add_user(app.db, app, name=name)
     user = app.users[name]
     assert isinstance(user.spawner, SwarmSpawner)
     token = user.new_api_token()
     # start the server
-    r = yield api_request(app, "users", name, "server", method="post")
+    r = await api_request(app, "users", name, "server", method="post")
     while r.status_code == 202:
         # request again
-        r = yield api_request(app, "users", name, "server", method="post")
+        r = await api_request(app, "users", name, "server", method="post")
     assert r.status_code == 201, r.text
+
     url = url_path_join(public_url(app, user), "api/status")
-    r = yield async_requests.get(url, headers={"Authorization": "token %s" % token})
-    assert r.url == url
-    r.raise_for_status()
-    print(r.text)
-    assert "kernels" in r.json()
+    resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})
+    assert resp.effective_url == url
+    resp.rethrow()
+    assert "kernels" in resp.body.decode("utf-8")
