@@ -42,10 +42,13 @@ async def test_start_stop(dockerspawner_configured_app):
     token = user.new_api_token()
     # start the server
     r = await api_request(app, "users", name, "servers", server_name, method="post")
-    while r.status_code == 202:
+    pending = r.status_code == 202
+    while pending:
         # request again
-        r = await api_request(app, "users", name, "servers", server_name, method="post")
-    assert r.status_code == 201, r.text
+        r = await api_request(app, "users", name, "servers", server_name)
+        user_info = r.json()
+        pending = user_info["servers"][server_name]["pending"]
+    assert r.status_code in {201, 200}, r.text
 
     url = url_path_join(public_url(app, user), server_name, "api/status")
     resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})

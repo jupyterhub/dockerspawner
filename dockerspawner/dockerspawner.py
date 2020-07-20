@@ -326,7 +326,7 @@ class DockerSpawner(Spawner):
             It is important to include {servername} if JupyterHub's "named
             servers" are enabled (JupyterHub.allow_named_servers = True).
             If the server is named, the default name_template is
-            "{prefix}-{username}.{servername}". If it is unnamed, the default
+            "{prefix}-{username}__{servername}". If it is unnamed, the default
             name_template is "{prefix}-{username}".
 
             Note: when using named servers,
@@ -340,7 +340,7 @@ class DockerSpawner(Spawner):
     @default('name_template')
     def _default_name_template(self):
         if self.name:
-            return "{prefix}-{username}.{servername}"
+            return "{prefix}-{username}__{servername}"
         else:
             return "{prefix}-{username}"
 
@@ -840,7 +840,7 @@ class DockerSpawner(Spawner):
 
     @gen.coroutine
     def get_object(self):
-        self.log.debug("Getting container '%s'", self.object_name)
+        self.log.debug("Getting %s '%s'", self.object_type, self.object_name)
         try:
             obj = yield self.docker("inspect_%s" % self.object_type, self.object_name)
             self.object_id = obj[self.object_id_key]
