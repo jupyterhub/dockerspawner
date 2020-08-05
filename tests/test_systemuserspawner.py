@@ -1,13 +1,12 @@
 """Tests for SwarmSpawner"""
 
 from getpass import getuser
-from unittest import mock
 
 import pytest
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.tests.mocking import public_url
 from jupyterhub.utils import url_path_join
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httpclient import AsyncHTTPClient
 
 from dockerspawner import SystemUserSpawner
 
@@ -27,7 +26,7 @@ async def test_start_stop(systemuserspawner_configured_app):
         # request again
         r = await api_request(app, "users", name, "server", method="post")
     assert r.status_code == 201, r.text
-    
+
     url = url_path_join(public_url(app, user), "api/status")
     resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})
     assert resp.effective_url == url

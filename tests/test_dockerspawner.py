@@ -1,35 +1,56 @@
 """Tests for DockerSpawner class"""
 
+import asyncio
 import json
 
-import asyncio
 import docker
 import pytest
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.tests.mocking import public_url
 from jupyterhub.utils import url_path_join
-from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.httpclient import AsyncHTTPClient
 
 from dockerspawner import DockerSpawner
 
 # Mark all tests in this file as asyncio
 pytestmark = pytest.mark.asyncio
 
+def test_name_collision(dockerspawner_configured_app):
+    app = dockerspawner_configured_app
+    has_hyphen = "user--foo"
+    add_user(app.db, app, name=has_hyphen)
+    user = app.users[has_hyphen]
+    spawner1 = user.spawners[""]
+    assert isinstance(spawner1, DockerSpawner)
+    assert spawner1.object_name == "{}-{}".format(spawner1.prefix, has_hyphen)
+
+    part1, part2 = ["user", "foo"]
+    add_user(app.db, app, name=part1)
+    user2 = app.users[part1]
+    spawner2 = user2.spawners[part2]
+    assert spawner1.object_name != spawner2.object_name
+
+
 async def test_start_stop(dockerspawner_configured_app):
     app = dockerspawner_configured_app
     name = "has@"
     add_user(app.db, app, name=name)
     user = app.users[name]
-    assert isinstance(user.spawner, DockerSpawner)
+    server_name = 'also-has@'
+    spawner = user.spawners[server_name]
+    assert isinstance(spawner, DockerSpawner)
     token = user.new_api_token()
     # start the server
-    r = await api_request(app, "users", name, "server", method="post")
-    while r.status_code == 202:
+    r = await api_request(app, "users", name, "servers", server_name, method="post")
+    pending = r.status_code == 202
+    while pending:
         # request again
-        r = await api_request(app, "users", name, "server", method="post")
-    assert r.status_code == 201, r.text
+        r = await api_request(app, "users", name, "servers", server_name)
+        user_info = r.json()
+        pending = user_info["servers"][server_name]["pending"]
+    assert r.status_code in {201, 200}, r.text
 
-    url = url_path_join(public_url(app, user), "api/status")
+    url = url_path_join(public_url(app, user), server_name, "api/status")
     resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})
     assert resp.effective_url == url
     resp.rethrow()
