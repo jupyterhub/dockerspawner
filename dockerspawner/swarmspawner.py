@@ -151,7 +151,12 @@ class SwarmSpawner(DockerSpawner):
                 filters={"service": self.service_name, "desired-state": "running"},
             )
             if len(tasks) == 0:
-                return None
+                tasks = yield self.docker(
+                    "tasks",
+                    filters={"service": self.service_name},
+                )
+                if len(tasks) == 0:
+                    return None
 
             elif len(tasks) > 1:
                 raise RuntimeError(
@@ -221,7 +226,18 @@ class SwarmSpawner(DockerSpawner):
         )
         create_kwargs.update(self.extra_create_kwargs)
 
-        return (yield self.docker("create_service", **create_kwargs))
+        service = yield self.docker("create_service", **create_kwargs)
+
+        while True:
+            tasks = yield self.docker(
+                "tasks",
+                filters={"service": self.service_name},
+            )
+            if len(tasks) > 0:
+                break
+            yield gen.sleep(1.0)
+
+        return service
 
     @property
     def internal_hostname(self):
@@ -254,7 +270,7 @@ class SwarmSpawner(DockerSpawner):
             status = service["Status"]
             state = status["State"].lower()
             self.log.debug("Service %s state: %s", self.service_id[:7], state)
-            if state in {"new", "assigned", "accepted", "starting", "pending", "preparing"}:
+            if state in {"new", "assigned", "accepted", "starting", "pending", "preparing", "ready", "rejected"}:
                 # not ready yet, wait before checking again
                 yield gen.sleep(dt)
                 # exponential backoff
