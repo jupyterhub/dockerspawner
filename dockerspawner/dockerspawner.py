@@ -256,7 +256,7 @@ class DockerSpawner(Spawner):
         return self.allowed_images
 
     @default('options_form')
-    def _default_options_form(self):
+    def _options_form_default(self):
         allowed_images = self._get_allowed_images()
         if len(allowed_images) <= 1:
             # default form only when there are images to choose from
