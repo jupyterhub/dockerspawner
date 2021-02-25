@@ -5,7 +5,7 @@ This example configures JupyterHub to allow users to launch arbitrary docker ima
 There are 3 steps:
 
 1. enable an `options_form`. This can be a simple bootstrap html form snippet,
-   or a *callable* that takes the Spawner instance and returns such a form.
+   or a _callable_ that takes the Spawner instance and returns such a form.
    In this case, we create one `input` element with a `label`,
    making sure to apply bootstrap's `form-control` class.
 2. define `Spawner.options_from_form(formdata)` to transform the form data (always a dict of lists of strings, e.g. `{"image": ["string"]}`) into the expected dictionary structure

@@ -26,7 +26,6 @@ jobs:
 
   # Run tests
   test:
-
     runs-on: ubuntu-20.04
     timeout-minutes: 10
 

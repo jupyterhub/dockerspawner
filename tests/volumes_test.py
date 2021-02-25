@@ -1,8 +1,11 @@
 """Test volume manipulation logic
 """
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import types
+
 from traitlets.config import LoggingConfigurable
 
 
@@ -14,10 +17,10 @@ def test_binds(monkeypatch):
     d = DockerSpawner()
     d.user = types.SimpleNamespace(name="xyz")
     d.volumes = {"a": "b", "c": {"bind": "d", "mode": "Z"}}
-    assert (
-        d.volume_binds
-        == {"a": {"bind": "b", "mode": "rw"}, "c": {"bind": "d", "mode": "Z"}}
-    )
+    assert d.volume_binds == {
+        "a": {"bind": "b", "mode": "rw"},
+        "c": {"bind": "d", "mode": "Z"},
+    }
     d.volumes = {"a": "b", "c": "d", "e": "f"}
     assert d.volume_mount_points == ["b", "d", "f"]
     d.volumes = {"/nfs/{username}": {"bind": "/home/{username}", "mode": "z"}}
@@ -46,10 +49,9 @@ def test_default_format_volume_name(monkeypatch):
     d = DockerSpawner()
     d.user = types.SimpleNamespace(name="user@email.com")
     d.volumes = {"data/{username}": {"bind": "/home/{raw_username}", "mode": "z"}}
-    assert (
-        d.volume_binds
-        == {"data/user_40email_2Ecom": {"bind": "/home/user@email.com", "mode": "z"}}
-    )
+    assert d.volume_binds == {
+        "data/user_40email_2Ecom": {"bind": "/home/user@email.com", "mode": "z"}
+    }
     assert d.volume_mount_points == ["/home/user@email.com"]
 
 
@@ -61,12 +63,9 @@ def test_escaped_format_volume_name(monkeypatch):
     d.user = types.SimpleNamespace(name="user@email.com")
     d.volumes = {"data/{username}": {"bind": "/home/{username}", "mode": "z"}}
     d.format_volume_name = dockerspawner.volumenamingstrategy.escaped_format_volume_name
-    assert (
-        d.volume_binds
-        == {
-            "data/user_40email_2Ecom": {"bind": "/home/user_40email_2Ecom", "mode": "z"}
-        }
-    )
+    assert d.volume_binds == {
+        "data/user_40email_2Ecom": {"bind": "/home/user_40email_2Ecom", "mode": "z"}
+    }
     assert d.volume_mount_points == ["/home/user_40email_2Ecom"]
 
 

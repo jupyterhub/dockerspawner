@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Minimal Python version sanity check (from IPython/Jupyterhub)
-#-----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 from __future__ import print_function
 
 import os
@@ -38,28 +36,34 @@ with open('requirements.txt') as f:
         install_requires.append(req)
 
 from setuptools.command.bdist_egg import bdist_egg
+
+
 class bdist_egg_disabled(bdist_egg):
     """Disabled version of bdist_egg
 
     Prevents setup.py install from performing setuptools' default easy_install,
     which it should never ever do.
     """
+
     def run(self):
-        sys.exit("Aborting implicit building of eggs. Use `pip install .` to install from source.")
+        sys.exit(
+            "Aborting implicit building of eggs. Use `pip install .` to install from source."
+        )
+
 
 setup_args = dict(
-    name                = 'dockerspawner',
-    packages            = ['dockerspawner'],
-    version             = version_ns['__version__'],
-    description         = """Dockerspawner: A custom spawner for Jupyterhub.""",
-    long_description    = "Spawn single-user servers with Docker.",
-    author              = "Jupyter Development Team",
-    author_email        = "jupyter@googlegroups.com",
-    url                 = "https://jupyter.org",
-    license             = "BSD",
-    platforms           = "Linux, Mac OS X",
-    keywords            = ['Interactive', 'Interpreter', 'Shell', 'Web'],
-    classifiers         = [
+    name='dockerspawner',
+    packages=['dockerspawner'],
+    version=version_ns['__version__'],
+    description="""Dockerspawner: A custom spawner for Jupyterhub.""",
+    long_description="Spawn single-user servers with Docker.",
+    author="Jupyter Development Team",
+    author_email="jupyter@googlegroups.com",
+    url="https://jupyter.org",
+    license="BSD",
+    platforms="Linux, Mac OS X",
+    keywords=['Interactive', 'Interpreter', 'Shell', 'Web'],
+    classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Science/Research',
@@ -67,7 +71,7 @@ setup_args = dict(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
     ],
-    install_requires = install_requires,
+    install_requires=install_requires,
     entry_points={
         'jupyterhub.spawners': [
             'docker = dockerspawner:DockerSpawner',

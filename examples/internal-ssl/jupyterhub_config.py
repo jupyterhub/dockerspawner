@@ -1,8 +1,10 @@
 import os
-c = get_config() # noqa
+
+c = get_config()  # noqa
 c.JupyterHub.authenticator_class = 'dummy'
 
 from dockerspawner import DockerSpawner
+
 c.JupyterHub.spawner_class = DockerSpawner
 
 c.ConfigurableHTTPProxy.should_start = False

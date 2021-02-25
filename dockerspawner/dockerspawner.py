@@ -1,37 +1,36 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
+import os
+import string
+import warnings
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
-import os
 from pprint import pformat
-import string
-from tarfile import TarFile, TarInfo
+from tarfile import TarFile
+from tarfile import TarInfo
 from textwrap import dedent
 from urllib.parse import urlparse
-import warnings
 
 import docker
 from docker.errors import APIError
-from docker.utils import kwargs_from_env
 from docker.types import Mount
-from tornado import gen, web
-
+from docker.utils import kwargs_from_env
 from escapism import escape
 from jupyterhub.spawner import Spawner
-from traitlets import (
-    Any,
-    Bool,
-    CaselessStrEnum,
-    Dict,
-    List,
-    Int,
-    Unicode,
-    Union,
-    default,
-    observe,
-    validate,
-)
+from tornado import gen
+from tornado import web
+from traitlets import Any
+from traitlets import Bool
+from traitlets import CaselessStrEnum
+from traitlets import default
+from traitlets import Dict
+from traitlets import Int
+from traitlets import List
+from traitlets import observe
+from traitlets import Unicode
+from traitlets import Union
+from traitlets import validate
 
 from .volumenamingstrategy import default_format_volume_name
 
@@ -86,7 +85,6 @@ class DockerSpawner(Spawner):
             )
             setattr(self, new_attr, change.new)
 
-
     @property
     def executor(self):
         """single global executor"""
@@ -140,7 +138,9 @@ class DockerSpawner(Spawner):
     # it is not the ip in the container,
     # but the host ip of the port forwarded to the container
     # when use_internal_ip is False
-    container_ip = Unicode("127.0.0.1", help="Deprecated, use `DockerSpawner.host_ip`", config=True)
+    container_ip = Unicode(
+        "127.0.0.1", help="Deprecated, use `DockerSpawner.host_ip`", config=True
+    )
 
     host_ip = Unicode(
         "127.0.0.1",
@@ -166,7 +166,13 @@ class DockerSpawner(Spawner):
 
     # unlike container_ip, container_port is the internal port
     # on which the server is bound.
-    container_port = Int(8888, min=1, max=65535, help="Deprecated, use `DockerSpawner.port.`", config=True)
+    container_port = Int(
+        8888,
+        min=1,
+        max=65535,
+        help="Deprecated, use `DockerSpawner.port.`",
+        config=True,
+    )
 
     # fix default port to 8888, used in the container
 
@@ -183,7 +189,7 @@ class DockerSpawner(Spawner):
     container_image = Unicode(
         "jupyterhub/singleuser:%s" % _jupyterhub_xy,
         help="Deprecated, use `DockerSpawner.image.`",
-        config=True
+        config=True,
     )
 
     image = Unicode(
@@ -203,7 +209,11 @@ class DockerSpawner(Spawner):
         """,
     )
 
-    image_whitelist = Union([Any(), Dict(), List()], help="Deprecated, use `DockerSpawner.allowed_images`.", config=True,)
+    image_whitelist = Union(
+        [Any(), Dict(), List()],
+        help="Deprecated, use `DockerSpawner.allowed_images`.",
+        config=True,
+    )
 
     allowed_images = Union(
         [Any(), Dict(), List()],
@@ -297,10 +307,12 @@ class DockerSpawner(Spawner):
         - ifnotpresent: pull if the image is not already present (default)
         - always: always pull the image to check for updates, even if it is present
         - never: never perform a pull
-        """
+        """,
     )
 
-    container_prefix = Unicode(config=True, help="Deprecated, use `DockerSpawner.prefix`.")
+    container_prefix = Unicode(
+        config=True, help="Deprecated, use `DockerSpawner.prefix`."
+    )
 
     container_name_template = Unicode(
         config=True, help="Deprecated, use `DockerSpawner.name_template`."
@@ -392,7 +404,7 @@ class DockerSpawner(Spawner):
 
         Busybox is used because we just need an empty container
         that waits while we stage files into the volume via .put_archive.
-        """
+        """,
     )
 
     @gen.coroutine
@@ -431,7 +443,8 @@ class DockerSpawner(Spawner):
                 volume_name: {"bind": "/certs", "mode": "rw"},
             },
         )
-        container = yield self.docker('create_container',
+        container = yield self.docker(
+            'create_container',
             self.move_certs_image,
             volumes=["/certs"],
             host_config=host_config,
@@ -440,7 +453,8 @@ class DockerSpawner(Spawner):
         container_id = container['Id']
         self.log.debug(
             "Container %s is creating ssl certs for %s",
-            container_id[:12], self._log_name,
+            container_id[:12],
+            self._log_name,
         )
         # start the container
         yield self.docker('start', container_id)
@@ -463,7 +477,7 @@ class DockerSpawner(Spawner):
 
         The same string-templating applies to this
         as other volume names.
-        """
+        """,
     )
 
     read_only_volumes = Dict(
@@ -655,7 +669,7 @@ class DockerSpawner(Spawner):
         help=""" If specified, the command will be executed inside the container
         after starting.
         Similar to using 'docker exec'
-        """
+        """,
     )
 
     @gen.coroutine
@@ -669,11 +683,8 @@ class DockerSpawner(Spawner):
         container = yield self.get_object()
         container_id = container[self.object_id_key]
 
-        exec_kwargs = {
-            'cmd': self.post_start_cmd,
-            'container': container_id
-        }
-        
+        exec_kwargs = {'cmd': self.post_start_cmd, 'container': container_id}
+
         exec_id = yield self.docker("exec_create", **exec_kwargs)
 
         return self.docker("exec_start", exec_id=exec_id)
@@ -730,6 +741,7 @@ class DockerSpawner(Spawner):
         A different way of specifying docker volumes using more advanced spec.
         Converts mounts list of dict to a list of docker.types.Mount
         """
+
         def _fmt(v):
             return self.format_volume_name(v, self)
 
@@ -775,6 +787,7 @@ class DockerSpawner(Spawner):
         }
 
     object_name = Unicode()
+
     @default("object_name")
     def _object_name_default(self):
         """Render the name of our container/service using name_template"""
@@ -914,7 +927,9 @@ class DockerSpawner(Spawner):
             yield self.docker("remove_" + self.object_type, self.object_id, v=True)
         except docker.errors.APIError as e:
             if e.status_code == 409:
-                self.log.debug("Already removing %s: %s", self.object_type, self.object_id)
+                self.log.debug(
+                    "Already removing %s: %s", self.object_type, self.object_id
+                )
             else:
                 raise
 
@@ -953,8 +968,9 @@ class DockerSpawner(Spawner):
         create_kwargs.update(self.extra_create_kwargs)
 
         # build the dictionary of keyword arguments for host_config
-        host_config = dict(binds=self.volume_binds, mounts=self.mount_binds, 
-                           links=self.links)
+        host_config = dict(
+            binds=self.volume_binds, mounts=self.mount_binds, links=self.links
+        )
 
         if getattr(self, "mem_limit", None) is not None:
             # If jupyterhub version > 0.7, mem_limit is a traitlet that can
@@ -992,7 +1008,6 @@ class DockerSpawner(Spawner):
         """
         return self.docker("stop", self.container_id)
 
-
     @gen.coroutine
     def pull_image(self, image):
         """Pull the image, if needed
@@ -1004,7 +1019,7 @@ class DockerSpawner(Spawner):
         """
         # docker wants to split repo:tag
         # the part split("/")[-1] allows having an image from a custom repo
-        # with port but without tag. For example: my.docker.repo:51150/foo would not 
+        # with port but without tag. For example: my.docker.repo:51150/foo would not
         # pass this test, resulting in image=my.docker.repo:51150/foo and tag=latest
         if ':' in image.split("/")[-1]:
             # rsplit splits from right to left, allowing to have a custom image repo with port
@@ -1260,10 +1275,13 @@ def _deprecated_method(old_name, new_name, version):
 
     return deprecated
 
+
 # deprecate white/blacklist method names
 for _old_name, _new_name, _version in [
     ("check_image_whitelist", "check_allowed", "0.12.0")
 ]:
     setattr(
-        DockerSpawner, _old_name, _deprecated_method(_old_name, _new_name, _version),
+        DockerSpawner,
+        _old_name,
+        _deprecated_method(_old_name, _new_name, _version),
     )

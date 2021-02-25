@@ -6,4 +6,3 @@ here="$(dirname $0)"
 source $here/env
 
 jupyterhub $@
-

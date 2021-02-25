@@ -93,7 +93,7 @@ networks:
     driver: overlay
 ```
 
-However, docker-compose *actually* created this network as `swarm_jupyterhub-net`,
+However, docker-compose _actually_ created this network as `swarm_jupyterhub-net`,
 and that's the name we need to pass to the Spawner:
 
 ```python
@@ -113,6 +113,5 @@ Finally, start jupyterhub:
 ```
 docker-compose up
 ```
-
 
 At this point, you should be able to go to `http://$(docker-machine ip swarm-master)` and test spawning.

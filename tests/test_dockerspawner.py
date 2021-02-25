@@ -1,12 +1,12 @@
 """Tests for DockerSpawner class"""
-
 import asyncio
 import json
 
 import docker
 import pytest
-from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.tests.mocking import public_url
+from jupyterhub.tests.test_api import add_user
+from jupyterhub.tests.test_api import api_request
 from jupyterhub.utils import url_path_join
 from tornado.httpclient import AsyncHTTPClient
 
@@ -14,6 +14,7 @@ from dockerspawner import DockerSpawner
 
 # Mark all tests in this file as asyncio
 pytestmark = pytest.mark.asyncio
+
 
 def test_name_collision(dockerspawner_configured_app):
     app = dockerspawner_configured_app
@@ -51,7 +52,9 @@ async def test_start_stop(dockerspawner_configured_app):
     assert r.status_code in {201, 200}, r.text
 
     url = url_path_join(public_url(app, user), server_name, "api/status")
-    resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})
+    resp = await AsyncHTTPClient().fetch(
+        url, headers={"Authorization": "token %s" % token}
+    )
     assert resp.effective_url == url
     resp.rethrow()
     assert "kernels" in resp.body.decode("utf-8")
@@ -84,13 +87,19 @@ async def test_allowed_image(dockerspawner_configured_app, image):
     assert r.status_code == 201, r.text
 
     url = url_path_join(public_url(app, user), "api/status")
-    resp = await AsyncHTTPClient().fetch(url, headers={"Authorization": "token %s" % token})
+    resp = await AsyncHTTPClient().fetch(
+        url, headers={"Authorization": "token %s" % token}
+    )
     assert resp.effective_url == url
     resp.rethrow()
 
     assert resp.headers['x-jupyterhub-version'].startswith(image)
     r = await api_request(
-        app, "users", name, "server", method="delete",
+        app,
+        "users",
+        name,
+        "server",
+        method="delete",
     )
     r.raise_for_status()
 
@@ -111,7 +120,9 @@ async def test_image_pull_policy(dockerspawner_configured_app):
     tag = "1.29.1"  # a version that's definitely not latest
     # ensure image isn't present
     try:
-        await asyncio.wrap_future(spawner.docker("remove_image", "{}:{}".format(repo, tag)))
+        await asyncio.wrap_future(
+            spawner.docker("remove_image", "{}:{}".format(repo, tag))
+        )
     except docker.errors.ImageNotFound:
         pass
 

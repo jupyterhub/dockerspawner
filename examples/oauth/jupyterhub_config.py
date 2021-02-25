@@ -7,6 +7,7 @@ c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
 
 # The docker instances need access to the Hub, so the default loopback port doesn't work:
 from jupyter_client.localinterfaces import public_ips
+
 c.JupyterHub.hub_ip = public_ips()[0]
 
 # OAuth with GitHub

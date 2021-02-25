@@ -22,6 +22,7 @@ command line for details.
   ```python
   c.JupyterHub.spawner_class = 'docker' # or 'docker-swarm' or 'docker-system-user'
   ```
+
 - Support total internal SSL encryption with JupyterHub 1.0
 - Add new `DockerSpawner.pull_policy` to configure pulling of images.
   Values are inspired by Kubernetes, and case-insensitive. Can be any of
@@ -35,7 +36,6 @@ command line for details.
 #### Fixes:
 
 - Slow startup in SwarmSpawner could be treated as failures.
-
 
 ## 0.10
 
@@ -117,7 +117,6 @@ Some configuration has been cleaned up to be clearer and more concise:
 - workaround bug where Docker can report ports as strings
 - bump docker dependency to new `docker` package from `docker-py`
 
-
 ## [0.7] - 2017-03-14
 
 - Only need to set `DockerSpawner.network_name` to run on a docker network,
@@ -161,8 +160,7 @@ Some configuration has been cleaned up to be clearer and more concise:
 
 First release
 
-
-[Unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.11.1...HEAD
+[unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.11.1...HEAD
 [0.11.1]: https://github.com/jupyterhub/dockerspawner/compare/0.11.0...0.11.1
 [0.11.0]: https://github.com/jupyterhub/dockerspawner/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/jupyterhub/dockerspawner/compare/0.9.1...0.10.0

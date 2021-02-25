@@ -1,9 +1,9 @@
-from dockerspawner import DockerSpawner
 from textwrap import dedent
-from traitlets import (
-    Integer,
-    Unicode,
-)
+
+from traitlets import Integer
+from traitlets import Unicode
+
+from dockerspawner import DockerSpawner
 
 
 class SystemUserSpawner(DockerSpawner):
@@ -20,7 +20,7 @@ class SystemUserSpawner(DockerSpawner):
             If the string is empty or `None`, the user's home directory will
             be looked up via the `pwd` database.
             """
-        )
+        ),
     )
 
     image_homedir_format_string = Unicode(
@@ -33,10 +33,11 @@ class SystemUserSpawner(DockerSpawner):
             `username` variable, which will be formatted with the
             user's username.
             """
-        )
+        ),
     )
 
-    user_id = Integer(-1,
+    user_id = Integer(
+        -1,
         help=dedent(
             """
             If system users are being used, then we need to know their user id
@@ -47,10 +48,11 @@ class SystemUserSpawner(DockerSpawner):
             1. stored in the state dict (authenticator can write here)
             2. lookup via pwd
             """
-        )
+        ),
     )
 
-    group_id = Integer(-1,
+    group_id = Integer(
+        -1,
         help=dedent(
             """
             If system users are being used, then we need to know their group id
@@ -61,7 +63,7 @@ class SystemUserSpawner(DockerSpawner):
             1. stored in the state dict (authenticator can write here)
             2. lookup via pwd
             """
-        )
+        ),
     )
 
     @property
@@ -70,10 +72,14 @@ class SystemUserSpawner(DockerSpawner):
         Path to the volume containing the user's home directory on the host.
         Looked up from `pwd` if an empty format string or `None` has been specified.
         """
-        if self.host_homedir_format_string is not None and self.host_homedir_format_string != "":
+        if (
+            self.host_homedir_format_string is not None
+            and self.host_homedir_format_string != ""
+        ):
             homedir = self.host_homedir_format_string.format(username=self.user.name)
         else:
             import pwd
+
             homedir = pwd.getpwnam(self.user.name).pw_dir
         return homedir
 
@@ -110,22 +116,21 @@ class SystemUserSpawner(DockerSpawner):
             }
         """
         volumes = super(SystemUserSpawner, self).volume_binds
-        volumes[self.host_homedir] = {
-            'bind': self.homedir,
-            'ro': False
-        }
+        volumes[self.host_homedir] = {'bind': self.homedir, 'ro': False}
         return volumes
 
     def get_env(self):
         env = super(SystemUserSpawner, self).get_env()
         # relies on NB_USER and NB_UID handling in jupyter/docker-stacks
-        env.update(dict(
-            USER=self.user.name, # deprecated
-            NB_USER=self.user.name,
-            USER_ID=self.user_id, # deprecated
-            NB_UID=self.user_id,
-            HOME=self.homedir,
-        ))
+        env.update(
+            dict(
+                USER=self.user.name,  # deprecated
+                NB_USER=self.user.name,
+                USER_ID=self.user_id,  # deprecated
+                NB_UID=self.user_id,
+                HOME=self.homedir,
+            )
+        )
         if self.group_id >= 0:
             env.update(NB_GID=self.group_id)
         return env
@@ -139,6 +144,7 @@ class SystemUserSpawner(DockerSpawner):
         the system users are not on the Hub system (i.e. Hub itself is in a container).
         """
         import pwd
+
         return pwd.getpwnam(self.user.name).pw_uid
 
     def _group_id_default(self):
@@ -150,6 +156,7 @@ class SystemUserSpawner(DockerSpawner):
         the system users are not on the Hub system (i.e. Hub itself is in a container).
         """
         import pwd
+
         return pwd.getpwnam(self.user.name).pw_gid
 
     def load_state(self, state):
@@ -167,17 +174,20 @@ class SystemUserSpawner(DockerSpawner):
             state['group_id'] = self.group_id
         return state
 
-    def start(self, *, image=None, extra_create_kwargs=None,
-        extra_host_config=None):
+    def start(self, *, image=None, extra_create_kwargs=None, extra_host_config=None):
         """start the single-user server in a docker container"""
         if image:
             self.log.warning("Specifying image via .start args is deprecated")
             self.image = image
         if extra_create_kwargs:
-            self.log.warning("Specifying extra_create_kwargs via .start args is deprecated")
+            self.log.warning(
+                "Specifying extra_create_kwargs via .start args is deprecated"
+            )
             self.extra_create_kwargs.update(extra_create_kwargs)
         if extra_host_config:
-            self.log.warning("Specifying extra_host_config via .start kwargs is deprecated")
+            self.log.warning(
+                "Specifying extra_host_config via .start kwargs is deprecated"
+            )
             self.extra_host_config.update(extra_host_config)
 
         self.extra_create_kwargs.setdefault('working_dir', self.homedir)

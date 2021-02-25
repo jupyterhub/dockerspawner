@@ -19,4 +19,5 @@ c.Spawner.cmd = ["jupyter", "labhub"]
 
 # debug-logging for testing
 import logging
+
 c.JupyterHub.log_level = logging.DEBUG
