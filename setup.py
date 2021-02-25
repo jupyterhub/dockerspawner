@@ -12,12 +12,6 @@ from __future__ import print_function
 import os
 import sys
 
-v = sys.version_info
-if v[:2] < (3,3):
-    error = "ERROR: Jupyter Hub requires Python version 3.3 or above."
-    print(error, file=sys.stderr)
-    sys.exit(1)
-
 
 if os.name in ('nt', 'dos'):
     error = "ERROR: Windows is not supported"
@@ -81,15 +75,16 @@ setup_args = dict(
             'docker-swarm = dockerspawner:SwarmSpawner',
         ],
     },
-    cmdclass = {
+    python_requires=">=3.6",
+    cmdclass={
         'bdist_egg': bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
-    }
+    },
 )
-
 
 
 def main():
     setup(**setup_args)
+
 
 if __name__ == '__main__':
     main()
