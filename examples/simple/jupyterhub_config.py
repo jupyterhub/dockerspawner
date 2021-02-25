@@ -1,9 +1,10 @@
+c = get_config()  # noqa
 
 # dummy for testing. Don't use this in production!
-c.JupyterHub.authenticator_class = 'dummyauthenticator.DummyAuthenticator'
+c.JupyterHub.authenticator_class = "dummy"
 
 # launch with docker
-c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
+c.JupyterHub.spawner_class = "docker"
 
 # we need the hub to listen on all ips when it is in a container
 c.JupyterHub.hub_ip = '0.0.0.0'
