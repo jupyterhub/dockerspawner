@@ -6,10 +6,7 @@ name: Tests
 on:
   pull_request:
   push:
-
-defaults:
-  run:
-    shell: bash
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -62,8 +59,6 @@ jobs:
           path: ~/.cache/pip
           # Look to see if there is a cache hit for the corresponding requirements file
           key: ${{ runner.os }}-pip-${{ hashFiles('*requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       - name: Install Python dependencies
         run: |
