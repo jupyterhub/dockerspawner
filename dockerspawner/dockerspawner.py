@@ -1,6 +1,7 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
+import asyncio
 import os
 import string
 import warnings
@@ -856,7 +857,9 @@ class DockerSpawner(Spawner):
 
         returns a Future
         """
-        return self.executor.submit(self._docker, method, *args, **kwargs)
+        return asyncio.wrap_future(
+            self.executor.submit(self._docker, method, *args, **kwargs)
+        )
 
     @gen.coroutine
     def poll(self):
@@ -919,16 +922,19 @@ class DockerSpawner(Spawner):
             cmd = image_info["Config"]["Cmd"]
         return cmd + self.get_args()
 
-    @gen.coroutine
-    def remove_object(self):
+    async def remove_object(self):
         self.log.info("Removing %s %s", self.object_type, self.object_id)
         # remove the container, as well as any associated volumes
         try:
-            yield self.docker("remove_" + self.object_type, self.object_id, v=True)
+            await self.docker("remove_" + self.object_type, self.object_id, v=True)
         except docker.errors.APIError as e:
             if e.status_code == 409:
                 self.log.debug(
                     "Already removing %s: %s", self.object_type, self.object_id
+                )
+            elif e.status_code == 404:
+                self.log.debug(
+                    "Already removed %s: %s", self.object_type, self.object_id
                 )
             else:
                 raise
@@ -969,7 +975,10 @@ class DockerSpawner(Spawner):
 
         # build the dictionary of keyword arguments for host_config
         host_config = dict(
-            binds=self.volume_binds, mounts=self.mount_binds, links=self.links
+            auto_remove=self.remove,
+            binds=self.volume_binds,
+            links=self.links,
+            mounts=self.mount_binds,
         )
 
         if getattr(self, "mem_limit", None) is not None:
@@ -992,21 +1001,28 @@ class DockerSpawner(Spawner):
         obj = yield self.docker("create_container", **create_kwargs)
         return obj
 
-    @gen.coroutine
-    def start_object(self):
+    async def start_object(self):
         """Actually start the container/service
 
         e.g. calling `docker start`
         """
-        return self.docker("start", self.container_id)
+        await self.docker("start", self.container_id)
 
-    @gen.coroutine
-    def stop_object(self):
+    async def stop_object(self):
         """Stop the container/service
 
         e.g. calling `docker stop`. Does not remove the container.
         """
-        return self.docker("stop", self.container_id)
+        try:
+            await self.docker("stop", self.container_id)
+        except APIError as e:
+            if e.status_code == 404:
+                self.log.debug(
+                    "Already removed %s: %s", self.object_type, self.object_id
+                )
+                return
+            else:
+                raise
 
     @gen.coroutine
     def pull_image(self, image):
