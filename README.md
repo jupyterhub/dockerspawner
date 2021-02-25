@@ -1,6 +1,6 @@
 # DockerSpawner
 
-[![TravisCI (.org) build status](https://img.shields.io/travis/com/jupyterhub/dockerspawner?logo=travis)](https://travis-ci.com/jupyterhub/dockerspawner)
+[![GitHub Workflow Status - Test](https://img.shields.io/github/workflow/status/jupyterhub/dockerspawner/Tests?logo=github&label=tests)](https://github.com/jupyterhub/dockerspawner/actions)
 [![Latest PyPI version](https://img.shields.io/pypi/v/dockerspawner?logo=pypi)](https://pypi.org/project/dockerspawner/)
 [![Documentation build status](https://img.shields.io/readthedocs/jupyterhub?logo=read-the-docs)](https://jupyterhub-dockerspawner.readthedocs.org/en/latest/)
 [![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/dockerspawner/issues)
