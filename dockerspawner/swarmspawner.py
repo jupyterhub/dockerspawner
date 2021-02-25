@@ -1,16 +1,21 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker service
 """
-
 from pprint import pformat
 from textwrap import dedent
 
-from docker.types import (
-    ContainerSpec, TaskTemplate, Resources, EndpointSpec, Mount, DriverConfig, Placement
-)
 from docker.errors import APIError
+from docker.types import ContainerSpec
+from docker.types import DriverConfig
+from docker.types import EndpointSpec
+from docker.types import Mount
+from docker.types import Placement
+from docker.types import Resources
+from docker.types import TaskTemplate
 from tornado import gen
-from traitlets import Dict, Unicode, default
+from traitlets import default
+from traitlets import Dict
+from traitlets import Unicode
 
 from .dockerspawner import DockerSpawner
 
@@ -191,9 +196,9 @@ class SwarmSpawner(DockerSpawner):
             mem_limit=self.mem_limit,
             mem_reservation=self.mem_guarantee,
             cpu_limit=int(self.cpu_limit * 1e9) if self.cpu_limit else None,
-            cpu_reservation=int(
-                self.cpu_guarantee * 1e9
-            ) if self.cpu_guarantee else None,
+            cpu_reservation=int(self.cpu_guarantee * 1e9)
+            if self.cpu_guarantee
+            else None,
         )
         resources_kwargs.update(self.extra_resources_spec)
         resources_spec = Resources(**resources_kwargs)
@@ -270,7 +275,16 @@ class SwarmSpawner(DockerSpawner):
             status = service["Status"]
             state = status["State"].lower()
             self.log.debug("Service %s state: %s", self.service_id[:7], state)
-            if state in {"new", "assigned", "accepted", "starting", "pending", "preparing", "ready", "rejected"}:
+            if state in {
+                "new",
+                "assigned",
+                "accepted",
+                "starting",
+                "pending",
+                "preparing",
+                "ready",
+                "rejected",
+            }:
                 # not ready yet, wait before checking again
                 yield gen.sleep(dt)
                 # exponential backoff

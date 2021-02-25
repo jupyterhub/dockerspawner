@@ -24,7 +24,7 @@ repository](https://github.com/jupyterhub/dockerspawner).
 
 1. Update [CHANGELOG.md](CHANGELOG.md) and add it to
    the working tree.
-   
+
    ```bash
    git add CHANGELOG.md
    ```
@@ -45,10 +45,10 @@ repository](https://github.com/jupyterhub/dockerspawner).
    Tip: You can get the current project version by checking the [latest
    tag on GitHub](https://github.com/jupyterhub/dockerspawner/tags).
 
-
 1. Reset the `version_info` variable in
    [\_version.py](dockerspawner/_version.py) appropriately with an incremented
    patch version and a `dev` element, then make a commit.
+
    ```bash
    git add dockerspawner/_version.py
    git commit -m "back to dev"

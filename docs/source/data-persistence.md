@@ -12,7 +12,7 @@ isolate user files, not ownership or permissions on the host.
 ## Volume mapping
 
 Volume mapping for DockerSpawner in `jupyterhub_config.py`
-is required configuration for persistence. To map volumes from 
+is required configuration for persistence. To map volumes from
 the host file/directory to the container (referred to as guest)
 file/directory mount point, set the `c.DockerSpawner.volumes` to specify
 the guest mount point (bind) for the volume.
@@ -52,10 +52,11 @@ c.Spawner.mem_limit = '2G'
 The value can either be an integer (bytes) or a string with a 'K', 'M', 'G' or 'T' prefix.
 
 ## Resources
+
 The [`jupyterhub-deploy-docker`](https://github.com/jupyterhub/jupyterhub-deploy-docker) repo
-contains a reference deployment that persists the notebook directory; 
+contains a reference deployment that persists the notebook directory;
 see its [`jupyterhub_config.py`](https://github.com/jupyterhub/jupyterhub-deploy-docker/blob/master/jupyterhub_config.py)
 for an example configuration.
 
 See Docker documentation on [data volumes](https://docs.docker.com/storage/volumes/) for more information on data
-persistence. 
+persistence.

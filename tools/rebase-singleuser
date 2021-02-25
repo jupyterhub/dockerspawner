@@ -15,8 +15,8 @@ set -e
 base="$1"
 name="$2"
 if [[ -z "$base" || -z "$name" ]]; then
-  echo "Usage: rebase-singleuser [base image] [destination image]" >&2
-  exit 1
+    echo "Usage: rebase-singleuser [base image] [destination image]" >&2
+    exit 1
 fi
 
 # modify FROM target in singleuser Dockerfile

@@ -1,8 +1,8 @@
 import logging
-import pytest
 
-from traitlets.config import Config
+import pytest
 from tornado import web
+from traitlets.config import Config
 
 from dockerspawner import DockerSpawner
 

@@ -7,7 +7,6 @@
 [![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
 [![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
 
-
 The **dockerspawner** (also known as JupyterHub Docker Spawner), enables
 [JupyterHub](https://github.com/jupyterhub/jupyterhub) to spawn single user
 notebook servers in [Docker containers](https://www.docker.com/resources/what-container).
@@ -38,7 +37,7 @@ pip install dockerspawner
 
 ## Contributing
 
-If you would like to contribute to the project (:heart:), please read our 
+If you would like to contribute to the project (:heart:), please read our
 [contributor documentation](http://jupyterhub-dockerspawner/en/latest/contributing.html)
 and the [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
@@ -49,12 +48,10 @@ copyright on their contributions.
 
 All code is licensed under the terms of the revised BSD license.
 
-
 ## Getting help
 
 We encourage you to ask questions on the [Discourse community forum](https://discourse.jupyter.org/),
 or [Gitter](https://gitter.im/jupyterhub/jupyterhub).
-
 
 ## Resources
 

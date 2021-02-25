@@ -1,6 +1,6 @@
 codecov
-pytest>=3.6
-pytest-cov
-pytest-asyncio
-pyflakes
 notebook
+pyflakes
+pytest>=3.6
+pytest-asyncio
+pytest-cov

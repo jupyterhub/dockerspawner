@@ -50,7 +50,7 @@ Now we should have jupyterhub running on port 8000 on our docker host.
 
 ## Further goals
 
-This shows the *very basics* of running the Hub in a docker container (mainly setting up the network). To run for real, you will want to:
+This shows the _very basics_ of running the Hub in a docker container (mainly setting up the network). To run for real, you will want to:
 
 - mount a volume (or a database) for the hub state
 - mount volumes for user storage so they don't lose data on each shutdown

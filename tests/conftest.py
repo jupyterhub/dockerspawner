@@ -1,16 +1,20 @@
 """pytest config for dockerspawner tests"""
-
 from unittest import mock
 
+import pytest
 from docker import from_env as docker_from_env
 from docker.errors import APIError
-import pytest
-
+from jupyterhub.tests.conftest import app
+from jupyterhub.tests.conftest import event_loop
+from jupyterhub.tests.conftest import io_loop
+from jupyterhub.tests.conftest import ssl_tmpdir
 from jupyterhub.tests.mocking import MockHub
 
+from dockerspawner import DockerSpawner
+from dockerspawner import SwarmSpawner
+from dockerspawner import SystemUserSpawner
+
 # import base jupyterhub fixtures
-from jupyterhub.tests.conftest import app, io_loop, event_loop, ssl_tmpdir  # noqa
-from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
 
 # make Hub connectable from docker by default
 MockHub.hub_ip = "0.0.0.0"
@@ -40,9 +44,7 @@ def swarmspawner_configured_app(app, named_servers):
     app.config.SwarmSpawner.prefix = "dockerspawner-test"
     with mock.patch.dict(
         app.tornado_settings, {"spawner_class": SwarmSpawner}
-    ), mock.patch.dict(
-        app.config.SwarmSpawner, {"network_name": "bridge"}
-    ):
+    ), mock.patch.dict(app.config.SwarmSpawner, {"network_name": "bridge"}):
         yield app
 
 
@@ -50,9 +52,7 @@ def swarmspawner_configured_app(app, named_servers):
 def systemuserspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     app.config.DockerSpawner.prefix = "dockerspawner-test"
-    with mock.patch.dict(
-        app.tornado_settings, {"spawner_class": SystemUserSpawner}
-    ):
+    with mock.patch.dict(app.tornado_settings, {"spawner_class": SystemUserSpawner}):
         yield app
 
 

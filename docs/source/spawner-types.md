@@ -2,7 +2,7 @@
 
 Three basic types of spawners are available for dockerspawner:
 
-- [DockerSpawner][ln-spawner-docker]: useful if you would like to spawn 
+- [DockerSpawner][ln-spawner-docker]: useful if you would like to spawn
   single user notebook servers on the fly. It will take an
   authenticated user and spawn a notebook server in a Docker container
   for the user.
@@ -14,14 +14,13 @@ Three basic types of spawners are available for dockerspawner:
   servers.
 
 - [SystemUserSpawner][ln-spawner-sysusr]: useful if you would like to
-  spawn single user notebook servers that correspond to the system's 
+  spawn single user notebook servers that correspond to the system's
   users.
 
 [ln-spawner-docker]: #dockerspawner
 [ln-spawner-swarm]: #swarmspawner
 [ln-spawner-sysusr]: #systemuserspawner
 
-  
 In most cases, we recommend using DockerSpawner. Use cases where you
 may wish to use SystemUserSpawner are:
 
@@ -30,9 +29,9 @@ may wish to use SystemUserSpawner are:
   should be able to access from within the container. For example, you
   wish to use the system users and user home directories that
   already exist on a system.
-- You are using an external service, such as nbgrader, that relies on 
+- You are using an external service, such as nbgrader, that relies on
   distinct unix user ownership and permissions.
-  
+
 ```{note}
 If neither of those cases applies, DockerSpawner is probably the right
 choice.
@@ -40,7 +39,7 @@ choice.
 
 ## DockerSpawner
 
-Tell JupyterHub to use DockerSpawner by adding the following line to 
+Tell JupyterHub to use DockerSpawner by adding the following line to
 your `jupyterhub_config.py`:
 
 ```python

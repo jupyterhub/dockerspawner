@@ -10,8 +10,8 @@ services:
       - "80:8000"
     command:
       - configurable-http-proxy
-      - '--error-target'
-      - 'http://hub/hub/error'
+      - "--error-target"
+      - "http://hub/hub/error"
 
   hub:
     # build an image with SwarmSpawner and our jupyterhub_config.py
