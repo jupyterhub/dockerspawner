@@ -46,7 +46,7 @@ async def test_start_stop(dockerspawner_configured_app):
     pending = r.status_code == 202
     while pending:
         # request again
-        r = await api_request(app, "users", name, "servers", server_name)
+        r = await api_request(app, "users", name)
         user_info = r.json()
         pending = user_info["servers"][server_name]["pending"]
     assert r.status_code in {201, 200}, r.text
@@ -81,10 +81,12 @@ async def test_allowed_image(dockerspawner_configured_app, image):
         with pytest.raises(Exception):
             r.raise_for_status()
         return
-    while r.status_code == 202:
+    pending = r.status_code == 202
+    while pending:
         # request again
-        r = await api_request(app, "users", name, "server", method="post")
-    assert r.status_code == 201, r.text
+        r = await api_request(app, "users", name)
+        user_info = r.json()
+        pending = user_info["servers"][""]["pending"]
 
     url = url_path_join(public_url(app, user), "api/status")
     resp = await AsyncHTTPClient().fetch(
