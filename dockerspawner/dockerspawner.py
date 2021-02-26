@@ -298,7 +298,7 @@ class DockerSpawner(Spawner):
         return options
 
     pull_policy = CaselessStrEnum(
-        ["always", "ifnotpresent", "never"],
+        ["always", "ifnotpresent", "never", "skip"],
         default_value="ifnotpresent",
         config=True,
         help="""The policy for pulling the user docker image.
@@ -306,8 +306,18 @@ class DockerSpawner(Spawner):
         Choices:
 
         - ifnotpresent: pull if the image is not already present (default)
-        - always: always pull the image to check for updates, even if it is present
-        - never: never perform a pull
+        - always: always pull the image to check for updates,
+          even if it is present
+        - never: never perform a pull, raise if image is not present
+        - skip: never perform a pull, skip the step entirely
+          (like never, but without raising when images are not present;
+          default for swarm)
+
+        .. versionadded: 0.12
+            'skip' option added. It is the default for swarm
+            because pre-pulling images on swarm clusters
+            doesn't make sense since the container is likely not
+            going to run on the same node where the image was pulled.
         """,
     )
 
@@ -1029,10 +1039,14 @@ class DockerSpawner(Spawner):
         """Pull the image, if needed
 
         - pulls it unconditionally if pull_policy == 'always'
+        - skipped entirely if pull_policy == 'skip' (default for swarm)
         - otherwise, checks if it exists, and
           - raises if pull_policy == 'never'
           - pulls if pull_policy == 'ifnotpresent'
         """
+        if self.pull_policy == "skip":
+            self.log.debug(f"Skipping pull of {image}")
+            return
         # docker wants to split repo:tag
         # the part split("/")[-1] allows having an image from a custom repo
         # with port but without tag. For example: my.docker.repo:51150/foo would not
