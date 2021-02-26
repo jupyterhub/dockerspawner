@@ -1,5 +1,6 @@
 from textwrap import dedent
 
+from traitlets import Bool
 from traitlets import Integer
 from traitlets import Unicode
 
@@ -34,6 +35,21 @@ class SystemUserSpawner(DockerSpawner):
             user's username.
             """
         ),
+    )
+
+    run_as_root = Bool(
+        False,
+        config=True,
+        help="""Run the container as root
+
+        Relies on the image itself having handling of $NB_UID and $NB_GID
+        options to switch.
+
+        This was the default behavior prior to 0.12, but has become opt-in.
+        This enables images to nicely map usernames to userids inside the container.
+
+        .. versionadded:: 0.12
+        """,
     )
 
     user_id = Integer(
@@ -191,8 +207,17 @@ class SystemUserSpawner(DockerSpawner):
             self.extra_host_config.update(extra_host_config)
 
         self.extra_create_kwargs.setdefault('working_dir', self.homedir)
-        # systemuser image must be started as root
-        # relies on NB_UID and NB_USER handling in docker-stacks
-        self.extra_create_kwargs.setdefault('user', '0')
+        if self.run_as_root:
+            # systemuser images derived from Jupyter docker stacks
+            # can start as root and 'become' $NB_UID with proper
+            # name and everything.
+            # relies on $NB_UID and $NB_USER env handling in those images
+            # make this opt-in since without it, all users will run as root
+            self.extra_create_kwargs.setdefault('user', '0')
+        elif self.user_id >= 0:
+            user_s = str(self.user_id)
+            if self.group_id >= 0:
+                user_s = f"{user_s}:{self.group_id}"
+            self.extra_create_kwargs.setdefault('user', user_s)
 
         return super(SystemUserSpawner, self).start()
