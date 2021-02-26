@@ -6,6 +6,7 @@ import os
 import string
 import warnings
 from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from io import BytesIO
 from pprint import pformat
 from tarfile import TarFile
@@ -792,7 +793,7 @@ class DockerSpawner(Spawner):
     @default("object_name")
     def _object_name_default(self):
         """Render the name of our container/service using name_template"""
-        return self.name_template.format(**self.template_namespace())
+        return self._render_templates(self.name_template)
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
@@ -971,7 +972,7 @@ class DockerSpawner(Spawner):
         # ensure internal port is exposed
         create_kwargs["ports"] = {"%i/tcp" % self.port: None}
 
-        create_kwargs.update(self._extra_create_kwargs_subs())
+        create_kwargs.update(self._render_templates(self.extra_create_kwargs))
 
         # build the dictionary of keyword arguments for host_config
         host_config = dict(
@@ -989,7 +990,7 @@ class DockerSpawner(Spawner):
 
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}
-        host_config.update(self.extra_host_config)
+        host_config.update(self._render_templates(self.extra_host_config))
         host_config.setdefault("network_mode", self.network_name)
 
         self.log.debug("Starting host with config: %s", host_config)
@@ -1268,24 +1269,36 @@ class DockerSpawner(Spawner):
             binds[_fmt(k)] = {"bind": _fmt(v), "mode": m}
         return binds
 
-    def _extra_create_kwargs_subs(self):
+    def _render_templates(self, obj, ns=None):
+        """Recursively render template strings
+
+        Dives down into dicts, lists, tuples
+        and applies template formatting on all strings found in:
+        - list or tuple items
+        - dict keys or values
+
+        Always returns the original object structure.
         """
-        Substitutes values from template_namespace() for extra docker create kwargs.
-        """
-        subs = {}
+        if ns is None:
+            ns = self.template_namespace()
 
-        def _fmt(v):
-            return v.format(**self.template_namespace())
+        _fmt = partial(self._render_templates, ns=ns)
 
-        for k, v in self.extra_create_kwargs.items():
-            if isinstance(v, dict):
-                subs[_fmt(k)] = {}
-                for k1, v1 in v.items():
-                    subs[_fmt(k)].update({_fmt(k1): _fmt(v1)})
-            else:
-                subs[_fmt(k)] = _fmt(v)
-
-        return subs
+        if isinstance(obj, str):
+            try:
+                return obj.format(**ns)
+            except (ValueError, KeyError):
+                # not a valid format string
+                # to avoid crashing leave invalid templates unrendered
+                # otherwise, this unconditional formatting would not allow
+                # strings with `{` characters in them
+                return obj
+        elif isinstance(obj, dict):
+            return {_fmt(key): _fmt(value) for key, value in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return type(obj)([_fmt(item) for item in obj])
+        else:
+            return obj
 
 
 def _deprecated_method(old_name, new_name, version):
