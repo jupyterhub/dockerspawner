@@ -50,7 +50,7 @@ def test_default_format_volume_name(monkeypatch):
     d.user = types.SimpleNamespace(name="user@email.com")
     d.volumes = {"data/{username}": {"bind": "/home/{raw_username}", "mode": "z"}}
     assert d.volume_binds == {
-        "data/user_40email_2Ecom": {"bind": "/home/user@email.com", "mode": "z"}
+        "data/user-40email-2ecom": {"bind": "/home/user@email.com", "mode": "z"}
     }
     assert d.volume_mount_points == ["/home/user@email.com"]
 
@@ -64,9 +64,9 @@ def test_escaped_format_volume_name(monkeypatch):
     d.volumes = {"data/{username}": {"bind": "/home/{username}", "mode": "z"}}
     d.format_volume_name = dockerspawner.volumenamingstrategy.escaped_format_volume_name
     assert d.volume_binds == {
-        "data/user_40email_2Ecom": {"bind": "/home/user_40email_2Ecom", "mode": "z"}
+        "data/user-40email-2ecom": {"bind": "/home/user-40email-2ecom", "mode": "z"}
     }
-    assert d.volume_mount_points == ["/home/user_40email_2Ecom"]
+    assert d.volume_mount_points == ["/home/user-40email-2ecom"]
 
 
 class _MockSpawner(LoggingConfigurable):

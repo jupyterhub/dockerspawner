@@ -23,7 +23,9 @@ def test_name_collision(dockerspawner_configured_app):
     user = app.users[has_hyphen]
     spawner1 = user.spawners[""]
     assert isinstance(spawner1, DockerSpawner)
-    assert spawner1.object_name == "{}-{}".format(spawner1.prefix, has_hyphen)
+    assert spawner1.object_name == "{}-{}".format(
+        spawner1.prefix, has_hyphen.replace("-", "-2d")
+    )
 
     part1, part2 = ["user", "foo"]
     add_user(app.db, app, name=part1)
