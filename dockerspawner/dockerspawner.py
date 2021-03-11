@@ -111,14 +111,10 @@ class DockerSpawner(Spawner):
             cls._client = client
         return cls._client
 
-    # notice when user has set the command
-    # default command is that of the container,
-    # but user can override it via config
-    _user_set_cmd = False
-
-    @observe("cmd")
-    def _cmd_changed(self, change):
-        self._user_set_cmd = True
+    @default("cmd")
+    def _default_cmd(self):
+        # no default means use the image command
+        return None
 
     object_id = Unicode()
     # the type of object we create
@@ -916,7 +912,7 @@ class DockerSpawner(Spawner):
     @gen.coroutine
     def get_command(self):
         """Get the command to run (full command + args)"""
-        if self._user_set_cmd:
+        if self.cmd:
             cmd = self.cmd
         else:
             image_info = yield self.docker("inspect_image", self.image)
