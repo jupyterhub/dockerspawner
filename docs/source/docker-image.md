@@ -13,7 +13,7 @@ and are encouraged as the image of choice. Make sure to pick a tag!
 Example:
 
 ```python
-c.DockerSpawner.image = 'jupyter/scipy-notebook:8f56e3c47fec'
+c.DockerSpawner.image = 'jupyter/scipy-notebook:67b8fb91f950'
 ```
 
 The docker-stacks are moving targets with always changing versions.
@@ -25,10 +25,10 @@ always include the `:hash` tag part when specifying the image.
 You can also build your own image.
 The only requirements for an image to be used with JupyterHub:
 
-1. it has Python >= 3.4
-2. it has JupyterHub
+1. it has Python >= 3.6
+2. it has JupyterHub version matching your Hub deployment
 3. it has the Jupyter `notebook` package
-4. CMD launches jupyterhub-singleuser OR the `c.Spawner.cmd` configuration is used
+4. CMD launches jupyterhub-singleuser, OR jupyter-labhub, OR the `c.Spawner.cmd` configuration is used
    to do this.
 
 For just about any starting image, you can make it work with JupyterHub by installing
@@ -37,19 +37,21 @@ the appropriate JupyterHub version and the Jupyter notebook package.
 For instance, from the docker-stacks, pin your JupyterHub version and you are done:
 
 ```Dockerfile
-FROM jupyter/scipy-notebook:8f56e3c47fec
-ARG JUPYTERHUB_VERSION=0.8.0
+FROM jupyter/scipy-notebook:67b8fb91f950
+ARG JUPYTERHUB_VERSION=1.3.0
 RUN pip3 install --no-cache \
     jupyterhub==$JUPYTERHUB_VERSION
 ```
 
 Or for the absolute minimal JupyterHub user image starting only from the base Python image:
 
+**NOTE: make sure to pick the jupyterhub version you are using!**
+
 ```Dockerfile
-FROM python:3.6
+FROM python:3.8
 RUN pip3 install \
-    jupyterhub==0.7.2 \
-    'notebook>=5.0,<=6.0'
+    'jupyterhub==1.3.*' \
+    'notebook==6.*'
 
 # create a user, since we don't want to run as root
 RUN useradd -m jovyan
