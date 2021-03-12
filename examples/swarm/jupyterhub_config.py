@@ -2,7 +2,7 @@
 c.ConfigurableHTTPProxy.should_start = False
 c.ConfigurableHTTPProxy.api_url = 'http://proxy:8001'
 # tell the hub to use Dummy Auth (for testing)
-c.JupyterHub.authenticator_class = 'dummyauthenticator.DummyAuthenticator'
+c.JupyterHub.authenticator_class = 'dummy'
 # use SwarmSpawner
 c.JupyterHub.spawner_class = 'dockerspawner.SwarmSpawner'
 # The Hub should listen on all interfaces,
@@ -13,6 +13,9 @@ c.JupyterHub.hub_connect_ip = 'hub'
 # this is the network name for jupyterhub in docker-compose.yml
 # with a leading 'swarm_' that docker-compose adds
 c.SwarmSpawner.network_name = 'swarm_jupyterhub-net'
+
+# increase launch timeout because initial image pulls can take a while
+c.SwarmSpawner.spawn_timeout = 60
 
 # start jupyterlab
 c.Spawner.cmd = ["jupyter", "labhub"]
