@@ -26,6 +26,12 @@ class SwarmSpawner(DockerSpawner):
     object_type = "service"
     object_id_key = "ID"
 
+    @default("pull_policy")
+    def _default_pull_policy(self):
+        # pre-pulling doesn't usually make sense on swarm
+        # unless it's a single-node cluster, so skip it by efault
+        return "skip"
+
     @property
     def service_id(self):
         """alias for object_id"""
