@@ -59,6 +59,8 @@ def compose_up(volumes_and_networks, compose_build):
         else:
             break
     else:
+        p.terminate()
+        check_call(['docker-compose', 'rm', '-s', '-f'], cwd=here)
         raise TimeoutError("hub never showed up at %s" % hub_url)
 
     try:
