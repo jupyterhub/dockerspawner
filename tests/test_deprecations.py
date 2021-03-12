@@ -1,7 +1,6 @@
 import logging
 
 import pytest
-from tornado import web
 from traitlets.config import Config
 
 from dockerspawner import DockerSpawner
@@ -25,11 +24,11 @@ def test_deprecated_config(caplog):
     assert spawner.allowed_images == {"1.0": "jupyterhub/singleuser:1.0"}
 
 
-def test_deprecated_methods():
+async def test_deprecated_methods():
     cfg = Config()
     cfg.DockerSpawner.image_whitelist = {"1.0": "jupyterhub/singleuser:1.0"}
     spawner = DockerSpawner(config=cfg)
 
-    assert spawner.check_allowed("1.0")
+    assert await spawner.check_allowed("1.0")
     with pytest.deprecated_call():
-        assert spawner.check_image_whitelist("1.0")
+        assert await spawner.check_image_whitelist("1.0")

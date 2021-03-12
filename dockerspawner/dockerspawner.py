@@ -20,7 +20,6 @@ from docker.types import Mount
 from docker.utils import kwargs_from_env
 from escapism import escape
 from jupyterhub.spawner import Spawner
-from tornado import gen
 from tornado import web
 from traitlets import Any
 from traitlets import Bool
@@ -409,15 +408,14 @@ class DockerSpawner(Spawner):
         """,
     )
 
-    @gen.coroutine
-    def move_certs(self, paths):
+    async def move_certs(self, paths):
         self.log.info("Staging internal ssl certs for %s", self._log_name)
-        yield self.pull_image(self.move_certs_image)
+        await self.pull_image(self.move_certs_image)
         # create the volume
         volume_name = self.format_volume_name(self.certs_volume_name, self)
         # create volume passes even if it already exists
         self.log.info("Creating ssl volume %s for %s", volume_name, self._log_name)
-        yield self.docker('create_volume', volume_name)
+        await self.docker('create_volume', volume_name)
 
         # create a tar archive of the internal cert files
         # docker.put_archive takes a tarfile and a running container
@@ -445,7 +443,7 @@ class DockerSpawner(Spawner):
                 volume_name: {"bind": "/certs", "mode": "rw"},
             },
         )
-        container = yield self.docker(
+        container = await self.docker(
             'create_container',
             self.move_certs_image,
             volumes=["/certs"],
@@ -459,17 +457,17 @@ class DockerSpawner(Spawner):
             self._log_name,
         )
         # start the container
-        yield self.docker('start', container_id)
+        await self.docker('start', container_id)
         # stage the archive to the container
         try:
-            yield self.docker(
+            await self.docker(
                 'put_archive',
                 container=container_id,
                 path='/certs',
                 data=tar_buf,
             )
         finally:
-            yield self.docker('remove_container', container_id)
+            await self.docker('remove_container', container_id)
         return nb_paths
 
     certs_volume_name = Unicode(
@@ -668,26 +666,25 @@ class DockerSpawner(Spawner):
     post_start_cmd = UnicodeOrFalse(
         False,
         config=True,
-        help=""" If specified, the command will be executed inside the container
+        help="""If specified, the command will be executed inside the container
         after starting.
         Similar to using 'docker exec'
         """,
     )
 
-    @gen.coroutine
-    def post_start_exec(self):
+    async def post_start_exec(self):
         """
         Execute additional command inside the container after starting it.
 
         e.g. calling 'docker exec'
         """
 
-        container = yield self.get_object()
+        container = await self.get_object()
         container_id = container[self.object_id_key]
 
         exec_kwargs = {'cmd': self.post_start_cmd, 'container': container_id}
 
-        exec_id = yield self.docker("exec_create", **exec_kwargs)
+        exec_id = await self.docker("exec_create", **exec_kwargs)
 
         return self.docker("exec_start", exec_id=exec_id)
 
@@ -862,10 +859,9 @@ class DockerSpawner(Spawner):
             self.executor.submit(self._docker, method, *args, **kwargs)
         )
 
-    @gen.coroutine
-    def poll(self):
+    async def poll(self):
         """Check for my id in `docker ps`"""
-        container = yield self.get_object()
+        container = await self.get_object()
         if not container:
             self.log.warning("Container not found: %s", self.container_name)
             return 0
@@ -885,11 +881,10 @@ class DockerSpawner(Spawner):
                 "FinishedAt={FinishedAt}".format(**container_state)
             )
 
-    @gen.coroutine
-    def get_object(self):
+    async def get_object(self):
         self.log.debug("Getting %s '%s'", self.object_type, self.object_name)
         try:
-            obj = yield self.docker("inspect_%s" % self.object_type, self.object_name)
+            obj = await self.docker("inspect_%s" % self.object_type, self.object_name)
             self.object_id = obj[self.object_id_key]
         except APIError as e:
             if e.response.status_code == 404:
@@ -913,13 +908,12 @@ class DockerSpawner(Spawner):
 
         return obj
 
-    @gen.coroutine
-    def get_command(self):
+    async def get_command(self):
         """Get the command to run (full command + args)"""
         if self._user_set_cmd:
             cmd = self.cmd
         else:
-            image_info = yield self.docker("inspect_image", self.image)
+            image_info = await self.docker("inspect_image", self.image)
             cmd = image_info["Config"]["Cmd"]
         return cmd + self.get_args()
 
@@ -940,8 +934,7 @@ class DockerSpawner(Spawner):
             else:
                 raise
 
-    @gen.coroutine
-    def check_allowed(self, image):
+    async def check_allowed(self, image):
         allowed_images = self._get_allowed_images()
         if not allowed_images:
             return image
@@ -957,8 +950,7 @@ class DockerSpawner(Spawner):
     def _get_ssl_alt_names(self):
         return ['DNS:' + self.internal_hostname]
 
-    @gen.coroutine
-    def create_object(self):
+    async def create_object(self):
         """Create the container/service object"""
 
         create_kwargs = dict(
@@ -966,7 +958,7 @@ class DockerSpawner(Spawner):
             environment=self.get_env(),
             volumes=self.volume_mount_points,
             name=self.container_name,
-            command=(yield self.get_command()),
+            command=(await self.get_command()),
         )
 
         # ensure internal port is exposed
@@ -999,7 +991,7 @@ class DockerSpawner(Spawner):
         create_kwargs.setdefault("host_config", {}).update(host_config)
 
         # create the container
-        obj = yield self.docker("create_container", **create_kwargs)
+        obj = await self.docker("create_container", **create_kwargs)
         return obj
 
     async def start_object(self):
@@ -1025,8 +1017,7 @@ class DockerSpawner(Spawner):
             else:
                 raise
 
-    @gen.coroutine
-    def pull_image(self, image):
+    async def pull_image(self, image):
         """Pull the image, if needed
 
         - pulls it unconditionally if pull_policy == 'always'
@@ -1048,12 +1039,12 @@ class DockerSpawner(Spawner):
         if self.pull_policy.lower() == 'always':
             # always pull
             self.log.info("pulling %s", image)
-            yield self.docker('pull', repo, tag)
+            await self.docker('pull', repo, tag)
             # done
             return
         try:
             # check if the image is present
-            yield self.docker('inspect_image', image)
+            await self.docker('inspect_image', image)
         except docker.errors.NotFound:
             if self.pull_policy == "never":
                 # never pull, raise because there is no such image
@@ -1061,10 +1052,9 @@ class DockerSpawner(Spawner):
             elif self.pull_policy == "ifnotpresent":
                 # not present, pull it for the first time
                 self.log.info("pulling image %s", image)
-                yield self.docker('pull', repo, tag)
+                await self.docker('pull', repo, tag)
 
-    @gen.coroutine
-    def start(self, image=None, extra_create_kwargs=None, extra_host_config=None):
+    async def start(self, image=None, extra_create_kwargs=None, extra_host_config=None):
         """Start the single-user server in a docker container.
 
         Additional arguments to create/host config/etc. can be specified
@@ -1095,12 +1085,12 @@ class DockerSpawner(Spawner):
         image_option = self.user_options.get('image')
         if image_option:
             # save choice in self.image
-            self.image = yield self.check_allowed(image_option)
+            self.image = await self.check_allowed(image_option)
 
         image = self.image
-        yield self.pull_image(image)
+        await self.pull_image(image)
 
-        obj = yield self.get_object()
+        obj = await self.get_object()
         if obj and self.remove:
             self.log.warning(
                 "Removing %s that should have been cleaned up: %s (id: %s)",
@@ -1108,12 +1098,12 @@ class DockerSpawner(Spawner):
                 self.object_name,
                 self.object_id[:7],
             )
-            yield self.remove_object()
+            await self.remove_object()
 
             obj = None
 
         if obj is None:
-            obj = yield self.create_object()
+            obj = await self.create_object()
             self.object_id = obj[self.object_id_key]
             self.log.info(
                 "Created %s %s (id: %s) from image %s",
@@ -1147,12 +1137,12 @@ class DockerSpawner(Spawner):
         )
 
         # start the container
-        yield self.start_object()
+        await self.start_object()
 
         if self.post_start_cmd:
-            yield self.post_start_exec()
+            await self.post_start_exec()
 
-        ip, port = yield self.get_ip_and_port()
+        ip, port = await self.get_ip_and_port()
         if jupyterhub.version_info < (0, 7):
             # store on user for pre-jupyterhub-0.7:
             self.user.server.ip = ip
@@ -1168,15 +1158,13 @@ class DockerSpawner(Spawner):
         """
         return self.container_name
 
-    @gen.coroutine
-    def get_ip_and_port(self):
+    async def get_ip_and_port(self):
         """Queries Docker daemon for container's IP and port.
 
         If you are using network_mode=host, you will need to override
         this method as follows::
 
-            @gen.coroutine
-            def get_ip_and_port(self):
+            async def get_ip_and_port(self):
                 return self.host_ip, self.port
 
         You will need to make sure host_ip and port
@@ -1192,7 +1180,7 @@ class DockerSpawner(Spawner):
             ip = self.internal_hostname
             port = self.port
         elif self.use_internal_ip:
-            resp = yield self.docker("inspect_container", self.container_id)
+            resp = await self.docker("inspect_container", self.container_id)
             network_settings = resp["NetworkSettings"]
             if "Networks" in network_settings:
                 ip = self.get_network_ip(network_settings)
@@ -1200,7 +1188,7 @@ class DockerSpawner(Spawner):
                 ip = network_settings["IPAddress"]
             port = self.port
         else:
-            resp = yield self.docker("port", self.container_id, self.port)
+            resp = await self.docker("port", self.container_id, self.port)
             if resp is None:
                 raise RuntimeError("Failed to get port info for %s" % self.container_id)
 
@@ -1228,8 +1216,7 @@ class DockerSpawner(Spawner):
         ip = network["IPAddress"]
         return ip
 
-    @gen.coroutine
-    def stop(self, now=False):
+    async def stop(self, now=False):
         """Stop the container
 
         Will remove the container if `c.DockerSpawner.remove` is `True`.
@@ -1242,10 +1229,10 @@ class DockerSpawner(Spawner):
             self.object_name,
             self.object_id[:7],
         )
-        yield self.stop_object()
+        await self.stop_object()
 
         if self.remove:
-            yield self.remove_object()
+            await self.remove_object()
 
         self.clear_state()
 
