@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from subprocess import check_call
 from subprocess import Popen
@@ -43,6 +44,8 @@ def volumes_and_networks():
                 obj.remove()
             except docker.errors.NotFound:
                 pass
+            except docker.errors.APIError as e:
+                print(f"Error deleting {obj}: {e}", file=sys.stderr)
 
 
 @pytest.fixture(scope='session')
@@ -59,6 +62,8 @@ def compose_up(volumes_and_networks, compose_build):
         else:
             break
     else:
+        p.terminate()
+        check_call(['docker-compose', 'rm', '-s', '-f'], cwd=here)
         raise TimeoutError("hub never showed up at %s" % hub_url)
 
     try:
