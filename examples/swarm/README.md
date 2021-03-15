@@ -6,20 +6,20 @@ If you already have a swarm cluster, skip this section.
 
 To make this a complete example,
 let's create a local swarm cluster with virtualbox.
-We will have one master and two workers.
+We will have one manager and two workers.
 
 ```bash
-docker-machine create --driver virtualbox swarm-master
+docker-machine create --driver virtualbox swarm-manager
 docker-machine create --driver virtualbox swarm1
 docker-machine create --driver virtualbox swarm2
 ```
 
-Make `swarm-master` the master
+Make `swarm-manager` the manager
 
 ```bash
-MASTER_IP=$(docker-machine ip swarm-master)
-docker-machine ssh swarm-master "docker swarm init --advertise-addr $MASTER_IP"
-docker_join_command=$(docker-machine ssh swarm-master "docker swarm join-token worker" | grep "^\s*docker")
+MANAGER_IP=$(docker-machine ip swarm-manager)
+docker-machine ssh swarm-manager "docker swarm init --advertise-addr $MANAGER_IP"
+docker_join_command=$(docker-machine ssh swarm-manager "docker swarm join-token worker" | grep "^\s*docker")
 ```
 
 which will have output like:
@@ -27,10 +27,10 @@ which will have output like:
 ```
 To add a worker to this swarm, run the following command:
 
-    docker swarm join --token SWMTKN-1-67asaufw4gdn7tclwwvs09xyytc12alwgf1qdozlcjyp4og5ps-cqpokgek9ml3gahxv7cvz0rm9 192.168.99.101:2377
+    docker swarm join --token ...
 ```
 
-Copy that `docker swarm join` command and run it on on your workers:
+Run the join command we captured on on your workers:
 
 ```bash
 docker-machine ssh swarm1 "$docker_join_command"
@@ -46,15 +46,15 @@ This node joined a swarm as a worker.
 Now we can connect to the cluster and verify that it exists:
 
 ```bash
-eval $(docker-machine env swarm-master)
+eval $(docker-machine env swarm-manager)
 docker node ls
 ```
 
 ```
-ID                            HOSTNAME            STATUS              AVAILABILITY        MANAGER STATUS      ENGINE VERSION
-vnvw9ym4n7fxsqmzx1ut9z23h     swarm1              Ready               Active                                  18.06.1-ce
-m3a1as22uoavuf5jayy24hx87     swarm2              Ready               Active                                  18.06.1-ce
-vz8n6gw6m0ve1a7gk0micxa4n *   swarm-master        Ready               Active              Leader              18.06.1-ce
+ID                            HOSTNAME        STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+mggnoy17xh8z78lz4pm8npn2x     swarm1          Ready     Active                          19.03.12
+jwlechv3wf7zc7ynm8lshewii     swarm2          Ready     Active                          19.03.12
+pjw8sebqsc3ervzlvhdayfbpl *   swarm-manager   Ready     Active         Leader           19.03.12
 ```
 
 ## Using SwarmSpawner
@@ -110,8 +110,8 @@ docker-compose build
 
 Finally, start jupyterhub:
 
-```
+```bash
 docker-compose up
 ```
 
-At this point, you should be able to go to `http://$(docker-machine ip swarm-master)` and test spawning.
+At this point, you should be able to go to `http://$(docker-machine ip swarm-manager)` and test spawning.
