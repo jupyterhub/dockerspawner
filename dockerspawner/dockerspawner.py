@@ -351,13 +351,13 @@ class DockerSpawner(Spawner):
             It is important to include {servername} if JupyterHub's "named
             servers" are enabled (JupyterHub.allow_named_servers = True).
             If the server is named, the default name_template is
-            "{prefix}-{username}__{servername}". If it is unnamed, the default
+            "{prefix}-{username}--{servername}". If it is unnamed, the default
             name_template is "{prefix}-{username}".
 
             Note: when using named servers,
             it is important that the separator between {username} and {servername}
             is not a character that can occur in an escaped {username},
-            and also not the single escape character '_'.
+            and also not the single escape character '-'.
             """
         ),
     )
@@ -365,7 +365,7 @@ class DockerSpawner(Spawner):
     @default('name_template')
     def _default_name_template(self):
         if self.name:
-            return "{prefix}-{username}__{servername}"
+            return "{prefix}-{username}--{servername}"
         else:
             return "{prefix}-{username}"
 
@@ -581,8 +581,60 @@ class DockerSpawner(Spawner):
         config=True, help="Additional args to create_host_config for container create"
     )
 
-    _docker_safe_chars = set(string.ascii_letters + string.digits + "-")
-    _docker_escape_char = "_"
+    escape = Any(
+        help="""Override escaping with any callable of the form escape(str)->str
+
+        This is used to ensure docker-safe container names, etc.
+
+        The default escaping should ensure safety and validity,
+        but can produce cumbersome strings in cases.
+
+        Set c.DockerSpawner.escape = 'legacy' to preserve the earlier, unsafe behavior
+        if it worked for you.
+
+        .. versionadded:: 0.12
+
+        .. versionchanged:: 0.12
+            Escaping has changed in 0.12 to ensure safety,
+            but existing deployments will get different container and volume names.
+        """,
+        config=True,
+    )
+
+    @default("escape")
+    def _escape_default(self):
+        return self._escape
+
+    @validate("escape")
+    def _validate_escape(self, proposal):
+        escape = proposal.value
+        if escape == "legacy":
+            return self._legacy_escape
+        if not callable(escape):
+            raise ValueError("DockerSpawner.escape must be callable, got %r" % escape)
+        return escape
+
+    @staticmethod
+    def _escape(text):
+        # Make sure a substring matches the restrictions for DNS labels
+        # Note: '-' cannot be in safe_chars, as it is being used as escape character
+        # any '-' must be escaped to '-2d' to avoid collisions
+        safe_chars = set(string.ascii_lowercase + string.digits)
+        return escape(text, safe_chars, escape_char='-').lower()
+
+    @staticmethod
+    def _legacy_escape(text):
+        """Legacy implementation of escape
+
+        Select with config c.DockerSpawner.escape = 'legacy'
+
+        Unsafe and doesn't work in all cases,
+        but allows opt-in to backward compatibility for an upgrading deployment.
+
+        Do not use for new deployments.
+        """
+        safe_chars = set(string.ascii_letters + string.digits + "-")
+        return escape(text, safe_chars, escape_char='_')
 
     hub_ip_connect = Unicode(
         config=True,
@@ -771,23 +823,15 @@ class DockerSpawner(Spawner):
     def escaped_name(self):
         """Escape the username so it's safe for docker objects"""
         if self._escaped_name is None:
-            self._escaped_name = self._escape(self.user.name)
+            self._escaped_name = self.escape(self.user.name)
         return self._escaped_name
-
-    def _escape(self, s):
-        """Escape a string to docker-safe characters"""
-        return escape(
-            s,
-            safe=self._docker_safe_chars,
-            escape_char=self._docker_escape_char,
-        )
 
     object_id = Unicode(allow_none=True)
 
     def template_namespace(self):
-        escaped_image = self.image.replace("/", "_")
+        escaped_image = self.image.replace("/", "-")
         server_name = getattr(self, "name", "")
-        safe_server_name = self._escape(server_name.lower())
+        safe_server_name = self.escape(server_name.lower())
         return {
             "username": self.escaped_name,
             "safe_username": self.escaped_name,
