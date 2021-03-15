@@ -1,4 +1,5 @@
 """pytest config for dockerspawner tests"""
+import inspect
 from unittest import mock
 
 import pytest
@@ -18,6 +19,19 @@ from dockerspawner import SystemUserSpawner
 
 # make Hub connectable from docker by default
 MockHub.hub_ip = "0.0.0.0"
+
+
+def pytest_collection_modifyitems(items):
+    """This function is automatically run by pytest passing all collected test
+    functions.
+
+    We use it to add asyncio marker to all async tests and assert we don't use
+    test functions that are async generators which wouldn't make sense.
+    """
+    for item in items:
+        if inspect.iscoroutinefunction(item.obj):
+            item.add_marker('asyncio')
+        assert not inspect.isasyncgenfunction(item.obj)
 
 
 @pytest.fixture

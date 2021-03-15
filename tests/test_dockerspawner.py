@@ -152,10 +152,10 @@ async def test_image_pull_policy(dockerspawner_configured_app):
     # run again with Always,
     # should trigger a pull even though the image is present
     spawner.pull_policy = "always"
-    spawner.pull_image(image)
+    await spawner.pull_image(image)
     image_info = await asyncio.wrap_future(spawner.docker("inspect_image", repo))
     assert image_info["Id"] != old_image_info["Id"]
 
     # run again with never, make sure it's still happy
     spawner.pull_policy = "never"
-    spawner.pull_image(image)
+    await spawner.pull_image(image)

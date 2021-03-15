@@ -1,6 +1,7 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker service
 """
+import asyncio
 from pprint import pformat
 from textwrap import dedent
 
@@ -12,7 +13,6 @@ from docker.types import Mount
 from docker.types import Placement
 from docker.types import Resources
 from docker.types import TaskTemplate
-from tornado import gen
 from traitlets import default
 from traitlets import Dict
 from traitlets import Unicode
@@ -131,10 +131,9 @@ class SwarmSpawner(DockerSpawner):
         else:
             return []
 
-    @gen.coroutine
-    def poll(self):
+    async def poll(self):
         """Check for my id in `docker ps`"""
-        service = yield self.get_task()
+        service = await self.get_task()
         if not service:
             self.log.warning("Service %s not found", self.service_name)
             return 0
@@ -150,19 +149,18 @@ class SwarmSpawner(DockerSpawner):
         else:
             return pformat(service_state)
 
-    @gen.coroutine
-    def get_task(self):
+    async def get_task(self):
         self.log.debug("Getting task of service '%s'", self.service_name)
-        if self.get_object() is None:
+        if await self.get_object() is None:
             return None
 
         try:
-            tasks = yield self.docker(
+            tasks = await self.docker(
                 "tasks",
                 filters={"service": self.service_name, "desired-state": "running"},
             )
             if len(tasks) == 0:
-                tasks = yield self.docker(
+                tasks = await self.docker(
                     "tasks",
                     filters={"service": self.service_name},
                 )
@@ -186,13 +184,12 @@ class SwarmSpawner(DockerSpawner):
 
         return task
 
-    @gen.coroutine
-    def create_object(self):
+    async def create_object(self):
         """Start the single-user server in a docker service."""
         container_kwargs = dict(
             image=self.image,
             env=self.get_env(),
-            args=(yield self.get_command()),
+            args=(await self.get_command()),
             mounts=self.mounts,
         )
         container_kwargs.update(self.extra_container_spec)
@@ -237,16 +234,16 @@ class SwarmSpawner(DockerSpawner):
         )
         create_kwargs.update(self.extra_create_kwargs)
 
-        service = yield self.docker("create_service", **create_kwargs)
+        service = await self.docker("create_service", **create_kwargs)
 
         while True:
-            tasks = yield self.docker(
+            tasks = await self.docker(
                 "tasks",
                 filters={"service": self.service_name},
             )
             if len(tasks) > 0:
                 break
-            yield gen.sleep(1.0)
+            await asyncio.sleep(1)
 
         return service
 
@@ -254,14 +251,12 @@ class SwarmSpawner(DockerSpawner):
     def internal_hostname(self):
         return self.service_name
 
-    @gen.coroutine
-    def remove_object(self):
+    async def remove_object(self):
         self.log.info("Removing %s %s", self.object_type, self.object_id)
         # remove the container, as well as any associated volumes
-        yield self.docker("remove_" + self.object_type, self.object_id)
+        await self.docker("remove_" + self.object_type, self.object_id)
 
-    @gen.coroutine
-    def start_object(self):
+    async def start_object(self):
         """Not actually starting anything
 
         but use this to wait for the container to be running.
@@ -274,7 +269,7 @@ class SwarmSpawner(DockerSpawner):
         dt = 1.0
 
         while True:
-            service = yield self.get_task()
+            service = await self.get_task()
             if not service:
                 raise RuntimeError("Service %s not found" % self.service_name)
 
@@ -292,7 +287,7 @@ class SwarmSpawner(DockerSpawner):
                 "rejected",
             }:
                 # not ready yet, wait before checking again
-                yield gen.sleep(dt)
+                await asyncio.sleep(dt)
                 # exponential backoff
                 dt = min(dt * 1.5, 11)
             else:
@@ -302,23 +297,20 @@ class SwarmSpawner(DockerSpawner):
                 "Service %s not running: %s" % (self.service_name, pformat(status))
             )
 
-    @gen.coroutine
-    def stop_object(self):
+    async def stop_object(self):
         """Nothing to do here
 
         There is no separate stop action for services
         """
         pass
 
-    @gen.coroutine
-    def get_ip_and_port(self):
+    async def get_ip_and_port(self):
         """Queries Docker daemon for service's IP and port.
 
         If you are using network_mode=host, you will need to override
         this method as follows::
 
-            @gen.coroutine
-            def get_ip_and_port(self):
+            async def get_ip_and_port(self):
                 return self.host_ip, self.port
 
         You will need to make sure host_ip and port
@@ -331,7 +323,7 @@ class SwarmSpawner(DockerSpawner):
         else:
             # discover published ip, port
             ip = self.host_ip
-            service = yield self.get_object()
+            service = await self.get_object()
             for port_config in service["Endpoint"]["Ports"]:
                 if port_config.get("TargetPort") == self.port:
                     port = port_config["PublishedPort"]
