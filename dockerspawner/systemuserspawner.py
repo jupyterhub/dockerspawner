@@ -219,5 +219,11 @@ class SystemUserSpawner(DockerSpawner):
             if self.group_id >= 0:
                 user_s = f"{user_s}:{self.group_id}"
             self.extra_create_kwargs.setdefault('user', user_s)
+        elif self.group_id >= 0:
+            # group_id set, but user_id not set.
+            # this doesn't make sense.
+            self.log.warning(
+                f"user_id for {self.user.name} not set, but group_id is {self.group_id}. This will have no effect."
+            )
 
         return super(SystemUserSpawner, self).start()
