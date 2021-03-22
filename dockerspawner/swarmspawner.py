@@ -109,9 +109,11 @@ class SwarmSpawner(DockerSpawner):
 
     @property
     def mount_driver_config(self):
-        return DriverConfig(
-            name=self.volume_driver, options=self.volume_driver_options or None
-        )
+        if self.volume_driver:
+            return DriverConfig(
+                name=self.volume_driver, options=self.volume_driver_options or None
+            )
+        return None
 
     @property
     def mounts(self):
