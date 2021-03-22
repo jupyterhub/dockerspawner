@@ -6,6 +6,7 @@ from unittest import mock
 
 import docker
 import pytest
+import traitlets
 from jupyterhub.tests.mocking import public_url
 from jupyterhub.tests.test_api import add_user
 from jupyterhub.tests.test_api import api_request
@@ -219,3 +220,20 @@ async def test_post_start(dockerspawner_configured_app, caplog):
             assert "post_start stderr" not in logged
 
     await spawner.stop()
+
+
+@pytest.mark.skipif(
+    traitlets.__version__ < '5.0', reason="One test fails on traitlets < 5.0. See #420."
+)
+@pytest.mark.parametrize(
+    "mem_limit, expected",
+    [
+        ("1G", 1024 ** 3),
+        (1_000_000, 1_000_000),
+        (lambda spawner: "2G", 2 * 1024 ** 3),
+        (lambda spawner: 1_000_000, 1_000_000),
+    ],
+)
+def test_mem_limit(mem_limit, expected):
+    s = DockerSpawner(mem_limit=mem_limit)
+    assert s.mem_limit == expected
