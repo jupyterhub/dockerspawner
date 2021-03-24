@@ -16,7 +16,7 @@ def test_deprecated_config(caplog):
         (
             log.name,
             logging.WARNING,
-            'DockerSpawner.image_whitelist is deprecated in DockerSpawner 0.12.0, use '
+            'DockerSpawner.image_whitelist is deprecated in DockerSpawner 12.0, use '
             'DockerSpawner.allowed_images instead',
         )
     ]

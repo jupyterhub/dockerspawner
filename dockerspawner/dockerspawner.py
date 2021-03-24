@@ -63,7 +63,7 @@ class DockerSpawner(Spawner):
         "container_prefix": ("prefix", "0.10.0"),
         "container_name_template": ("name_template", "0.10.0*"),
         "remove_containers": ("remove", "0.10.0"),
-        "image_whitelist": ("allowed_images", "0.12.0"),
+        "image_whitelist": ("allowed_images", "12.0"),
     }
 
     @observe(*list(_deprecated_aliases))
@@ -232,7 +232,7 @@ class DockerSpawner(Spawner):
         The user is accessible as spawner.user.
         The callable should return a dict or list as above.
 
-        .. versionchanged:: 0.12.0
+        .. versionchanged:: 12.0
             `DockerSpawner.image_whitelist` renamed to `allowed_images`
 
         """,
@@ -309,7 +309,7 @@ class DockerSpawner(Spawner):
           (like never, but without raising when images are not present;
           default for swarm)
 
-        .. versionadded: 0.12
+        .. versionadded: 12.0
             'skip' option added. It is the default for swarm
             because pre-pulling images on swarm clusters
             doesn't make sense since the container is likely not
@@ -586,10 +586,10 @@ class DockerSpawner(Spawner):
         Set c.DockerSpawner.escape = 'legacy' to preserve the earlier, unsafe behavior
         if it worked for you.
 
-        .. versionadded:: 0.12
+        .. versionadded:: 12.0
 
-        .. versionchanged:: 0.12
-            Escaping has changed in 0.12 to ensure safety,
+        .. versionchanged:: 12.0
+            Escaping has changed in 12.0 to ensure safety,
             but existing deployments will get different container and volume names.
         """,
         config=True,
@@ -1367,7 +1367,7 @@ def _deprecated_method(old_name, new_name, version):
 
 # deprecate white/blacklist method names
 for _old_name, _new_name, _version in [
-    ("check_image_whitelist", "check_allowed", "0.12.0")
+    ("check_image_whitelist", "check_allowed", "12.0")
 ]:
     setattr(
         DockerSpawner,
