@@ -6,6 +6,117 @@ command line for details.
 
 ## [Unreleased]
 
+## 12
+
+### [12.0] 2021-03
+
+This is a big release!
+
+Several bugs have been fixed, especially in SwarmSpawner, and more configuration options added.
+
+#### New escaping scheme
+
+In particular, the biggest backward-incompatible change to highlight
+is the container (and volume) name escaping scheme now produces DNS-safe results, which matches the behavior of kubespawner.
+This is a stricter subset of characters than docker containers strictly require,
+but many features don't work right without it.
+The result is for certain user names and/or server names, their container and/or volume names will change.
+Upgrading existing deployments will result in disconnecting these users from their running containers and volumes, which means:
+
+- if there are running users across the upgrade,
+  some containers will need to be manually stopped
+- some volumes may need to be renamed, which [docker doesn't support](https://github.com/moby/moby/issues/31154),
+  but [can be done](https://github.com/moby/moby/issues/31154#issuecomment-360531460):
+
+  ```bash
+  docker volume create --name $new_volume
+  docker run --rm -it -v $old_volume:/from -v $new_volume:/to alpine ash -c "cd /from ; cp -av . /to"
+  docker volume rm $old_volume
+  ```
+
+The main differences are:
+
+- The escape character is `-` instead of `_` which means `-` cannot itself be a safe character and must be escaped to `-2d`
+- Uppercase characters are now escaped (normalizing to lowercase at the username level is common)
+
+So affected usernames are those with `-` or uppercase letters, or any that already needed escaping.
+
+You can restore the pre-12.0 behavior with:
+
+```python
+c.DockerSpawner.escape = "legacy"
+```
+
+#### SystemUserSpawner.run_as_root
+
+Another security-related change is the addition of `SystemUserSpawner.run_as_root`.
+Prior to 12.0, SystemUserSpawner always ran as root and relied on the container to use $NB_USER and $NB_UID to "become" the user.
+This behavior meant that user containers based on images that lacked this behavior would all run as root.
+To address this, `run_as_root` behavior is now opt-in
+
+All changes are detailed below.
+
+([full changelog](https://github.com/jupyterhub/dockerspawner/compare/0.11.1...12.0.0))
+
+#### New features added
+
+- apply template formatting to all of extra_create_kwargs, extra_host_config [#409](https://github.com/jupyterhub/dockerspawner/pull/409) ([@minrk](https://github.com/minrk))
+- Add mounts option for more advanced binds [#406](https://github.com/jupyterhub/dockerspawner/pull/406) ([@minrk](https://github.com/minrk))
+- Add JUPYTER_IMAGE_SPEC to env. [#316](https://github.com/jupyterhub/dockerspawner/pull/316) ([@danielballan](https://github.com/danielballan))
+- Added post_start_cmd [#307](https://github.com/jupyterhub/dockerspawner/pull/307) ([@mohirio](https://github.com/mohirio))
+
+#### Enhancements made
+
+- Use default cmd=None to indicate using the image command [#415](https://github.com/jupyterhub/dockerspawner/pull/415) ([@minrk](https://github.com/minrk))
+- add 'skip' option for pull_policy [#411](https://github.com/jupyterhub/dockerspawner/pull/411) ([@minrk](https://github.com/minrk))
+- Add auto_remove to host_config [#318](https://github.com/jupyterhub/dockerspawner/pull/318) ([@jtpio](https://github.com/jtpio))
+- Make default name_template compatible with named servers. [#315](https://github.com/jupyterhub/dockerspawner/pull/315) ([@danielballan](https://github.com/danielballan))
+- SystemUserSpawner: Pass group id to the container [#304](https://github.com/jupyterhub/dockerspawner/pull/304) ([@zeehio](https://github.com/zeehio))
+- Allow lookup of host homedir via `pwd` [#302](https://github.com/jupyterhub/dockerspawner/pull/302) ([@AdrianoKF](https://github.com/AdrianoKF))
+
+#### Bugs fixed
+
+- (PATCH) SwarmSpawner, InvalidArgument: Incompatible options have been provided for the bind type mount. [#419](https://github.com/jupyterhub/dockerspawner/pull/419) ([@cmotadev](https://github.com/cmotadev))
+- Make sure that create_object() creates the service task [#396](https://github.com/jupyterhub/dockerspawner/pull/396) ([@girgink](https://github.com/girgink))
+- avoid name collisions when using named servers [#386](https://github.com/jupyterhub/dockerspawner/pull/386) ([@minrk](https://github.com/minrk))
+- Fix issue with pulling images from custom repos that contain a port [#334](https://github.com/jupyterhub/dockerspawner/pull/334) ([@raethlein](https://github.com/raethlein))
+
+#### Maintenance and upkeep improvements
+
+- async/await [#417](https://github.com/jupyterhub/dockerspawner/pull/417) ([@minrk](https://github.com/minrk))
+- stop building docs on circleci [#387](https://github.com/jupyterhub/dockerspawner/pull/387) ([@minrk](https://github.com/minrk))
+- Test with latest jh [#379](https://github.com/jupyterhub/dockerspawner/pull/379) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- Fix RTD build [#378](https://github.com/jupyterhub/dockerspawner/pull/378) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- Add release instructions and Travis deploy [#377](https://github.com/jupyterhub/dockerspawner/pull/377) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- Fix tests [#374](https://github.com/jupyterhub/dockerspawner/pull/374) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- Add README badges [#356](https://github.com/jupyterhub/dockerspawner/pull/356) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Documentation improvements
+
+- Update swarm example [#418](https://github.com/jupyterhub/dockerspawner/pull/418) ([@minrk](https://github.com/minrk))
+- improve robustness of internal-ssl example [#416](https://github.com/jupyterhub/dockerspawner/pull/416) ([@minrk](https://github.com/minrk))
+- update versions in docker-image docs [#410](https://github.com/jupyterhub/dockerspawner/pull/410) ([@minrk](https://github.com/minrk))
+- Add GitHub Action readme badge [#408](https://github.com/jupyterhub/dockerspawner/pull/408) ([@consideRatio](https://github.com/consideRatio))
+- Switch CI to GitHub actions [#407](https://github.com/jupyterhub/dockerspawner/pull/407) ([@minrk](https://github.com/minrk))
+- touch up simple example [#405](https://github.com/jupyterhub/dockerspawner/pull/405) ([@minrk](https://github.com/minrk))
+- add example for selecting arbitrary image via options_form [#401](https://github.com/jupyterhub/dockerspawner/pull/401) ([@minrk](https://github.com/minrk))
+- Typo fix in the docs [#380](https://github.com/jupyterhub/dockerspawner/pull/380) ([@jtpio](https://github.com/jtpio))
+- Add docs [#375](https://github.com/jupyterhub/dockerspawner/pull/375) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+- Fix dead link in doc [#350](https://github.com/jupyterhub/dockerspawner/pull/350) ([@JocelynDelalande](https://github.com/JocelynDelalande))
+- Fix project name typo [#339](https://github.com/jupyterhub/dockerspawner/pull/339) ([@kinow](https://github.com/kinow))
+
+#### API and Breaking Changes
+
+- Make escaping DNS-safe [#414](https://github.com/jupyterhub/dockerspawner/pull/414) ([@minrk](https://github.com/minrk))
+- add SystemUserSpawner.run_as_root [#412](https://github.com/jupyterhub/dockerspawner/pull/412) ([@minrk](https://github.com/minrk))
+- Rename DockerSpawner.image_whitelist to allowed_images [#381](https://github.com/jupyterhub/dockerspawner/pull/381) ([@GeorgianaElena](https://github.com/GeorgianaElena))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/dockerspawner/graphs/contributors?from=2019-04-25&to=2021-03-24&type=c))
+
+[@1kastner](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3A1kastner+updated%3A2019-04-25..2021-03-24&type=Issues) | [@AdrianoKF](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AAdrianoKF+updated%3A2019-04-25..2021-03-24&type=Issues) | [@anmtan](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aanmtan+updated%3A2019-04-25..2021-03-24&type=Issues) | [@AnubhavUjjawal](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AAnubhavUjjawal+updated%3A2019-04-25..2021-03-24&type=Issues) | [@belfhi](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Abelfhi+updated%3A2019-04-25..2021-03-24&type=Issues) | [@bellackn](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Abellackn+updated%3A2019-04-25..2021-03-24&type=Issues) | [@bjornandre](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Abjornandre+updated%3A2019-04-25..2021-03-24&type=Issues) | [@blacksailer](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ablacksailer+updated%3A2019-04-25..2021-03-24&type=Issues) | [@cblomart](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Acblomart+updated%3A2019-04-25..2021-03-24&type=Issues) | [@choldgraf](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Acholdgraf+updated%3A2019-04-25..2021-03-24&type=Issues) | [@cmotadev](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Acmotadev+updated%3A2019-04-25..2021-03-24&type=Issues) | [@cmseal](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Acmseal+updated%3A2019-04-25..2021-03-24&type=Issues) | [@co60ca](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aco60ca+updated%3A2019-04-25..2021-03-24&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AconsideRatio+updated%3A2019-04-25..2021-03-24&type=Issues) | [@cyliu0204](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Acyliu0204+updated%3A2019-04-25..2021-03-24&type=Issues) | [@danielballan](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Adanielballan+updated%3A2019-04-25..2021-03-24&type=Issues) | [@danlester](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Adanlester+updated%3A2019-04-25..2021-03-24&type=Issues) | [@efagerberg](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aefagerberg+updated%3A2019-04-25..2021-03-24&type=Issues) | [@gatoniel](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Agatoniel+updated%3A2019-04-25..2021-03-24&type=Issues) | [@GeorgianaElena](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AGeorgianaElena+updated%3A2019-04-25..2021-03-24&type=Issues) | [@girgink](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Agirgink+updated%3A2019-04-25..2021-03-24&type=Issues) | [@hugoJuhel](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AhugoJuhel+updated%3A2019-04-25..2021-03-24&type=Issues) | [@jameholme](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ajameholme+updated%3A2019-04-25..2021-03-24&type=Issues) | [@jamesdbrock](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ajamesdbrock+updated%3A2019-04-25..2021-03-24&type=Issues) | [@JocelynDelalande](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AJocelynDelalande+updated%3A2019-04-25..2021-03-24&type=Issues) | [@jtpio](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ajtpio+updated%3A2019-04-25..2021-03-24&type=Issues) | [@kinow](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Akinow+updated%3A2019-04-25..2021-03-24&type=Issues) | [@kkr78](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Akkr78+updated%3A2019-04-25..2021-03-24&type=Issues) | [@ltupin](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Altupin+updated%3A2019-04-25..2021-03-24&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amanics+updated%3A2019-04-25..2021-03-24&type=Issues) | [@mathematicalmichael](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amathematicalmichael+updated%3A2019-04-25..2021-03-24&type=Issues) | [@meeseeksmachine](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ameeseeksmachine+updated%3A2019-04-25..2021-03-24&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aminrk+updated%3A2019-04-25..2021-03-24&type=Issues) | [@missingcharacter](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amissingcharacter+updated%3A2019-04-25..2021-03-24&type=Issues) | [@mohirio](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amohirio+updated%3A2019-04-25..2021-03-24&type=Issues) | [@myurasov](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amyurasov+updated%3A2019-04-25..2021-03-24&type=Issues) | [@nazeels](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Anazeels+updated%3A2019-04-25..2021-03-24&type=Issues) | [@nmvega](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Anmvega+updated%3A2019-04-25..2021-03-24&type=Issues) | [@nuraym](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Anuraym+updated%3A2019-04-25..2021-03-24&type=Issues) | [@parente](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aparente+updated%3A2019-04-25..2021-03-24&type=Issues) | [@raethlein](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Araethlein+updated%3A2019-04-25..2021-03-24&type=Issues) | [@sabuhish](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Asabuhish+updated%3A2019-04-25..2021-03-24&type=Issues) | [@sangramga](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Asangramga+updated%3A2019-04-25..2021-03-24&type=Issues) | [@support](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Asupport+updated%3A2019-04-25..2021-03-24&type=Issues) | [@TimoRoth](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3ATimoRoth+updated%3A2019-04-25..2021-03-24&type=Issues) | [@vlizanae](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Avlizanae+updated%3A2019-04-25..2021-03-24&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Awelcome+updated%3A2019-04-25..2021-03-24&type=Issues) | [@Wildcarde](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AWildcarde+updated%3A2019-04-25..2021-03-24&type=Issues) | [@willingc](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Awillingc+updated%3A2019-04-25..2021-03-24&type=Issues) | [@wwj718](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Awwj718+updated%3A2019-04-25..2021-03-24&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ayuvipanda+updated%3A2019-04-25..2021-03-24&type=Issues) | [@z3ky](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Az3ky+updated%3A2019-04-25..2021-03-24&type=Issues) | [@zeehio](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Azeehio+updated%3A2019-04-25..2021-03-24&type=Issues) | [@zhiyuli](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Azhiyuli+updated%3A2019-04-25..2021-03-24&type=Issues)
+
 ## 0.11
 
 ### [0.11.1] - 2019-04-25
@@ -160,7 +271,8 @@ Some configuration has been cleaned up to be clearer and more concise:
 
 First release
 
-[unreleased]: https://github.com/jupyterhub/dockerspawner/compare/0.11.1...HEAD
+[unreleased]: https://github.com/jupyterhub/dockerspawner/compare/12.0.0...HEAD
+[12.0]: https://github.com/jupyterhub/dockerspawner/compare/0.11.1...12.0.0
 [0.11.1]: https://github.com/jupyterhub/dockerspawner/compare/0.11.0...0.11.1
 [0.11.0]: https://github.com/jupyterhub/dockerspawner/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/jupyterhub/dockerspawner/compare/0.9.1...0.10.0
