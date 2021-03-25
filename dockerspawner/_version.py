@@ -3,8 +3,8 @@
 # Distributed under the terms of the Modified BSD License.
 
 version_info = (
-    0,
     12,
+    0,
     0,
     'dev',  # comment-out this line for a release
 )
