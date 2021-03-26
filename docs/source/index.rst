@@ -67,6 +67,14 @@ API Reference
 
    api/index
 
+Changes in DockerSpawner
+------------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   changelog
+
 Indices and tables
 ==================
 
