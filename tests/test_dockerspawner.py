@@ -1,6 +1,8 @@
 """Tests for DockerSpawner class"""
 import asyncio
 import json
+import logging
+from unittest import mock
 
 import docker
 import pytest
@@ -159,3 +161,61 @@ async def test_image_pull_policy(dockerspawner_configured_app):
     # run again with never, make sure it's still happy
     spawner.pull_policy = "never"
     await spawner.pull_image(image)
+
+
+async def test_post_start(dockerspawner_configured_app, caplog):
+    app = dockerspawner_configured_app
+    name = "post-start"
+    add_user(app.db, app, name=name)
+    user = app.users[name]
+    spawner = user.spawners['']
+    log_name = "dockerspawner"
+    spawner.log = logging.getLogger(log_name)
+    spawner.remove = True
+    # mock out ip and port, no need for it
+    async def mock_ip_port():
+        return ("127.0.0.1", 1234)
+
+    spawner.get_ip_and_port = mock_ip_port
+
+    spawner.image = "busybox:1.29.1"
+    spawner.cmd = ["sh", "-c", "sleep 300"]
+    spawner.post_start_cmd = "ls /"
+
+    # verify that it's called during startup
+    finished_future = asyncio.Future()
+    finished_future.set_result(None)
+    mock_post_start = mock.Mock(return_value=finished_future)
+    with mock.patch.object(spawner, 'post_start_exec', mock_post_start):
+        await spawner.start()
+    mock_post_start.assert_called_once()
+
+    # verify log capture for 3 combinations:
+    # - success
+    # - failure
+    # - no such command (different failure)
+
+    for (cmd, expected_stdout, expected_stderr) in [
+        ("true", False, False),
+        ("ls /", True, False),
+        ("ls /nosuchfile", False, True),
+        ("nosuchcommand", False, True),
+        ("echo", False, False),
+    ]:
+        spawner.post_start_cmd = cmd
+        idx = len(caplog.records)
+        with caplog.at_level(logging.DEBUG, log_name):
+            await spawner.post_start_exec()
+        logged = "\n".join(
+            f"{rec.levelname}: {rec.message}" for rec in caplog.records[idx:]
+        )
+        if expected_stdout:
+            assert "DEBUG: post_start stdout" in logged
+        else:
+            assert "post_start stdout" not in logged
+        if expected_stderr:
+            assert "WARNING: post_start stderr" in logged
+        else:
+            assert "post_start stderr" not in logged
+
+    await spawner.stop()
