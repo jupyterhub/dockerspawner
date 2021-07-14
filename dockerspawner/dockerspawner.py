@@ -12,6 +12,7 @@ from pprint import pformat
 from tarfile import TarFile
 from tarfile import TarInfo
 from textwrap import dedent
+from textwrap import indent
 from urllib.parse import urlparse
 
 import docker
@@ -741,10 +742,44 @@ class DockerSpawner(Spawner):
         container_id = container[self.object_id_key]
 
         exec_kwargs = {'cmd': self.post_start_cmd, 'container': container_id}
+        self.log.debug(
+            f"Running post_start exec in {self.object_name}: {self.post_start_cmd}"
+        )
 
         exec_id = await self.docker("exec_create", **exec_kwargs)
 
-        return self.docker("exec_start", exec_id=exec_id)
+        stdout, stderr = await self.docker("exec_start", exec_id=exec_id, demux=True)
+
+        # docker-py uses None for empty output instead of empty bytestring
+        if stdout is None:
+            stdout = b''
+
+        # stderr is usually None instead of empty b''
+        # this includes error conditions like "OCI runtime exec failed..."
+        # but also most successful runs
+        if stderr is None:
+            # crude check for "OCI runtime exec failed: ..."
+            # switch message to stderr instead of stdout for warning-level output
+            if b'exec failed' in stdout:
+                stderr = stdout
+                stdout = b''
+            else:
+                stderr = b''
+
+        for name, stream, level in [
+            ("stdout", stdout, "debug"),
+            ("stderr", stderr, "warning"),
+        ]:
+            output = stream.decode("utf8", "replace").strip()
+            if not output:
+                continue
+
+            if '\n' in output:
+                # if multi-line, wrap to new line and indent
+                output = '\n' + output
+                output = indent(output, "    ")
+            log = getattr(self.log, level)
+            log(f"post_start {name} in {self.object_name}: {output}")
 
     @property
     def tls_client(self):
