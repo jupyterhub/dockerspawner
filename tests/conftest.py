@@ -1,14 +1,16 @@
 """pytest config for dockerspawner tests"""
 import inspect
+import json
+from textwrap import indent
 from unittest import mock
 
 import pytest
 from docker import from_env as docker_from_env
 from docker.errors import APIError
-from jupyterhub.tests.conftest import app
-from jupyterhub.tests.conftest import event_loop
-from jupyterhub.tests.conftest import io_loop
-from jupyterhub.tests.conftest import ssl_tmpdir
+from jupyterhub.tests.conftest import app  # noqa: F401
+from jupyterhub.tests.conftest import event_loop  # noqa: F401
+from jupyterhub.tests.conftest import io_loop  # noqa: F401
+from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
 
 from dockerspawner import DockerSpawner
@@ -95,3 +97,46 @@ def docker():
             for s in services:
                 if s.name.startswith("dockerspawner-test"):
                     s.remove()
+
+
+# make sure reports are available during yield fixtures
+# from pytest docs: https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    outcome = yield
+    rep = outcome.get_result()
+
+    # set a report attribute for each phase of a call, which can
+    # be "setup", "call", "teardown"
+
+    setattr(item, "rep_" + rep.when, rep)
+
+
+@pytest.fixture(autouse=True)
+def debug_docker(request, docker):
+    """Debug docker state after tests"""
+    yield
+    if not hasattr(request.node, 'rep_call'):
+        return
+    if not request.node.rep_call.failed:
+        return
+
+    print("executing test failed", request.node.nodeid)
+    containers = docker.containers.list(all=True)
+    for c in containers:
+        print(f"Container {c.name}: {c.status}")
+
+    for c in containers:
+        logs = indent(c.logs().decode('utf8', 'replace'), '  ')
+        print(f"Container {c.name} logs:\n{logs}")
+
+    for c in containers:
+        container_info = json.dumps(
+            docker.api.inspect_container(c.id),
+            indent=2,
+            sort_keys=True,
+        )
+        print(f"Container {c.name}: {container_info}")
