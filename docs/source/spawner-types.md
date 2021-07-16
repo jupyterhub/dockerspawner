@@ -46,7 +46,7 @@ your `jupyterhub_config.py`:
 c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
 ```
 
-There is a complete example in [examples/oauth](https://github.com/jupyterhub/dockerspawner/tree/master/examples/oauth)
+There is a complete example in [examples/oauth](https://github.com/jupyterhub/dockerspawner/tree/HEAD/examples/oauth)
 for using GitHub OAuth to authenticate users, and spawn containers with docker.
 
 ## SwarmSpawner
