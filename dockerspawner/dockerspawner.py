@@ -21,6 +21,8 @@ from docker.types import Mount
 from docker.utils import kwargs_from_env
 from escapism import escape
 from jupyterhub.spawner import Spawner
+from jupyterhub.traitlets import ByteSpecification
+from jupyterhub.traitlets import Callable
 from tornado import web
 from traitlets import Any
 from traitlets import Bool
@@ -54,6 +56,15 @@ _jupyterhub_xy = "%i.%i" % (jupyterhub.version_info[:2])
 
 class DockerSpawner(Spawner):
     """A Spawner for JupyterHub that runs each user's server in a separate docker container"""
+
+    def _eval_if_callable(self, x):
+        """Evaluate x if it is callable
+
+        Or return x otherwise
+        """
+        if callable(x):
+            return x(self)
+        return x
 
     _executor = None
 
@@ -1034,6 +1045,36 @@ class DockerSpawner(Spawner):
     @default('ssl_alt_names')
     def _get_ssl_alt_names(self):
         return ['DNS:' + self.internal_hostname]
+
+    mem_limit = Union(
+        [Callable(), ByteSpecification()],
+        help="""
+        Maximum number of bytes a single-user notebook server is allowed to use.
+        Allows the following suffixes:
+          - K -> Kilobytes
+          - M -> Megabytes
+          - G -> Gigabytes
+          - T -> Terabytes
+        If the single user server tries to allocate more memory than this,
+        it will fail. There is no guarantee that the single-user notebook server
+        will be able to allocate this much memory - only that it can not
+        allocate more than this.
+
+        Alternatively to a string it can also be a callable that takes the spawner as
+        the only argument and returns a string:
+
+        def per_user_mem_limit(spawner):
+            username = spawner.user.name
+            ram_limits = {'alice': '4G', 'bob': '2G'}
+            return ram_limits.get(username, '1G')
+        c.DockerSpawner.mem_limit = per_user_mem_limit
+        """,
+    ).tag(config=True)
+
+    @validate('mem_limit')
+    def _mem_limit_str(self, proposal):
+        """cast mem_limit to a str"""
+        return self._eval_if_callable(proposal.value)
 
     async def create_object(self):
         """Create the container/service object"""
