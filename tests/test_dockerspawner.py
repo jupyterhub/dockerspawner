@@ -230,6 +230,8 @@ async def test_post_start(dockerspawner_configured_app, caplog):
     [
         ("1G", 1024 ** 3),
         (1_000_000, 1_000_000),
+        (None, None),
+        (lambda spawner: None, None),
         (lambda spawner: "2G", 2 * 1024 ** 3),
         (lambda spawner: 1_000_000, 1_000_000),
     ],
@@ -237,3 +239,42 @@ async def test_post_start(dockerspawner_configured_app, caplog):
 def test_mem_limit(mem_limit, expected):
     s = DockerSpawner(mem_limit=mem_limit)
     assert s.mem_limit == expected
+
+
+@pytest.mark.parametrize(
+    "cpu_limit, expected",
+    [
+        (1, 1),
+        (None, None),
+        (1.5, 1.5),
+        (lambda spawner: None, None),
+        (lambda spawner: 2, 2),
+        (lambda spawner: 1.25, 1.25),
+    ],
+)
+async def test_cpu_limit(dockerspawner_configured_app, cpu_limit, expected, username):
+    app = dockerspawner_configured_app
+    app.config.DockerSpawner.cpu_limit = cpu_limit
+    add_user(app.db, app, name=username)
+    user = app.users[username]
+    s = user.spawners[""]
+    assert s.cpu_limit == expected
+    original_docker = s.docker
+
+    async def mock_docker(cmd, *args, **kwargs):
+        if cmd == "create_container":
+            return args, kwargs
+        else:
+            return await original_docker(cmd, *args, **kwargs)
+
+    with mock.patch.object(s, 'docker', new=mock_docker):
+        args, kwargs = await s.create_object()
+
+    print(kwargs)
+    host_config = kwargs['host_config']
+    if expected is not None:
+        assert host_config['CpuPeriod'] == 100_000
+        assert host_config['CpuQuota'] == int(expected * 100_000)
+    else:
+        assert 'CpuPeriod' not in host_config
+        assert 'CpuQuota' not in host_config

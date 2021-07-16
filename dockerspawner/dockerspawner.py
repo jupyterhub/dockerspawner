@@ -29,6 +29,7 @@ from traitlets import Bool
 from traitlets import CaselessStrEnum
 from traitlets import default
 from traitlets import Dict
+from traitlets import Float
 from traitlets import Int
 from traitlets import List
 from traitlets import observe
@@ -408,9 +409,9 @@ class DockerSpawner(Spawner):
         config=True,
         help=dedent(
             """
-            List of dict with keys to match docker.types.Mount for more advanced 
+            List of dict with keys to match docker.types.Mount for more advanced
             configuration of mouted volumes.  As with volumes, if the default
-            format_volume_name is in use, you can use {username} in the source or 
+            format_volume_name is in use, you can use {username} in the source or
             target paths, and it will be replaced with the current user's name.
             """
         ),
@@ -1076,6 +1077,33 @@ class DockerSpawner(Spawner):
         """cast mem_limit to a str"""
         return self._eval_if_callable(proposal.value)
 
+    cpu_limit = Union(
+        [Callable(), Float(allow_none=True)],
+        help="""
+        CPU limit for containers
+
+        Will set cpu_quota = cpu_limit * cpu_period
+
+        The default cpu_period of 100ms will be used,
+        unless overridden in extra_host_config.
+
+        Alternatively to a single float,
+        cpu_limit can also be a callable that takes the spawner as
+        the only argument and returns a float:
+
+        def per_user_cpu_limit(spawner):
+            username = spawner.user.name
+            cpu_limits = {'alice': 2.5, 'bob': 2}
+            return cpu_limits.get(username, 1)
+        c.DockerSpawner.cpu_limit = per_user_cpu_limit
+        """,
+    ).tag(config=True)
+
+    @validate('cpu_limit')
+    def _cast_cpu_limit(self, proposal):
+        """cast cpu_limit to a float if it's callable"""
+        return self._eval_if_callable(proposal.value)
+
     async def create_object(self):
         """Create the container/service object"""
 
@@ -1101,10 +1129,16 @@ class DockerSpawner(Spawner):
         )
 
         if getattr(self, "mem_limit", None) is not None:
-            # If jupyterhub version > 0.7, mem_limit is a traitlet that can
-            # be directly configured. If so, use it to set mem_limit.
-            # this will still be overriden by extra_host_config
             host_config["mem_limit"] = self.mem_limit
+
+        if getattr(self, "cpu_limit", None) is not None:
+            # docker cpu units are in microseconds
+            # cpu_period default is 100ms
+            # cpu_quota is cpu_period * cpu_limit
+            cpu_period = host_config["cpu_period"] = self.extra_host_config.get(
+                "cpu_period", 100_000
+            )
+            host_config["cpu_quota"] = int(self.cpu_limit * cpu_period)
 
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}
