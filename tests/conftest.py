@@ -1,9 +1,11 @@
 """pytest config for dockerspawner tests"""
 import inspect
 import json
+import os
 from textwrap import indent
 from unittest import mock
 
+import netifaces
 import pytest
 from docker import from_env as docker_from_env
 from docker.errors import APIError
@@ -20,7 +22,25 @@ from dockerspawner import SystemUserSpawner
 # import base jupyterhub fixtures
 
 # make Hub connectable from docker by default
+# do this here because the `app` fixture has already loaded configuration
 MockHub.hub_ip = "0.0.0.0"
+
+if os.environ.get("HUB_CONNECT_IP"):
+    MockHub.hub_connect_ip = os.environ["HUB_CONNECT_IP"]
+else:
+    # get docker interface explicitly by default
+    # on GHA, the ip for hostname resolves to a 10.x
+    # address that is not connectable from within containers
+    # but the docker0 address is connectable
+    docker_interfaces = sorted(
+        iface for iface in netifaces.interfaces() if 'docker' in iface
+    )
+    if docker_interfaces:
+        iface = docker_interfaces[0]
+        print(f"Found docker interfaces: {docker_interfaces}, using {iface}")
+        MockHub.hub_connect_ip = netifaces.ifaddresses(docker_interfaces[0])[
+            netifaces.AF_INET
+        ][0]['addr']
 
 
 def pytest_collection_modifyitems(items):
