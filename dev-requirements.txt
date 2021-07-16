@@ -1,4 +1,5 @@
 codecov
+netifaces
 notebook
 pyflakes
 pytest>=3.6

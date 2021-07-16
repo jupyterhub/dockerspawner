@@ -1,14 +1,18 @@
 """pytest config for dockerspawner tests"""
 import inspect
+import json
+import os
+from textwrap import indent
 from unittest import mock
 
+import netifaces
 import pytest
 from docker import from_env as docker_from_env
 from docker.errors import APIError
-from jupyterhub.tests.conftest import app
-from jupyterhub.tests.conftest import event_loop
-from jupyterhub.tests.conftest import io_loop
-from jupyterhub.tests.conftest import ssl_tmpdir
+from jupyterhub.tests.conftest import app  # noqa: F401
+from jupyterhub.tests.conftest import event_loop  # noqa: F401
+from jupyterhub.tests.conftest import io_loop  # noqa: F401
+from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
 
 from dockerspawner import DockerSpawner
@@ -18,7 +22,25 @@ from dockerspawner import SystemUserSpawner
 # import base jupyterhub fixtures
 
 # make Hub connectable from docker by default
+# do this here because the `app` fixture has already loaded configuration
 MockHub.hub_ip = "0.0.0.0"
+
+if os.environ.get("HUB_CONNECT_IP"):
+    MockHub.hub_connect_ip = os.environ["HUB_CONNECT_IP"]
+else:
+    # get docker interface explicitly by default
+    # on GHA, the ip for hostname resolves to a 10.x
+    # address that is not connectable from within containers
+    # but the docker0 address is connectable
+    docker_interfaces = sorted(
+        iface for iface in netifaces.interfaces() if 'docker' in iface
+    )
+    if docker_interfaces:
+        iface = docker_interfaces[0]
+        print(f"Found docker interfaces: {docker_interfaces}, using {iface}")
+        MockHub.hub_connect_ip = netifaces.ifaddresses(docker_interfaces[0])[
+            netifaces.AF_INET
+        ][0]['addr']
 
 
 def pytest_collection_modifyitems(items):
@@ -95,3 +117,46 @@ def docker():
             for s in services:
                 if s.name.startswith("dockerspawner-test"):
                     s.remove()
+
+
+# make sure reports are available during yield fixtures
+# from pytest docs: https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures
+
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    outcome = yield
+    rep = outcome.get_result()
+
+    # set a report attribute for each phase of a call, which can
+    # be "setup", "call", "teardown"
+
+    setattr(item, "rep_" + rep.when, rep)
+
+
+@pytest.fixture(autouse=True)
+def debug_docker(request, docker):
+    """Debug docker state after tests"""
+    yield
+    if not hasattr(request.node, 'rep_call'):
+        return
+    if not request.node.rep_call.failed:
+        return
+
+    print("executing test failed", request.node.nodeid)
+    containers = docker.containers.list(all=True)
+    for c in containers:
+        print(f"Container {c.name}: {c.status}")
+
+    for c in containers:
+        logs = indent(c.logs().decode('utf8', 'replace'), '  ')
+        print(f"Container {c.name} logs:\n{logs}")
+
+    for c in containers:
+        container_info = json.dumps(
+            docker.api.inspect_container(c.id),
+            indent=2,
+            sort_keys=True,
+        )
+        print(f"Container {c.name}: {container_info}")
