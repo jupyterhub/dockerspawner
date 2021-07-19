@@ -30,7 +30,7 @@ repository](https://github.com/jupyterhub/dockerspawner).
    ```
 
    Tip: Identifying the changes can be made easier with the help of the
-   [choldgraf/github-activity](https://github.com/choldgraf/github-activity)
+   [executablebooks/github-activity](https://github.com/executablebooks/github-activity)
    utility.
 
 1. Set the `version_info` variable in [\_version.py](dockerspawner/_version.py)
