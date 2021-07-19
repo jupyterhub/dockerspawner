@@ -11,26 +11,26 @@ repository](https://github.com/jupyterhub/dockerspawner).
 
 ## Steps to make a release
 
-1. Checkout master and make sure it is up to date.
+1. Checkout main and make sure it is up to date.
 
    ```bash
    ORIGIN=${ORIGIN:-origin} # set to the canonical remote, e.g. 'upstream' if 'origin' is not the official repo
-   git checkout master
-   git fetch $ORIGIN master
-   git reset --hard $ORIGIN/master
+   git checkout main
+   git fetch $ORIGIN main
+   git reset --hard $ORIGIN/main
    # WARNING! This next command deletes any untracked files in the repo
    git clean -xfd
    ```
 
-1. Update [CHANGELOG.md](CHANGELOG.md) and add it to
+1. Update [docs/source/changelog.md](docs/source/changelog.md) and add it to
    the working tree.
 
    ```bash
-   git add CHANGELOG.md
+   git add docs/source/changelog.md
    ```
 
    Tip: Identifying the changes can be made easier with the help of the
-   [choldgraf/github-activity](https://github.com/choldgraf/github-activity)
+   [executablebooks/github-activity](https://github.com/executablebooks/github-activity)
    utility.
 
 1. Set the `version_info` variable in [\_version.py](dockerspawner/_version.py)
@@ -45,6 +45,14 @@ repository](https://github.com/jupyterhub/dockerspawner).
    Tip: You can get the current project version by checking the [latest
    tag on GitHub](https://github.com/jupyterhub/dockerspawner/tags).
 
+1. Create a git tag for the release commit.
+
+   ```bash
+   git tag -a $VERSION -m "release $VERSION"
+   # then verify you tagged the right commit
+   git log
+   ```
+
 1. Reset the `version_info` variable in
    [\_version.py](dockerspawner/_version.py) appropriately with an incremented
    patch version and a `dev` element, then make a commit.
@@ -54,23 +62,8 @@ repository](https://github.com/jupyterhub/dockerspawner).
    git commit -m "back to dev"
    ```
 
-1. Push your two commits to master.
+1. Push your two commits.
 
    ```bash
-   # first push commits without a tags to ensure the
-   # commits comes through, because a tag can otherwise
-   # be pushed all alone without company of rejected
-   # commits, and we want have our tagged release coupled
-   # with a specific commit in master
-   git push $ORIGIN master
-   ```
-
-1. Create a git tag for the pushed release commit and push it.
-
-   ```bash
-   git tag -a $VERSION -m "release $VERSION"
-   # then verify you tagged the right commit
-   git log
-   # then push it
-   git push $ORIGIN --follow-tags
+   git push $ORIGIN main --follow-tags
    ```
