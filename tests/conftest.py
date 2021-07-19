@@ -160,3 +160,13 @@ def debug_docker(request, docker):
             sort_keys=True,
         )
         print(f"Container {c.name}: {container_info}")
+
+
+_username_counter = 0
+
+
+@pytest.fixture()
+def username():
+    global _username_counter
+    _username_counter += 1
+    return f"test-user-{_username_counter}"
