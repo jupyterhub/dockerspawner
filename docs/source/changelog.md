@@ -8,6 +8,27 @@ command line for details.
 
 ## 12
 
+### [12.1] 2021-07
+
+([full changelog](https://github.com/jupyterhub/dockerspawner/compare/12.0.0...12.1.0))
+
+#### Enhancements made
+
+- support cpu limit via cpu_quota / cpu_period [#435](https://github.com/jupyterhub/dockerspawner/pull/435) ([@minrk](https://github.com/minrk))
+- Log post_start exec output [#427](https://github.com/jupyterhub/dockerspawner/pull/427) ([@minrk](https://github.com/minrk))
+- Allow to specify a callable for `mem_limit` [#420](https://github.com/jupyterhub/dockerspawner/pull/420) ([@zeehio](https://github.com/zeehio))
+
+#### Maintenance and upkeep improvements
+
+- update release steps for main branch [#434](https://github.com/jupyterhub/dockerspawner/pull/434) ([@minrk](https://github.com/minrk))
+- more debug info from docker when tests fail [#433](https://github.com/jupyterhub/dockerspawner/pull/433) ([@minrk](https://github.com/minrk))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/dockerspawner/graphs/contributors?from=2021-03-26&to=2021-07-19&type=c))
+
+[@1kastner](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3A1kastner+updated%3A2021-03-26..2021-07-19&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amanics+updated%3A2021-03-26..2021-07-19&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aminrk+updated%3A2021-03-26..2021-07-19&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Awelcome+updated%3A2021-03-26..2021-07-19&type=Issues) | [@zeehio](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Azeehio+updated%3A2021-03-26..2021-07-19&type=Issues)
+
 ### [12.0] 2021-03
 
 This is a big release!
@@ -271,7 +292,8 @@ Some configuration has been cleaned up to be clearer and more concise:
 
 First release
 
-[unreleased]: https://github.com/jupyterhub/dockerspawner/compare/12.0.0...HEAD
+[unreleased]: https://github.com/jupyterhub/dockerspawner/compare/12.1.0...HEAD
+[12.1]: https://github.com/jupyterhub/dockerspawner/compare/12.0.0...12.1.0
 [12.0]: https://github.com/jupyterhub/dockerspawner/compare/0.11.1...12.0.0
 [0.11.1]: https://github.com/jupyterhub/dockerspawner/compare/0.11.0...0.11.1
 [0.11.0]: https://github.com/jupyterhub/dockerspawner/compare/0.10.0...0.11.0
