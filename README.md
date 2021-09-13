@@ -60,7 +60,7 @@ or [Gitter](https://gitter.im/jupyterhub/jupyterhub).
 - [Reporting Issues](https://github.com/jupyterhub/dockerspawner/issues)
 - JupyterHub tutorial | [Repo](https://github.com/jupyterhub/jupyterhub-tutorial)
   | [Tutorial documentation](http://jupyterhub-tutorial.readthedocs.io/en/latest/)
-- [Documentation for JupyterHub](http://jupyterhub.readthedocs.io/en/latest/) | [PDF (latest)](https://media.readthedocs.org/pdf/jupyterhub/latest/jupyterhub.pdf) | [PDF (stable)](https://media.readthedocs.org/pdf/jupyterhub/stable/jupyterhub.pdf)
+- [Documentation for JupyterHub](http://jupyterhub.readthedocs.io/en/latest/)
 - [Documentation for JupyterHub's REST API](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/jupyter/jupyterhub/HEAD/docs/rest-api.yml#/default)
 
 ### Project Jupyter
