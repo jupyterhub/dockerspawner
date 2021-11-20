@@ -147,3 +147,19 @@ c.DockerSpawner.host_ip = "0.0.0.0"
 This will configure DockerSpawner and SystemUserSpawner to get
 the container IP address and port number using the `docker port`
 command.
+
+## Using Podman
+
+Podman is an alternative to Docker for running containers, and supports running containers without root access.
+It is not supported by JupyterHub, but it can be used with DockerSpawner by [running a podman service](https://docs.podman.io/en/latest/markdown/podman-system-service.1.html):
+
+```sh
+podman system service --time=0 &
+export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
+# Run jupyterhub as normal
+jupyterhub --config=jupyterhub_config.py
+```
+
+There are several other ways of [running the Podman service](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/building_running_and_managing_containers/assembly_using-the-container-tools-api_building-running-and-managing-containers).
+
+Not all Docker features are supported by Podman.
