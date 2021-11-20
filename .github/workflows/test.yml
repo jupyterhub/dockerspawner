@@ -40,6 +40,9 @@ jobs:
             jupyterhub: 1.2
           - python: 3.9
             jupyterhub: 1.3
+          - python: "3.10"
+            jupyterhub: "1.4"
+            test: podman
 
     steps:
       - uses: actions/checkout@v2
@@ -81,6 +84,7 @@ jobs:
           npm install -g configurable-http-proxy
 
       - name: Pull images
+        if: matrix.test != 'podman'
         run: |
           for v in 1.0 1.1 1.2 1.3; do
             docker pull jupyterhub/singleuser:$v
@@ -91,7 +95,7 @@ jobs:
           done
 
       - name: Run tests
-        if: matrix.test != 'internal-ssl'
+        if: matrix.test != 'internal-ssl' && matrix.test != 'podman'
         run: |
           py.test --cov dockerspawner tests -v
 
@@ -100,6 +104,23 @@ jobs:
         run: |
           cd examples/internal-ssl
           pytest -vsx
+
+      - name: Run user-mode podman tests
+        if: matrix.test == 'podman'
+        run: |
+          sudo systemctl stop docker
+          # Default is unix://$XDG_RUNTIME_DIR/podman/podman.sock but XDG_RUNTIME_DIR may not be set
+          export DOCKER_HOST=unix://$HOME/podman.sock
+          podman system service --time=0 $DOCKER_HOST &
+          for n in $(seq 1 10); do
+            if ! docker version; then
+              sleep 2
+            else
+              break
+            fi
+          done
+          docker ps
+          py.test --cov dockerspawner tests/test_dockerspawner.py -v
 
       - name: Submit codecov report
         run: |
