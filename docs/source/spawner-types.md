@@ -151,7 +151,7 @@ command.
 ## Using Podman
 
 Podman is an alternative to Docker for running containers, and supports running containers without root access.
-It is not supported by JupyterHub, but it can be used with DockerSpawner by [running a podman service](https://docs.podman.io/en/latest/markdown/podman-system-service.1.html):
+It is not officially supported by JupyterHub, but it can be used with DockerSpawner by [running a podman service](https://docs.podman.io/en/latest/markdown/podman-system-service.1.html):
 
 ```sh
 podman system service --time=0 &
