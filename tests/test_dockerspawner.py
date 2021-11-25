@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+import os
 from unittest import mock
 
 import docker
@@ -111,6 +112,9 @@ async def test_allowed_image(dockerspawner_configured_app, image):
     r.raise_for_status()
 
 
+@pytest.mark.xfail(
+    "podman.sock" in os.getenv("DOCKER_HOST", ""), reason="Fails with Podman"
+)
 async def test_image_pull_policy(dockerspawner_configured_app):
     app = dockerspawner_configured_app
     name = "gumby"
