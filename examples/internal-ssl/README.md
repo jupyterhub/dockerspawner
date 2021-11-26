@@ -5,7 +5,7 @@ JupyterHub 1.0 introduces internal_ssl configuration for encryption and authenti
 DockerSpawner implements the `.move_certs` method necessary,
 so no additional configuration
 
-This directory contains a docker-compose configuration to deploy jupyterhub 1.0
+This directory contains a docker-compose configuration to deploy jupyterhub
 with configurable-http-proxy and total internal encryption.
 
 To use it:

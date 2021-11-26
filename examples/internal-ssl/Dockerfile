@@ -1,4 +1,4 @@
-FROM jupyterhub/jupyterhub:1.3.0
+FROM jupyterhub/jupyterhub:1
 COPY setup.py /src/dockerspawner/setup.py
 COPY requirements.txt /src/dockerspawner/requirements.txt
 RUN pip install -r /src/dockerspawner/requirements.txt
