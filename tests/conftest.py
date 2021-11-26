@@ -5,11 +5,13 @@ import os
 from textwrap import indent
 from unittest import mock
 
+import jupyterhub
 import netifaces
 import pytest
 from docker import from_env as docker_from_env
 from docker.errors import APIError
-from jupyterhub.tests.conftest import app  # noqa: F401
+from jupyterhub import version_info as jh_version_info
+from jupyterhub.tests.conftest import app as jupyterhub_app  # noqa: F401
 from jupyterhub.tests.conftest import event_loop  # noqa: F401
 from jupyterhub.tests.conftest import io_loop  # noqa: F401
 from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
@@ -57,6 +59,17 @@ def pytest_collection_modifyitems(items):
 
 
 @pytest.fixture
+def app(jupyterhub_app):
+    app = jupyterhub_app
+    app.config.DockerSpawner.prefix = "dockerspawner-test"
+    # If it's a prerelease e.g. (2, 0, 0, 'rc4', '') use full tag
+    if len(jh_version_info) > 3 and jh_version_info[3]:
+        tag = jupyterhub.__version__
+        app.config.DockerSpawner.image = f"jupyterhub/singleuser:{tag}"
+    return app
+
+
+@pytest.fixture
 def named_servers(app):
     with mock.patch.dict(
         app.tornado_settings,
@@ -68,7 +81,6 @@ def named_servers(app):
 @pytest.fixture
 def dockerspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
-    app.config.DockerSpawner.prefix = "dockerspawner-test"
     # app.config.DockerSpawner.remove = True
     with mock.patch.dict(app.tornado_settings, {"spawner_class": DockerSpawner}):
         yield app
@@ -77,7 +89,6 @@ def dockerspawner_configured_app(app, named_servers):
 @pytest.fixture
 def swarmspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
-    app.config.SwarmSpawner.prefix = "dockerspawner-test"
     with mock.patch.dict(
         app.tornado_settings, {"spawner_class": SwarmSpawner}
     ), mock.patch.dict(app.config.SwarmSpawner, {"network_name": "bridge"}):
@@ -87,7 +98,6 @@ def swarmspawner_configured_app(app, named_servers):
 @pytest.fixture
 def systemuserspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
-    app.config.DockerSpawner.prefix = "dockerspawner-test"
     with mock.patch.dict(app.tornado_settings, {"spawner_class": SystemUserSpawner}):
         yield app
 
