@@ -6,8 +6,12 @@ version: "3"
 
 services:
   proxy:
+    depends_on:
+      generate-certs:
+        condition: service_completed_successfully
+
     container_name: proxy
-    image: jupyterhub/configurable-http-proxy:4.3.1
+    image: jupyterhub/configurable-http-proxy:4.5.0
     restart: always
     environment:
       CONFIGPROXY_AUTH_TOKEN: ${CONFIGPROXY_AUTH_TOKEN}
@@ -21,6 +25,11 @@ services:
       default:
         aliases:
           - proxy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/_chp_healthz"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
     command: >
       configurable-http-proxy
       --port 8000
@@ -38,10 +47,37 @@ services:
       --client-ssl-request-cert
       --client-ssl-reject-unauthorized
 
+  # this is identical to the hub service
+  # but runs the `--generate-certs` step first
+  generate-certs:
+    user: "0:0"
+    build:
+      context: ../..
+      dockerfile: examples/internal-ssl/Dockerfile
+    restart: "no"
+    image: jupyterhub/jupyterhub:internal-ssl
+    volumes:
+      - "ssl:${SSL_VOLUME_CONTAINER}:rw"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      CONFIGPROXY_AUTH_TOKEN: ${CONFIGPROXY_AUTH_TOKEN}
+      # All containers will join this network
+      DOCKER_NETWORK_NAME: ${DOCKER_NETWORK_NAME}
+      # JupyterHub will spawn this Notebook image for users
+      DOCKER_NOTEBOOK_IMAGE: ${DOCKER_NOTEBOOK_IMAGE}
+      # SSL path
+      INTERNAL_SSL_PATH: ${SSL_VOLUME_CONTAINER}/certs
+    working_dir: ${DATA_VOLUME_CONTAINER}
+    command: >
+      jupyterhub -f /srv/jupyterhub/jupyterhub_config.py --generate-certs
+
   hub:
     user: "0:0"
     depends_on:
-      - proxy
+      proxy:
+        condition: service_healthy
+      generate-certs:
+        condition: service_completed_successfully
     build:
       context: ../..
       dockerfile: examples/internal-ssl/Dockerfile

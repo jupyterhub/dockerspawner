@@ -9,20 +9,6 @@ c.JupyterHub.authenticator_class = 'dummy'
 
 c.JupyterHub.spawner_class = 'docker'
 
-# wait for proxy DNS to resolve
-# hub startup will crash if it doesn't
-for i in range(30):
-    try:
-        socket.gethostbyname("proxy")
-    except socket.gaierror as e:
-        socket_error = e
-        print(f"Waiting for proxy: {e}", file=sys.stderr)
-        time.sleep(1)
-    else:
-        break
-else:
-    raise socket_error
-
 c.ConfigurableHTTPProxy.should_start = False
 c.ConfigurableHTTPProxy.api_url = 'https://proxy:8001'
 
