@@ -901,6 +901,12 @@ class DockerSpawner(Spawner):
         # to avoid losing track of running servers
         self.object_name = state.get("object_name", None) or self.object_name
 
+        if self.object_id:
+            self.log.debug(
+                f"Loaded state for {self._log_name}: {self.object_type}"
+                f" name={self.object_name}, id={self.object_id}"
+            )
+
     def get_state(self):
         state = super(DockerSpawner, self).get_state()
         if self.object_id:
@@ -908,6 +914,10 @@ class DockerSpawner(Spawner):
             # persist object_name if running
             # so that a change in the template doesn't lose track of running servers
             state["object_name"] = self.object_name
+            self.log.debug(
+                f"Persisting state for {self._log_name}: {self.object_type}"
+                f" name={self.object_name}, id={self.object_id}"
+            )
         return state
 
     def _public_hub_api_url(self):
@@ -1397,6 +1407,8 @@ class DockerSpawner(Spawner):
 
         if self.remove:
             await self.remove_object()
+            # clear object_id to avoid persisting removed state
+            self.object_id = ""
 
         self.clear_state()
 
