@@ -5,6 +5,7 @@ import os
 from textwrap import indent
 from unittest import mock
 
+import jupyterhub
 import netifaces
 import pytest
 from docker import from_env as docker_from_env
@@ -70,9 +71,9 @@ def named_servers(app):
 def dockerspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     app.config.DockerSpawner.prefix = "dockerspawner-test"
-    # If not a standard release e.g. (2, 0, 0, 'rc4', '') use full tag
+    # If it's a prerelease e.g. (2, 0, 0, 'rc4', '') use full tag
     if len(jh_version_info) > 3 and jh_version_info[3]:
-        tag = f"{jh_version_info[0]}.{jh_version_info[1]}.{jh_version_info[2]}{jh_version_info[3]}"
+        tag = jupyterhub.__version__
         app.config.DockerSpawner.image = f"jupyterhub/singleuser:{tag}"
     # app.config.DockerSpawner.remove = True
     with mock.patch.dict(app.tornado_settings, {"spawner_class": DockerSpawner}):
