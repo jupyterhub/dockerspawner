@@ -38,7 +38,8 @@ def test_name_collision(dockerspawner_configured_app):
     assert spawner1.object_name != spawner2.object_name
 
 
-async def test_start_stop(dockerspawner_configured_app):
+@pytest.mark.parametrize("remove", (True, False))
+async def test_start_stop(dockerspawner_configured_app, remove):
     app = dockerspawner_configured_app
     name = "has@"
     add_user(app.db, app, name=name)
@@ -46,6 +47,7 @@ async def test_start_stop(dockerspawner_configured_app):
     server_name = 'also-has@'
     spawner = user.spawners[server_name]
     assert isinstance(spawner, DockerSpawner)
+    spawner.remove = remove
     token = user.new_api_token()
     # start the server
     r = await api_request(app, "users", name, "servers", server_name, method="post")
@@ -64,6 +66,21 @@ async def test_start_stop(dockerspawner_configured_app):
     assert resp.effective_url == url
     resp.rethrow()
     assert "kernels" in resp.body.decode("utf-8")
+
+    # stop the server
+    r = await api_request(app, "users", name, "servers", server_name, method="delete")
+    pending = r.status_code == 202
+    while pending:
+        # request again
+        r = await api_request(app, "users", name)
+        user_info = r.json()
+        pending = user_info["servers"][server_name]["pending"]
+    assert r.status_code in {204, 200}, r.text
+    state = spawner.get_state()
+    if remove:
+        assert state == {}
+    else:
+        assert sorted(state) == ["object_id", "object_name"]
 
 
 @pytest.mark.parametrize("image", ["1.0", "1.1.0", "nomatch"])
