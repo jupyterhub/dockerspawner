@@ -1114,6 +1114,28 @@ class DockerSpawner(Spawner):
         """cast cpu_limit to a float if it's callable"""
         return self._eval_if_callable(proposal.value)
 
+    pids_limit = Union(
+        [Callable(), Int(allow_none=True)],
+        help="""
+        Maximum number of PIDS a single-user notebook server is allowed to use.
+
+        Alternatively to a single int,
+        pids_limit can also be a callable that takes the spawner as
+        the only argument and returns a int:
+
+        def per_user_pids_limit(spawner):
+            username = spawner.user.name
+            pids_limits = {'alice': 2.5, 'bob': 2}
+            return pids_limits.get(username, 1)
+        c.DockerSpawner.pids_limit = per_user_pids_limit
+        """,
+    ).tag(config=True)
+
+    @validate('pids_limit')
+    def _cast_pids_limit(self, proposal):
+        """cast pids_limit to an int if it's callable"""
+        return self._eval_if_callable(proposal.value)
+
     async def create_object(self):
         """Create the container/service object"""
 
@@ -1149,6 +1171,9 @@ class DockerSpawner(Spawner):
                 "cpu_period", 100_000
             )
             host_config["cpu_quota"] = int(self.cpu_limit * cpu_period)
+
+        if getattr(self, "pids_limit", None) is not None:
+            host_config["pids_limit"] = self.pids_limit
 
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}

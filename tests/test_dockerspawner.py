@@ -299,3 +299,18 @@ async def test_cpu_limit(dockerspawner_configured_app, cpu_limit, expected, user
     else:
         assert 'CpuPeriod' not in host_config
         assert 'CpuQuota' not in host_config
+
+@pytest.mark.parametrize(
+    "pids_limit, expected",
+    [
+        (10, 10),
+        (None, None),
+        (20.5, 20),
+        (lambda spawner: 10, 10),
+        (lambda spawner: None, None),
+        (lambda spawner: 20.5, 20),
+    ],
+)
+def test_pids_limit(pids_limit, expected):
+    s = DockerSpawner(pids_limit=pids_limit)
+    assert s.pids_limit == expected

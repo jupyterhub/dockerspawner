@@ -201,6 +201,7 @@ class SwarmSpawner(DockerSpawner):
             mem_limit=self.mem_limit,
             mem_reservation=self.mem_guarantee,
             cpu_limit=int(self.cpu_limit * 1e9) if self.cpu_limit else None,
+            pids_limit=self.pids_limit,
             cpu_reservation=int(self.cpu_guarantee * 1e9)
             if self.cpu_guarantee
             else None,
