@@ -305,10 +305,10 @@ async def test_cpu_limit(dockerspawner_configured_app, cpu_limit, expected, user
     [
         (10, 10),
         (None, None),
-        (20.5, 20),
+        (1_000, 1_000),
         (lambda spawner: 10, 10),
         (lambda spawner: None, None),
-        (lambda spawner: 20.5, 20),
+        (lambda spawner: 1_000, 1_000),
     ],
 )
 def test_pids_limit(pids_limit, expected):
