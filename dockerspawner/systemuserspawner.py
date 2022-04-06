@@ -1,8 +1,6 @@
 from textwrap import dedent
 
-from traitlets import Bool
-from traitlets import Integer
-from traitlets import Unicode
+from traitlets import Bool, Integer, Unicode
 
 from dockerspawner import DockerSpawner
 

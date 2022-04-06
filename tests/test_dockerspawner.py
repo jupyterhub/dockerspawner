@@ -9,8 +9,7 @@ import docker
 import pytest
 import traitlets
 from jupyterhub.tests.mocking import public_url
-from jupyterhub.tests.test_api import add_user
-from jupyterhub.tests.test_api import api_request
+from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.utils import url_path_join
 from tornado.httpclient import AsyncHTTPClient
 
@@ -249,11 +248,11 @@ async def test_post_start(dockerspawner_configured_app, caplog):
 @pytest.mark.parametrize(
     "mem_limit, expected",
     [
-        ("1G", 1024 ** 3),
+        ("1G", 1024**3),
         (1_000_000, 1_000_000),
         (None, None),
         (lambda spawner: None, None),
-        (lambda spawner: "2G", 2 * 1024 ** 3),
+        (lambda spawner: "2G", 2 * 1024**3),
         (lambda spawner: 1_000_000, 1_000_000),
     ],
 )

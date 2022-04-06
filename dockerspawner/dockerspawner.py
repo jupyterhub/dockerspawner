@@ -9,10 +9,8 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from io import BytesIO
 from pprint import pformat
-from tarfile import TarFile
-from tarfile import TarInfo
-from textwrap import dedent
-from textwrap import indent
+from tarfile import TarFile, TarInfo
+from textwrap import dedent, indent
 from urllib.parse import urlparse
 
 import docker
@@ -21,21 +19,22 @@ from docker.types import Mount
 from docker.utils import kwargs_from_env
 from escapism import escape
 from jupyterhub.spawner import Spawner
-from jupyterhub.traitlets import ByteSpecification
-from jupyterhub.traitlets import Callable
+from jupyterhub.traitlets import ByteSpecification, Callable
 from tornado import web
-from traitlets import Any
-from traitlets import Bool
-from traitlets import CaselessStrEnum
-from traitlets import default
-from traitlets import Dict
-from traitlets import Float
-from traitlets import Int
-from traitlets import List
-from traitlets import observe
-from traitlets import Unicode
-from traitlets import Union
-from traitlets import validate
+from traitlets import (
+    Any,
+    Bool,
+    CaselessStrEnum,
+    Dict,
+    Float,
+    Int,
+    List,
+    Unicode,
+    Union,
+    default,
+    observe,
+    validate,
+)
 
 from .volumenamingstrategy import default_format_volume_name
 

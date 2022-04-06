@@ -6,16 +6,16 @@ from pprint import pformat
 from textwrap import dedent
 
 from docker.errors import APIError
-from docker.types import ContainerSpec
-from docker.types import DriverConfig
-from docker.types import EndpointSpec
-from docker.types import Mount
-from docker.types import Placement
-from docker.types import Resources
-from docker.types import TaskTemplate
-from traitlets import default
-from traitlets import Dict
-from traitlets import Unicode
+from docker.types import (
+    ContainerSpec,
+    DriverConfig,
+    EndpointSpec,
+    Mount,
+    Placement,
+    Resources,
+    TaskTemplate,
+)
+from traitlets import Dict, Unicode, default
 
 from .dockerspawner import DockerSpawner
 
