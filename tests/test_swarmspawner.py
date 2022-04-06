@@ -1,8 +1,7 @@
 """Tests for SwarmSpawner"""
 import pytest
 from jupyterhub.tests.mocking import public_url
-from jupyterhub.tests.test_api import add_user
-from jupyterhub.tests.test_api import api_request
+from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.utils import url_path_join
 from tornado.httpclient import AsyncHTTPClient
 

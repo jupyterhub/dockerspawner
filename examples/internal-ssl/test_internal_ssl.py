@@ -1,8 +1,7 @@
 import os
 import sys
 import time
-from subprocess import check_call
-from subprocess import Popen
+from subprocess import Popen, check_call
 from urllib.parse import urlparse
 
 import docker

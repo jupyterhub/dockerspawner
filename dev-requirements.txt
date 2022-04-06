@@ -1,6 +1,6 @@
 codecov
 netifaces
-notebook
+notebook<7
 pyflakes
 pytest>=3.6
 pytest-asyncio

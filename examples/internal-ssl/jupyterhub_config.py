@@ -3,7 +3,6 @@ import socket
 import sys
 import time
 
-
 c = get_config()  # noqa
 c.JupyterHub.authenticator_class = 'dummy'
 

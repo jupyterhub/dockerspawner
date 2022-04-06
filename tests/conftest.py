@@ -17,9 +17,7 @@ from jupyterhub.tests.conftest import io_loop  # noqa: F401
 from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
 
-from dockerspawner import DockerSpawner
-from dockerspawner import SwarmSpawner
-from dockerspawner import SystemUserSpawner
+from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
 
 # import base jupyterhub fixtures
 

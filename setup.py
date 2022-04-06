@@ -10,7 +10,6 @@ from __future__ import print_function
 import os
 import sys
 
-
 if os.name in ('nt', 'dos'):
     error = "ERROR: Windows is not supported"
     print(error, file=sys.stderr)
