@@ -868,7 +868,7 @@ class DockerSpawner(Spawner):
     object_id = Unicode(allow_none=True)
 
     def template_namespace(self):
-        escaped_image = self.image.replace("/", "-")
+        escaped_image = self.image.replace("/", "-").replace(":", "-")
         server_name = getattr(self, "name", "")
         safe_server_name = self.escape(server_name.lower())
         return {
