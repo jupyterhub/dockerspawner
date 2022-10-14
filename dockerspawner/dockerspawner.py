@@ -887,6 +887,10 @@ class DockerSpawner(Spawner):
     def _object_name_default(self):
         """Render the name of our container/service using name_template"""
         return self._render_templates(self.name_template)
+    
+    async def _object_name_for_current_image(self):
+        """Render the name of our container/service using name_template"""
+        return self._render_templates(self.name_template)
 
     def load_state(self, state):
         super(DockerSpawner, self).load_state(state)
@@ -1259,9 +1263,10 @@ class DockerSpawner(Spawner):
         if image_option:
             # save choice in self.image
             self.image = await self.check_allowed(image_option)
+            self.object_name = await self._object_name_for_current_image()
 
         image = self.image
-        await self.pull_image(image)
+        await self.pull_imt self._object_name_default()age(image)
 
         obj = await self.get_object()
         if obj and self.remove:
