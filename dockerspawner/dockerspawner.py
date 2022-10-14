@@ -887,7 +887,7 @@ class DockerSpawner(Spawner):
     def _object_name_default(self):
         """Render the name of our container/service using name_template"""
         return self._render_templates(self.name_template)
-    
+
     async def _object_name_for_current_image(self):
         """Render the name of our container/service using name_template"""
         return self._render_templates(self.name_template)
