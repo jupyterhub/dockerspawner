@@ -1266,7 +1266,7 @@ class DockerSpawner(Spawner):
             self.object_name = await self._object_name_for_current_image()
 
         image = self.image
-        await self.pull_imt self._object_name_default()age(image)
+        await self.pull_image(image)
 
         obj = await self.get_object()
         if obj and self.remove:
