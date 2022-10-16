@@ -316,11 +316,6 @@ async def test_cpu_limit(dockerspawner_configured_app, cpu_limit, expected, user
         assert 'CpuQuota' not in host_config
 
 @mock.patch.dict(os.environ, {"DOCKER_HOST": "tcp://127.0.0.2"}, clear=True)
-def test_default_host_ip_reads_env_var(dockerspawner_configured_app):
-    app = dockerspawner_configured_app
-    name = "marshmellow"
-    add_user(app.db, app, name=name)
-    user = app.users[name]
-    assert isinstance(user.spawner, DockerSpawner)
-    spawner = user.spawners[""]
+def test_default_host_ip_reads_env_var():
+    spawner = DockerSpawner()
     assert spawner._default_host_ip() == "127.0.0.2"
