@@ -18,6 +18,7 @@ from dockerspawner import DockerSpawner
 # Mark all tests in this file as asyncio
 pytestmark = pytest.mark.asyncio
 
+
 def test_name_collision(dockerspawner_configured_app):
     app = dockerspawner_configured_app
     has_hyphen = "user--foo"
@@ -80,26 +81,25 @@ async def test_start_stop(dockerspawner_configured_app, remove):
     else:
         assert sorted(state) == ["object_id", "object_name"]
 
+
 def allowed_images_callable(*_):
     return ["jupyterhub/singleuser:1.0", "jupyterhub/singleuser:1.1"]
+
 
 @pytest.mark.parametrize(
     "image, expected",
     [
-    (
-    {
-        "1.0": "jupyterhub/singleuser:1.0",
-        "1.1": "jupyterhub/singleuser:1.1",
-    },
-    "1.0"
-    ),
-    (
-    ["jupyterhub/singleuser:1.0", "jupyterhub/singleuser:1.1.0"],
-    "1.1.0"
-    ),
-    (allowed_images_callable, "1.0"),
+        (
+            {
+                "1.0": "jupyterhub/singleuser:1.0",
+                "1.1": "jupyterhub/singleuser:1.1",
+            },
+            "1.0",
+        ),
+        (["jupyterhub/singleuser:1.0", "jupyterhub/singleuser:1.1.0"], "1.1.0"),
+        (allowed_images_callable, "1.0"),
     ],
-    )
+)
 async def test_allowed_image(dockerspawner_configured_app, image, expected):
     app = dockerspawner_configured_app
     name = "checker"
@@ -111,7 +111,12 @@ async def test_allowed_image(dockerspawner_configured_app, image, expected):
     token = user.new_api_token()
     # start the server
     r = await api_request(
-        app, "users", name, "server", method="post", data=json.dumps({"image": expected})
+        app,
+        "users",
+        name,
+        "server",
+        method="post",
+        data=json.dumps({"image": expected}),
     )
 
     if not callable(image):
@@ -314,6 +319,7 @@ async def test_cpu_limit(dockerspawner_configured_app, cpu_limit, expected, user
     else:
         assert 'CpuPeriod' not in host_config
         assert 'CpuQuota' not in host_config
+
 
 @mock.patch.dict(os.environ, {"DOCKER_HOST": "tcp://127.0.0.2"}, clear=True)
 def test_default_host_ip_reads_env_var():
