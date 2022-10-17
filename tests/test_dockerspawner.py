@@ -324,3 +324,26 @@ async def test_cpu_limit(dockerspawner_configured_app, cpu_limit, expected, user
 def test_default_host_ip_reads_env_var():
     spawner = DockerSpawner()
     assert spawner._default_host_ip() == "127.0.0.2"
+
+def test_default_options_form():
+    spawner = DockerSpawner()
+    spawner.allowed_images = {"1.0": "jupyterhub/singleuser:1.0"}
+    assert spawner._default_options_form() == ''
+    spawner2 = DockerSpawner()
+    spawner2.allowed_images =     {
+        "1.0": "jupyterhub/singleuser:1.0",
+        "1.1": "jupyterhub/singleuser:1.1",
+    }
+    assert spawner2._default_options_form() == """
+        <label for="image">Select an image:</label>
+        <select class="form-control" name="image" required autofocus>
+        ['<option value="1.0" >1.0</option>', '<option value="1.1" >1.1</option>']
+        </select>
+        """
+
+def test_options_from_form():
+    spawner = DockerSpawner()
+    formdata = {'image': ['1.0', '1.1']}
+    assert spawner.options_from_form(formdata) == {'image': '1.0'}
+
+
