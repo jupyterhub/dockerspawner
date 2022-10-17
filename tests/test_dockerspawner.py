@@ -94,7 +94,7 @@ def allowed_images_callable(*_):
                 "1.0": "jupyterhub/singleuser:1.0",
                 "1.1": "jupyterhub/singleuser:1.1",
             },
-            "1.0"
+            "1.0",
         ),
         (["jupyterhub/singleuser:1.0", "jupyterhub/singleuser:1.1.0"], "1.1.0"),
         (allowed_images_callable, "1.0"),
@@ -118,7 +118,6 @@ async def test_allowed_image(dockerspawner_configured_app, allowed_images, image
         method="post",
         data=json.dumps({"image": image}),
     )
-
 
     if image not in user.spawner._get_allowed_images():
         with pytest.raises(Exception):
