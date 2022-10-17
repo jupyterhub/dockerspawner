@@ -87,27 +87,27 @@ def allowed_images_callable(*_):
 
 
 @pytest.mark.parametrize(
-    "image, expected",
+    "allowed_images, image",
     [
         (
             {
                 "1.0": "jupyterhub/singleuser:1.0",
                 "1.1": "jupyterhub/singleuser:1.1",
             },
-            "1.0",
+            "1.0"
         ),
         (["jupyterhub/singleuser:1.0", "jupyterhub/singleuser:1.1.0"], "1.1.0"),
         (allowed_images_callable, "1.0"),
     ],
 )
-async def test_allowed_image(dockerspawner_configured_app, image, expected):
+async def test_allowed_image(dockerspawner_configured_app, allowed_images, image):
     app = dockerspawner_configured_app
     name = "checker"
     add_user(app.db, app, name=name)
     user = app.users[name]
     assert isinstance(user.spawner, DockerSpawner)
     user.spawner.remove_containers = True
-    user.spawner.allowed_images = image
+    user.spawner.allowed_images = allowed_images
     token = user.new_api_token()
     # start the server
     r = await api_request(
@@ -116,14 +116,14 @@ async def test_allowed_image(dockerspawner_configured_app, image, expected):
         name,
         "server",
         method="post",
-        data=json.dumps({"image": expected}),
+        data=json.dumps({"image": image}),
     )
 
-    if not callable(image):
-        if expected not in user.spawner.allowed_images:
-            with pytest.raises(Exception):
-                r.raise_for_status()
-            return
+
+    if image not in user.spawner._get_allowed_images():
+        with pytest.raises(Exception):
+            r.raise_for_status()
+        return
     pending = r.status_code == 202
     while pending:
         # request again
@@ -138,7 +138,7 @@ async def test_allowed_image(dockerspawner_configured_app, image, expected):
     assert resp.effective_url == url
     resp.rethrow()
 
-    assert resp.headers['x-jupyterhub-version'].startswith(expected)
+    assert resp.headers['x-jupyterhub-version'].startswith(image)
     r = await api_request(
         app,
         "users",
