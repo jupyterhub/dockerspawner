@@ -82,24 +82,44 @@ async def test_start_stop(dockerspawner_configured_app, remove):
         assert sorted(state) == ["object_id", "object_name"]
 
 
-@pytest.mark.parametrize("image", ["1.0", "1.1.0", "nomatch"])
-async def test_allowed_image(dockerspawner_configured_app, image):
+def allowed_images_callable(*_):
+    return ["jupyterhub/singleuser:1.0", "jupyterhub/singleuser:1.1"]
+
+
+@pytest.mark.parametrize(
+    "allowed_images, image",
+    [
+        (
+            {
+                "1.0": "jupyterhub/singleuser:1.0",
+                "1.1": "jupyterhub/singleuser:1.1",
+            },
+            "1.0",
+        ),
+        (["jupyterhub/singleuser:1.0", "jupyterhub/singleuser:1.1.0"], "1.1.0"),
+        (allowed_images_callable, "1.0"),
+    ],
+)
+async def test_allowed_image(dockerspawner_configured_app, allowed_images, image):
     app = dockerspawner_configured_app
     name = "checker"
     add_user(app.db, app, name=name)
     user = app.users[name]
     assert isinstance(user.spawner, DockerSpawner)
     user.spawner.remove_containers = True
-    user.spawner.allowed_images = {
-        "1.0": "jupyterhub/singleuser:1.0",
-        "1.1": "jupyterhub/singleuser:1.1",
-    }
+    user.spawner.allowed_images = allowed_images
     token = user.new_api_token()
     # start the server
     r = await api_request(
-        app, "users", name, "server", method="post", data=json.dumps({"image": image})
+        app,
+        "users",
+        name,
+        "server",
+        method="post",
+        data=json.dumps({"image": image}),
     )
-    if image not in user.spawner.allowed_images:
+
+    if image not in user.spawner._get_allowed_images():
         with pytest.raises(Exception):
             r.raise_for_status()
         return
@@ -298,3 +318,9 @@ async def test_cpu_limit(dockerspawner_configured_app, cpu_limit, expected, user
     else:
         assert 'CpuPeriod' not in host_config
         assert 'CpuQuota' not in host_config
+
+
+@mock.patch.dict(os.environ, {"DOCKER_HOST": "tcp://127.0.0.2"}, clear=True)
+def test_default_host_ip_reads_env_var():
+    spawner = DockerSpawner()
+    assert spawner._default_host_ip() == "127.0.0.2"
