@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from unittest import mock
+import string
 
 import docker
 import pytest
@@ -12,6 +13,7 @@ from jupyterhub.tests.mocking import public_url
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.utils import url_path_join
 from tornado.httpclient import AsyncHTTPClient
+from escapism import escape
 
 from dockerspawner import DockerSpawner
 
@@ -325,21 +327,19 @@ def test_default_host_ip_reads_env_var():
     spawner = DockerSpawner()
     assert spawner._default_host_ip() == "127.0.0.2"
 
+
 def test_default_options_form():
     spawner = DockerSpawner()
     spawner.allowed_images = {"1.0": "jupyterhub/singleuser:1.0"}
     assert spawner._default_options_form() == ''
-    spawner2 = DockerSpawner()
-    spawner2.allowed_images =     {
-        "1.0": "jupyterhub/singleuser:1.0",
-        "1.1": "jupyterhub/singleuser:1.1",
-    }
-    assert spawner2._default_options_form() == """
+    spawner.allowed_images["1.1"] = "jupyterhub/singleuser:1.1"
+    assert spawner._default_options_form() == """
         <label for="image">Select an image:</label>
         <select class="form-control" name="image" required autofocus>
         ['<option value="1.0" >1.0</option>', '<option value="1.1" >1.1</option>']
         </select>
         """
+
 
 def test_options_from_form():
     spawner = DockerSpawner()
@@ -347,3 +347,23 @@ def test_options_from_form():
     assert spawner.options_from_form(formdata) == {'image': '1.0'}
 
 
+@pytest.mark.parametrize("escape_type", ("legacy", escape))
+def test_validate_escape(escape_type):
+    spawner = DockerSpawner()
+    spawner.escape = escape_type
+    with pytest.raises(Exception):
+        spawner.escape = ""        
+
+
+def test_legacy_escape(dockerspawner_configured_app):
+    app = dockerspawner_configured_app
+    name = "cont@iner"
+    add_user(app.db, app, name=name)
+    user = app.users[name]
+    server_name = 'cont@iner_server'
+    spawner = user.spawners[server_name]
+    assert isinstance(spawner, DockerSpawner)
+    container_name_template = spawner.name_template
+    container_name = container_name_template.format(prefix="jupyter", username=name, servername=server_name)
+    safe_chars = set(string.ascii_letters + string.digits + "-")
+    assert spawner._legacy_escape(container_name) == escape(container_name, safe_chars, escape_char='_')
