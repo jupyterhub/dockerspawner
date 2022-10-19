@@ -3,17 +3,17 @@ import asyncio
 import json
 import logging
 import os
-from unittest import mock
 import string
+from unittest import mock
 
 import docker
 import pytest
 import traitlets
+from escapism import escape
 from jupyterhub.tests.mocking import public_url
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.utils import url_path_join
 from tornado.httpclient import AsyncHTTPClient
-from escapism import escape
 
 from dockerspawner import DockerSpawner
 
@@ -333,12 +333,15 @@ def test_default_options_form():
     spawner.allowed_images = {"1.0": "jupyterhub/singleuser:1.0"}
     assert spawner._default_options_form() == ''
     spawner.allowed_images["1.1"] = "jupyterhub/singleuser:1.1"
-    assert spawner._default_options_form() == """
+    assert (
+        spawner._default_options_form()
+        == """
         <label for="image">Select an image:</label>
         <select class="form-control" name="image" required autofocus>
         ['<option value="1.0" >1.0</option>', '<option value="1.1" >1.1</option>']
         </select>
         """
+    )
 
 
 def test_options_from_form():
@@ -352,7 +355,7 @@ def test_validate_escape(escape_type):
     spawner = DockerSpawner()
     spawner.escape = escape_type
     with pytest.raises(Exception):
-        spawner.escape = ""        
+        spawner.escape = ""
 
 
 def test_legacy_escape(dockerspawner_configured_app):
@@ -364,6 +367,10 @@ def test_legacy_escape(dockerspawner_configured_app):
     spawner = user.spawners[server_name]
     assert isinstance(spawner, DockerSpawner)
     container_name_template = spawner.name_template
-    container_name = container_name_template.format(prefix="jupyter", username=name, servername=server_name)
+    container_name = container_name_template.format(
+        prefix="jupyter", username=name, servername=server_name
+    )
     safe_chars = set(string.ascii_letters + string.digits + "-")
-    assert spawner._legacy_escape(container_name) == escape(container_name, safe_chars, escape_char='_')
+    assert spawner._legacy_escape(container_name) == escape(
+        container_name, safe_chars, escape_char='_'
+    )
