@@ -118,8 +118,9 @@ def docker():
                 c.remove()
         try:
             services = d.services.list()
-        except APIError:
+        except (APIError, TypeError):
             # e.g. services not available
+            # podman gives TypeError
             return
         else:
             for s in services:
