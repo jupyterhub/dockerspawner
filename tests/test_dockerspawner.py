@@ -400,3 +400,4 @@ def test_get_network_ip():
     spawner2.network_name = "doesnotexist"
     with pytest.raises(Exception):
         spawner2.get_network_ip(net_settings)
+        
