@@ -384,8 +384,7 @@ async def test_get_ip_and_port(dockerspawner_configured_app):
     spawner = user.spawners[""]
     assert isinstance(spawner, DockerSpawner)
     container_name_template = spawner.name_template
-    container_name = container_name_template.format(
-        prefix="jupyter", username=name)
+    container_name = container_name_template.format(prefix="jupyter", username=name)
     spawner.use_internal_hostname = True
     ip, port = await spawner.get_ip_and_port()
     assert ip, port == (container_name, 8888)
@@ -400,4 +399,3 @@ def test_get_network_ip():
     spawner2.network_name = "doesnotexist"
     with pytest.raises(Exception):
         spawner2.get_network_ip(net_settings)
-        
