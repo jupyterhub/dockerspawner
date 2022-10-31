@@ -374,3 +374,29 @@ def test_legacy_escape(dockerspawner_configured_app):
     assert spawner._legacy_escape(container_name) == escape(
         container_name, safe_chars, escape_char='_'
     )
+
+
+async def test_get_ip_and_port(dockerspawner_configured_app):
+    app = dockerspawner_configured_app
+    name = "new_container"
+    add_user(app.db, app, name=name)
+    user = app.users[name]
+    spawner = user.spawners[""]
+    assert isinstance(spawner, DockerSpawner)
+    container_name_template = spawner.name_template
+    container_name = container_name_template.format(
+        prefix="jupyter", username=name)
+    spawner.use_internal_hostname = True
+    ip, port = await spawner.get_ip_and_port()
+    assert ip, port == (container_name, 8888)
+
+
+def test_get_network_ip():
+    spawner1 = DockerSpawner()
+    spawner1.network_name = "bridge"
+    net_settings = {"Networks": {"bridge": {"IPAddress": ""}}}
+    assert spawner1.get_network_ip(net_settings) == ""
+    spawner2 = DockerSpawner()
+    spawner2.network_name = "doesnotexist"
+    with pytest.raises(Exception):
+        spawner2.get_network_ip(net_settings)
