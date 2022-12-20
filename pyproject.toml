@@ -1,10 +1,22 @@
+# isort is used for autoformatting Python code
+#
+# ref: https://pycqa.github.io/isort/
+#
 [tool.isort]
 profile = "black"
 
+
+# black is used for autoformatting Python code
+#
+# ref: https://black.readthedocs.io/en/stable/
+#
 [tool.black]
 skip-string-normalization = true
 target_version = [
     "py36",
     "py37",
     "py38",
+    "py39",
+    "py310",
+    "py311",
 ]
