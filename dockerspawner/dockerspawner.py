@@ -1113,6 +1113,42 @@ class DockerSpawner(Spawner):
         """cast cpu_limit to a float if it's callable"""
         return self._eval_if_callable(proposal.value)
 
+    gpu_ids = Union(
+        [Callable(), Unicode(allow_none=True)],
+        help="""
+        GPU IDs to share with containers
+
+        Default is None which means no GPUs are shared
+
+        Acceptable values are None or a string containing list of
+        GPU integer IDs or uuids or the literal 'all'
+        
+        Examples:
+        c.DockerSpawner.gpu_ids = None # Will not share GPUs with containers
+        c.DockerSpawner.gpu_ids = 'all' # Shares all the GPUs with containers
+        c.DockerSpawner.gpu_ids = '0' # Shares GPU of ID 0 with containers
+        c.DockerSpawner.gpu_ids = '0,1,2' # Shares GPUs of IDs 0, 1 and 2 with containers
+
+        Alternatively, you can pass a callable that takes the spawner as
+        the only argument and returns one of the above acceptable values:
+
+        def per_user_gpu_ids(spawner):
+            username = spawner.user.name
+            gpu_assign = {'alice': '0', 'bob': '1,2'}
+            return gpu_assign.get(username, None)
+        c.DockerSpawner.gpu_ids = per_user_gpu_ids
+
+        Note that before using this config option, you have to:
+            1- Install the Nvidia Container Toolkit and make sure your docker is able to run containers with gpu
+            2- Use an image with a CUDA version supported by your hosts GPU driver
+        """,
+    ).tag(config=True)
+
+    @validate('gpu_ids')
+    def _cast_gpu_ids(self, proposal):
+        """cast gpu_ids to a string if it's callable"""
+        return self._eval_if_callable(proposal.value)
+
     async def create_object(self):
         """Create the container/service object"""
 
@@ -1135,6 +1171,7 @@ class DockerSpawner(Spawner):
             binds=self.volume_binds,
             links=self.links,
             mounts=self.mount_binds,
+            device_requests = [],
         )
 
         if getattr(self, "mem_limit", None) is not None:
@@ -1148,6 +1185,11 @@ class DockerSpawner(Spawner):
                 "cpu_period", 100_000
             )
             host_config["cpu_quota"] = int(self.cpu_limit * cpu_period)
+
+        if getattr(self, "gpu_ids", None) is not None:
+            host_config['device_requests'].append(
+                docker.types.DeviceRequest(device_ids=[f"{self.gpu_ids}"], capabilities=[['gpu']])
+            )
 
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}
