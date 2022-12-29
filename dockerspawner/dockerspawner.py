@@ -1171,7 +1171,7 @@ class DockerSpawner(Spawner):
             binds=self.volume_binds,
             links=self.links,
             mounts=self.mount_binds,
-            device_requests = [],
+            device_requests=[],
         )
 
         if getattr(self, "mem_limit", None) is not None:
@@ -1188,7 +1188,9 @@ class DockerSpawner(Spawner):
 
         if getattr(self, "gpu_ids", None) is not None:
             host_config['device_requests'].append(
-                docker.types.DeviceRequest(device_ids=[f"{self.gpu_ids}"], capabilities=[['gpu']])
+                docker.types.DeviceRequest(
+                    device_ids=[f"{self.gpu_ids}"], capabilities=[['gpu']]
+                )
             )
 
         if not self.use_internal_ip:
