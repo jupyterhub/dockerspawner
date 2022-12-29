@@ -1,33 +1,5 @@
 # DockerSpawner
 
-## Fork README
-This fork adds a config option to easily share specific GPUs with containers spawned by the DockerSpawner. I have created a pull request but until it is merged, you can install the package by:
-```bash
-pip install git+https://github.com/indirected/dockerspawner.git
-```
-### Here is how you use the config option:
-```python
-c.DockerSpawner.gpu_ids = None # Will not share GPUs with containers
-c.DockerSpawner.gpu_ids = 'all' # Shares all the GPUs with containers
-c.DockerSpawner.gpu_ids = '0' # Shares GPU of ID 0 with containers
-c.DockerSpawner.gpu_ids = '0,1,2' # Shares GPUs of IDs 0, 1 and 2 with containers
-```
-Alternatively, you can pass a callable that takes the spawner as
-the only argument and returns one of the above acceptable values:
-```python
-def per_user_gpu_ids(spawner):
-    username = spawner.user.name
-    gpu_assign = {'alice': '0', 'bob': '1,2'}
-    return gpu_assign.get(username, None)
-c.DockerSpawner.gpu_ids = per_user_gpu_ids
-```
-Note that before using this config option, you have to:
-  1. Install the Nvidia Container Toolkit and make sure your docker is able to run containers with gpu
-  2. Use an image with a CUDA version supported by your host's GPU driver
-
----
-
-## Original README
 [![GitHub Workflow Status - Test](https://img.shields.io/github/workflow/status/jupyterhub/dockerspawner/Tests?logo=github&label=tests)](https://github.com/jupyterhub/dockerspawner/actions)
 [![Latest PyPI version](https://img.shields.io/pypi/v/dockerspawner?logo=pypi)](https://pypi.org/project/dockerspawner/)
 [![Documentation build status](https://img.shields.io/readthedocs/jupyterhub?logo=read-the-docs)](https://jupyterhub-dockerspawner.readthedocs.org/en/latest/)
