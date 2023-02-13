@@ -12,13 +12,14 @@ from pytest_jupyterhub.jupyterhub_spawners import hub_app
 from docker import from_env as docker_from_env
 from docker.errors import APIError
 from jupyterhub import version_info as jh_version_info
-from jupyterhub.tests.conftest import app as jupyterhub_app  # noqa: F401
+# from jupyterhub.tests.conftest import app as jupyterhub_app  # noqa: F401
 from jupyterhub.tests.conftest import event_loop  # noqa: F401
 from jupyterhub.tests.conftest import io_loop  # noqa: F401
 from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
 
 from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
+
 
 # import base jupyterhub fixtures
 
@@ -90,7 +91,7 @@ async def app(hub_app):
 
 
 @pytest.fixture
-def named_servers(app):
+async def named_servers(app):
     with mock.patch.dict(
         app.tornado_settings,
         {"allow_named_servers": True, "named_server_limit_per_user": 2},
@@ -99,7 +100,7 @@ def named_servers(app):
 
 
 @pytest.fixture
-def dockerspawner_configured_app(app, named_servers):
+async def dockerspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     # app.config.DockerSpawner.remove = True
     with mock.patch.dict(app.tornado_settings, {"spawner_class": DockerSpawner}):
@@ -107,7 +108,7 @@ def dockerspawner_configured_app(app, named_servers):
 
 
 @pytest.fixture
-def swarmspawner_configured_app(app, named_servers):
+async def swarmspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     with mock.patch.dict(
         app.tornado_settings, {"spawner_class": SwarmSpawner}
@@ -116,7 +117,7 @@ def swarmspawner_configured_app(app, named_servers):
 
 
 @pytest.fixture
-def systemuserspawner_configured_app(app, named_servers):
+async def systemuserspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     with mock.patch.dict(app.tornado_settings, {"spawner_class": SystemUserSpawner}):
         yield app
