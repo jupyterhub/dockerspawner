@@ -1,3 +1,4 @@
 docker
 escapism
 jupyterhub>=1.0
+git+https://github.com/jupyterhub/pytest-jupyterhub.git@main#egg=pytest_jupyterhub
