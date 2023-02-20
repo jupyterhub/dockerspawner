@@ -8,6 +8,7 @@ from unittest import mock
 import jupyterhub
 import netifaces
 import pytest
+from pytest_jupyterhub.jupyterhub_spawners import hub_app
 from docker import from_env as docker_from_env
 from docker.errors import APIError
 from jupyterhub import version_info as jh_version_info
@@ -23,6 +24,8 @@ from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
 
 # make Hub connectable from docker by default
 # do this here because the `app` fixture has already loaded configuration
+
+
 MockHub.hub_ip = "0.0.0.0"
 
 if os.environ.get("HUB_CONNECT_IP"):
@@ -56,6 +59,7 @@ def pytest_collection_modifyitems(items):
         assert not inspect.isasyncgenfunction(item.obj)
 
 
+""" 
 @pytest.fixture
 def app(jupyterhub_app):
     app = jupyterhub_app
@@ -65,7 +69,25 @@ def app(jupyterhub_app):
         tag = jupyterhub.__version__
         app.config.DockerSpawner.image = f"jupyterhub/singleuser:{tag}"
     return app
+ """
+ 
 
+@pytest.fixture
+async def app(hub_app):
+    config = {
+        "Dockerspawner": {
+            "prefix": "dockerspawner-test"
+        }
+    }
+
+    if len(jh_version_info) > 3 and jh_version_info[3]:
+        tag = jupyterhub.__version__
+        config["Dockerspawner"]["image"] = f"jupyterhub/singleuser:{tag}"
+    
+    app = await hub_app(config=config)
+
+    return app
+    
 
 @pytest.fixture
 def named_servers(app):
