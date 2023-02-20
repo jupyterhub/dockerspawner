@@ -91,7 +91,7 @@ async def app(hub_app):
 
 
 @pytest.fixture
-async def named_servers(app):
+def named_servers(app):
     with mock.patch.dict(
         app.tornado_settings,
         {"allow_named_servers": True, "named_server_limit_per_user": 2},
@@ -100,7 +100,7 @@ async def named_servers(app):
 
 
 @pytest.fixture
-async def dockerspawner_configured_app(app, named_servers):
+def dockerspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     # app.config.DockerSpawner.remove = True
     with mock.patch.dict(app.tornado_settings, {"spawner_class": DockerSpawner}):
@@ -108,7 +108,7 @@ async def dockerspawner_configured_app(app, named_servers):
 
 
 @pytest.fixture
-async def swarmspawner_configured_app(app, named_servers):
+def swarmspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     with mock.patch.dict(
         app.tornado_settings, {"spawner_class": SwarmSpawner}
@@ -117,7 +117,7 @@ async def swarmspawner_configured_app(app, named_servers):
 
 
 @pytest.fixture
-async def systemuserspawner_configured_app(app, named_servers):
+def systemuserspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
     with mock.patch.dict(app.tornado_settings, {"spawner_class": SystemUserSpawner}):
         yield app
