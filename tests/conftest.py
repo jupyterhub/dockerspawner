@@ -87,7 +87,7 @@ async def app(hub_app):
     app = await hub_app(config=config)
 
     return app
-    
+
 
 @pytest.fixture
 def named_servers(app):
