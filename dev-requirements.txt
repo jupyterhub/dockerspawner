@@ -5,4 +5,3 @@ pyflakes
 pytest>=3.6
 pytest-asyncio
 pytest-cov
-sqlalchemy==1.*
