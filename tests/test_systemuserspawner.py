@@ -9,9 +9,6 @@ from tornado.httpclient import AsyncHTTPClient
 
 from dockerspawner import SystemUserSpawner
 
-# Mark all tests in this file as asyncio
-pytestmark = pytest.mark.asyncio
-
 
 async def test_start_stop(systemuserspawner_configured_app):
     app = systemuserspawner_configured_app

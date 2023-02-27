@@ -17,9 +17,6 @@ from tornado.httpclient import AsyncHTTPClient
 
 from dockerspawner import DockerSpawner
 
-# Mark all tests in this file as asyncio
-pytestmark = pytest.mark.asyncio
-
 
 def test_name_collision(dockerspawner_configured_app):
     app = dockerspawner_configured_app
