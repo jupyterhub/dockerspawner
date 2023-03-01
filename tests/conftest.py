@@ -12,10 +12,6 @@ from pytest_jupyterhub.jupyterhub_spawners import hub_app
 from docker import from_env as docker_from_env
 from docker.errors import APIError
 from jupyterhub import version_info as jh_version_info
-from jupyterhub.tests.conftest import app as jupyterhub_app  # noqa: F401
-from jupyterhub.tests.conftest import event_loop  # noqa: F401
-from jupyterhub.tests.conftest import io_loop  # noqa: F401
-from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
 
 from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
