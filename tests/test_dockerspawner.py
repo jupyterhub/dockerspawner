@@ -212,6 +212,7 @@ async def test_post_start(dockerspawner_configured_app, caplog):
     log_name = "dockerspawner"
     spawner.log = logging.getLogger(log_name)
     spawner.remove = True
+
     # mock out ip and port, no need for it
     async def mock_ip_port():
         return ("127.0.0.1", 1234)
@@ -235,7 +236,7 @@ async def test_post_start(dockerspawner_configured_app, caplog):
     # - failure
     # - no such command (different failure)
 
-    for (cmd, expected_stdout, expected_stderr) in [
+    for cmd, expected_stdout, expected_stderr in [
         ("true", False, False),
         ("ls /", True, False),
         ("ls /nosuchfile", False, True),
