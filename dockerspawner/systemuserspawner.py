@@ -6,7 +6,6 @@ from dockerspawner import DockerSpawner
 
 
 class SystemUserSpawner(DockerSpawner):
-
     host_homedir_format_string = Unicode(
         "/home/{username}",
         config=True,

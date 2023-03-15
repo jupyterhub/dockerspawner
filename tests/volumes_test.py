@@ -8,7 +8,6 @@ from traitlets.config import LoggingConfigurable
 
 
 def test_binds(monkeypatch):
-
     monkeypatch.setattr("jupyterhub.spawner.Spawner", _MockSpawner)
     from dockerspawner.dockerspawner import DockerSpawner
 
