@@ -8,7 +8,7 @@ from unittest import mock
 import jupyterhub
 import netifaces
 import pytest
-from pytest_jupyterhub.jupyterhub_spawners import hub_app
+# from pytest_jupyterhub.jupyterhub_spawners import hub_app
 from docker import from_env as docker_from_env
 from docker.errors import APIError
 from jupyterhub import version_info as jh_version_info
@@ -22,6 +22,8 @@ from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
 # make Hub connectable from docker by default
 # do this here because the `app` fixture has already loaded configuration
 
+# Load pytest plugins
+pytest_plugins = "jupyterhub-spawners-plugin"
 
 MockHub.hub_ip = "0.0.0.0"
 
