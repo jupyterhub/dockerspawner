@@ -8,6 +8,7 @@ from unittest import mock
 import jupyterhub
 import netifaces
 import pytest
+
 # from pytest_jupyterhub.jupyterhub_spawners import hub_app
 from docker import from_env as docker_from_env
 from docker.errors import APIError
@@ -15,7 +16,6 @@ from jupyterhub import version_info as jh_version_info
 from jupyterhub.tests.mocking import MockHub
 
 from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
-
 
 # import base jupyterhub fixtures
 
@@ -69,20 +69,16 @@ def app(jupyterhub_app):
         app.config.DockerSpawner.image = f"jupyterhub/singleuser:{tag}"
     return app
  """
- 
+
 
 @pytest.fixture
 async def app(hub_app):
-    config = {
-        "Dockerspawner": {
-            "prefix": "dockerspawner-test"
-        }
-    }
+    config = {"Dockerspawner": {"prefix": "dockerspawner-test"}}
 
     if len(jh_version_info) > 3 and jh_version_info[3]:
         tag = jupyterhub.__version__
         config["Dockerspawner"]["image"] = f"jupyterhub/singleuser:{tag}"
-    
+
     app = await hub_app(config=config)
 
     return app
