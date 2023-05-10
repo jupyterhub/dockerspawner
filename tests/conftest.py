@@ -8,8 +8,6 @@ from unittest import mock
 import jupyterhub
 import netifaces
 import pytest
-
-# from pytest_jupyterhub.jupyterhub_spawners import hub_app
 from docker import from_env as docker_from_env
 from docker.errors import APIError
 from jupyterhub import version_info as jh_version_info
@@ -56,19 +54,6 @@ def pytest_collection_modifyitems(items):
         if inspect.iscoroutinefunction(item.obj):
             item.add_marker('asyncio')
         assert not inspect.isasyncgenfunction(item.obj)
-
-
-""" 
-@pytest.fixture
-def app(jupyterhub_app):
-    app = jupyterhub_app
-    app.config.DockerSpawner.prefix = "dockerspawner-test"
-    # If it's a prerelease e.g. (2, 0, 0, 'rc4', '') use full tag
-    if len(jh_version_info) > 3 and jh_version_info[3]:
-        tag = jupyterhub.__version__
-        app.config.DockerSpawner.image = f"jupyterhub/singleuser:{tag}"
-    return app
- """
 
 
 @pytest.fixture
