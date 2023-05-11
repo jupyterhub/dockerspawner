@@ -78,7 +78,7 @@ setup_args = dict(
             'docker-swarm = dockerspawner:SwarmSpawner',
         ],
     },
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     cmdclass={
         'bdist_egg': bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
     },
