@@ -11,10 +11,6 @@ import pytest
 from docker import from_env as docker_from_env
 from docker.errors import APIError
 from jupyterhub import version_info as jh_version_info
-from jupyterhub.tests.conftest import app as jupyterhub_app  # noqa: F401
-from jupyterhub.tests.conftest import event_loop  # noqa: F401
-from jupyterhub.tests.conftest import io_loop  # noqa: F401
-from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
 
 from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
@@ -23,6 +19,10 @@ from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
 
 # make Hub connectable from docker by default
 # do this here because the `app` fixture has already loaded configuration
+
+# Load pytest plugins
+pytest_plugins = "jupyterhub-spawners-plugin"
+
 MockHub.hub_ip = "0.0.0.0"
 
 if os.environ.get("HUB_CONNECT_IP"):
@@ -57,13 +57,15 @@ def pytest_collection_modifyitems(items):
 
 
 @pytest.fixture
-def app(jupyterhub_app):
-    app = jupyterhub_app
-    app.config.DockerSpawner.prefix = "dockerspawner-test"
-    # If it's a prerelease e.g. (2, 0, 0, 'rc4', '') use full tag
+async def app(hub_app):
+    config = {"Dockerspawner": {"prefix": "dockerspawner-test"}}
+
     if len(jh_version_info) > 3 and jh_version_info[3]:
         tag = jupyterhub.__version__
-        app.config.DockerSpawner.image = f"jupyterhub/singleuser:{tag}"
+        config["Dockerspawner"]["image"] = f"jupyterhub/singleuser:{tag}"
+
+    app = await hub_app(config=config)
+
     return app
 
 
