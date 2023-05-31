@@ -11,7 +11,7 @@ services:
         condition: service_completed_successfully
 
     container_name: proxy
-    image: jupyterhub/configurable-http-proxy:4.5.0
+    image: jupyterhub/configurable-http-proxy:4
     restart: always
     environment:
       CONFIGPROXY_AUTH_TOKEN: ${CONFIGPROXY_AUTH_TOKEN}
