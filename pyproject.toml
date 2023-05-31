@@ -67,3 +67,6 @@ tag_template = "{new_version}"
 
 [[tool.tbump.file]]
 src = "setup.py"
+
+[[tool.tbump.file]]
+src = "dockerspawner/_version.py"
