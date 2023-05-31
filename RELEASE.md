@@ -1,6 +1,6 @@
 # How to make a release
 
-`dockerspawner` is a package available on [PyPI].
+`dockerspawner` is a package available on [PyPI] and [conda-forge].
 
 These are the instructions on how to make a release.
 
@@ -48,6 +48,13 @@ These are the instructions on how to make a release.
    tbump --no-tag ${NEXT_VERSION}.dev
    ```
 
+5. Following the release to PyPI, an automated PR should arrive within 24 hours
+   to [conda-forge/dockerspawner-feedstock] with instructions on releasing to
+   conda-forge. You are welcome to volunteer doing this, but aren't required as
+   part of making this release to PyPI.
+
 [github-activity]: https://github.com/executablebooks/github-activity
 [pypi]: https://pypi.org/project/dockerspawner/
+[conda-forge]: https://anaconda.org/conda-forge/dockerspawner
+[conda-forge/dockerspawner-feedstock]: https://github.com/conda-forge/dockerspawner-feedstock
 [ci system]: https://github.com/jupyterhub/dockerspawner/actions/workflows/release.yaml
