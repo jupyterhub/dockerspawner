@@ -80,4 +80,4 @@ def test_internal_ssl(compose_up):
         time.sleep(0.1)
         r = s.get(r.url)
         r.raise_for_status()
-    assert urlparse(r.url).path == '/user/fake/tree'
+    assert urlparse(r.url).path == '/user/fake/lab'
