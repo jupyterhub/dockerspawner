@@ -1,11 +1,11 @@
 # DockerSpawner
 
-[![GitHub Workflow Status - Test](https://img.shields.io/github/workflow/status/jupyterhub/dockerspawner/Tests?logo=github&label=tests)](https://github.com/jupyterhub/dockerspawner/actions)
-[![Latest PyPI version](https://img.shields.io/pypi/v/dockerspawner?logo=pypi)](https://pypi.org/project/dockerspawner/)
-[![Documentation build status](https://img.shields.io/readthedocs/jupyterhub?logo=read-the-docs)](https://jupyterhub-dockerspawner.readthedocs.org/en/latest/)
-[![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/dockerspawner/issues)
-[![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
-[![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
+[![Latest PyPI version](https://img.shields.io/pypi/v/dockerspawner?logo=pypi)](https://pypi.python.org/pypi/dockerspawner)
+[![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/dockerspawner?logo=conda-forge)](https://anaconda.org/conda-forge/dockerspawner)
+[![GitHub Workflow Status - Test](https://img.shields.io/github/actions/workflow/status/jupyterhub/dockerspawner/test.yaml?logo=github&label=tests)](https://github.com/jupyterhub/dockerspawner/actions)
+[![Test coverage of code](https://codecov.io/gh/jupyterhub/dockerspawner/branch/main/graph/badge.svg)](https://codecov.io/gh/jupyterhub/dockerspawner)
+[![Issue tracking - GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/dockerspawner/issues)
+[![Help forum - Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
 
 The **dockerspawner** (also known as JupyterHub Docker Spawner), enables
 [JupyterHub](https://github.com/jupyterhub/jupyterhub) to spawn single user
