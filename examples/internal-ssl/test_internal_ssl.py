@@ -88,7 +88,8 @@ def test_internal_ssl(compose_up):
     r.raise_for_status()
 
     while "pending" in r.url:
-        time.sleep(0.1)
+        # request again
+        time.sleep(2)
         r = s.get(r.url)
         r.raise_for_status()
     assert urlparse(r.url).path == '/user/fake/lab'
