@@ -21,11 +21,6 @@ from setuptools import setup
 pjoin = os.path.join
 here = os.path.abspath(os.path.dirname(__file__))
 
-# Get the current package version.
-version_ns = {}
-with open(pjoin(here, 'dockerspawner', '_version.py')) as f:
-    exec(f.read(), {}, version_ns)
-
 install_requires = []
 with open('requirements.txt') as f:
     for line in f.readlines():
@@ -53,7 +48,7 @@ class bdist_egg_disabled(bdist_egg):
 setup_args = dict(
     name='dockerspawner',
     packages=['dockerspawner'],
-    version=version_ns['__version__'],
+    version="12.2.0.dev",
     description="""Dockerspawner: A custom spawner for Jupyterhub.""",
     long_description="Spawn single-user servers with Docker.",
     author="Jupyter Development Team",
