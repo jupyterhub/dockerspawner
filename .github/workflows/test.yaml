@@ -31,10 +31,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python-version: "3.7"
-            pip-install-spec: "jupyterhub==1.0.0 sqlalchemy==1.*"
           - python-version: "3.8"
-            pip-install-spec: "jupyterhub==2.* sqlalchemy==1.*"
+            pip-install-spec: "jupyterhub==2.3.1 sqlalchemy==1.*"
           - python-version: "3.9"
             pip-install-spec: "jupyterhub==3.*"
           - python-version: "3.11"

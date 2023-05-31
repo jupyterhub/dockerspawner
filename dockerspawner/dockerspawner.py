@@ -656,12 +656,11 @@ class DockerSpawner(Spawner):
 
     @observe("hub_ip_connect")
     def _ip_connect_changed(self, change):
-        if jupyterhub.version_info >= (0, 8):
-            warnings.warn(
-                "DockerSpawner.hub_ip_connect is no longer needed with JupyterHub 0.8."
-                "  Use JupyterHub.hub_connect_ip instead.",
-                DeprecationWarning,
-            )
+        warnings.warn(
+            "DockerSpawner.hub_ip_connect is no longer needed with JupyterHub 0.8."
+            "  Use JupyterHub.hub_connect_ip instead.",
+            DeprecationWarning,
+        )
 
     use_internal_ip = Bool(
         False,
@@ -1316,11 +1315,6 @@ class DockerSpawner(Spawner):
             await self.post_start_exec()
 
         ip, port = await self.get_ip_and_port()
-        if jupyterhub.version_info < (0, 7):
-            # store on user for pre-jupyterhub-0.7:
-            self.user.server.ip = ip
-            self.user.server.port = port
-        # jupyterhub 0.7 prefers returning ip, port:
         return (ip, port)
 
     @property
