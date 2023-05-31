@@ -25,7 +25,7 @@ for more information about features and usage.
 
 ## Prerequisites
 
-JupyterHub 0.7 or above is required, which also means Python 3.3 or above.
+Python 3.8 or above and JupyterHub 2.3.1 or above is required.
 
 ## Installation
 
@@ -50,8 +50,7 @@ All code is licensed under the terms of the revised BSD license.
 
 ## Getting help
 
-We encourage you to ask questions on the [Discourse community forum](https://discourse.jupyter.org/),
-or [Gitter](https://gitter.im/jupyterhub/jupyterhub).
+We encourage you to ask questions on the [Discourse community forum](https://discourse.jupyter.org/).
 
 ## Resources
 

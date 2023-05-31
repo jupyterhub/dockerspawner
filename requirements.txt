@@ -1,3 +1,3 @@
 docker
 escapism
-jupyterhub>=1.0
+jupyterhub>=2.3.1

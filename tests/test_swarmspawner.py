@@ -1,4 +1,6 @@
 """Tests for SwarmSpawner"""
+import asyncio
+
 import pytest
 from jupyterhub.tests.mocking import public_url
 from jupyterhub.tests.test_api import add_user, api_request
@@ -22,6 +24,7 @@ async def test_start_stop(swarmspawner_configured_app):
     pending = r.status_code == 202
     while pending:
         # request again
+        await asyncio.sleep(2)
         r = await api_request(app, "users", name)
         user_info = r.json()
         pending = user_info["servers"][server_name]["pending"]

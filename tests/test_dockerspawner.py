@@ -52,6 +52,7 @@ async def test_start_stop(dockerspawner_configured_app, remove):
     pending = r.status_code == 202
     while pending:
         # request again
+        await asyncio.sleep(2)
         r = await api_request(app, "users", name)
         user_info = r.json()
         pending = user_info["servers"][server_name]["pending"]
@@ -70,6 +71,7 @@ async def test_start_stop(dockerspawner_configured_app, remove):
     pending = r.status_code == 202
     while pending:
         # request again
+        await asyncio.sleep(2)
         r = await api_request(app, "users", name)
         user_info = r.json()
         pending = user_info["servers"][server_name]["pending"]
@@ -125,6 +127,7 @@ async def test_allowed_image(dockerspawner_configured_app, allowed_images, image
     pending = r.status_code == 202
     while pending:
         # request again
+        await asyncio.sleep(2)
         r = await api_request(app, "users", name)
         user_info = r.json()
         pending = user_info["servers"][""]["pending"]

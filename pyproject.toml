@@ -13,7 +13,6 @@ profile = "black"
 [tool.black]
 skip-string-normalization = true
 target_version = [
-    "py37",
     "py38",
     "py39",
     "py310",

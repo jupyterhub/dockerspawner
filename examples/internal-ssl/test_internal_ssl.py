@@ -9,7 +9,7 @@ import pytest
 import requests
 
 here = os.path.dirname(__file__)
-hub_url = 'http://127.0.0.1:8000'
+hub_url = 'http://localhost:8000'
 
 
 @pytest.fixture(scope='session')
@@ -74,10 +74,22 @@ def compose_up(volumes_and_networks, compose_build):
 
 def test_internal_ssl(compose_up):
     s = requests.Session()
-    r = s.post(hub_url + '/hub/login', data={'username': 'fake', 'password': 'ok'})
+
+    # acquire a _xsrf cookie to pass in the post request we are about to make
+    r = s.get(hub_url + '/hub/login')
     r.raise_for_status()
+    _xsrf_cookie = s.cookies.get("_xsrf", path="/hub/")
+    assert _xsrf_cookie
+
+    r = s.post(
+        hub_url + '/hub/login',
+        data={'username': 'fake', 'password': 'ok', '_xsrf': _xsrf_cookie},
+    )
+    r.raise_for_status()
+
     while "pending" in r.url:
-        time.sleep(0.1)
+        # request again
+        time.sleep(2)
         r = s.get(r.url)
         r.raise_for_status()
-    assert urlparse(r.url).path == '/user/fake/tree'
+    assert urlparse(r.url).path == '/user/fake/lab'
