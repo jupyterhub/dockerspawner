@@ -1,0 +1,117 @@
+# This is a GitHub workflow defining a set of jobs with a set of steps.
+# ref: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
+#
+name: Tests
+
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - ".github/workflows/*.yaml"
+      - "!.github/workflows/test.yaml"
+  push:
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - ".github/workflows/*.yaml"
+      - "!.github/workflows/test.yaml"
+    branches-ignore:
+      - "dependabot/**"
+      - "pre-commit-ci-update-config"
+    tags: ["**"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.7"
+            pip-install-spec: "jupyterhub==1.0.0 sqlalchemy==1.*"
+          - python-version: "3.8"
+            pip-install-spec: "jupyterhub==2.* sqlalchemy==1.*"
+          - python-version: "3.9"
+            pip-install-spec: "jupyterhub==3.*"
+          - python-version: "3.11"
+            pip-install-spec: "jupyterhub==4.*"
+          - python-version: "3.11"
+            pip-install-spec: "jupyterhub==4.*"
+            test-variation: internal-ssl
+          - python-version: "3.11"
+            pip-install-spec: "jupyterhub==4.*"
+            test-variation: podman
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: setup docker swarm
+        run: docker swarm init
+
+      - name: Install Python dependencies
+        run: |
+          pip install ${{ matrix.pip-install-spec }}
+          pip install -e "." -r dev-requirements.txt
+
+      - name: List Python dependencies
+        run: |
+          pip freeze
+
+      - name: Install Node dependencies
+        run: |
+          npm install -g configurable-http-proxy
+
+      - name: Run tests
+        if: matrix.test-variation == ''
+        run: |
+          pytest tests --cov=dockerspawner
+
+      - name: Run examples/internal-ssl tests
+        if: matrix.test-variation == 'internal-ssl'
+        # FIXME: --cov=dockerspawner is omitted as the tested code lives inside
+        #        the built dockerspawner image, so --cov=dockerspawner
+        #        referencing the local source code doesn't get us test coverage.
+        #
+        run: |
+          pytest examples/internal-ssl --capture=no
+
+      - name: Run podman tests
+        if: matrix.test-variation == 'podman'
+        # Podman's system service is started as a user managed process
+        # (user-mode / rootless), and the docker-api provided by podman is used
+        # by setting DOCKER_HOST to the podman provided docker-api.
+        #
+        # ref: https://docs.podman.io/en/latest/markdown/podman-system-service.1.html
+        # ref: https://docker-py.readthedocs.io/en/stable/client.html#envvar-DOCKER_HOST
+        #
+        run: |
+          # Default is unix://$XDG_RUNTIME_DIR/podman/podman.sock but XDG_RUNTIME_DIR may not be set
+          export DOCKER_HOST=unix://$HOME/podman.sock
+
+          podman system service --time=0 $DOCKER_HOST &
+
+          for n in $(seq 1 10); do
+            if ! docker version &>/dev/null; then
+              echo "podman system service - starting..."
+              sleep 1
+            else
+              echo "podman system service - started!"
+              echo ""
+              break
+            fi
+          done
+
+          pytest tests/test_dockerspawner.py --cov=dockerspawner
+
+      # GitHub action reference: https://github.com/codecov/codecov-action
+      - uses: codecov/codecov-action@v3

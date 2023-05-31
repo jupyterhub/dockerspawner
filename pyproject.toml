@@ -13,7 +13,6 @@ profile = "black"
 [tool.black]
 skip-string-normalization = true
 target_version = [
-    "py36",
     "py37",
     "py38",
     "py39",
@@ -27,7 +26,15 @@ target_version = [
 # ref: https://docs.pytest.org/en/stable/
 #
 [tool.pytest.ini_options]
-addopts = "--verbose --color=yes --durations=10"
+addopts = "--verbose --color=yes --durations=10 --maxfail=1"
 asyncio_mode = "auto"
-# Ignore thousands of tests in dependencies installed in a virtual environment
-norecursedirs = "lib lib64"
+testpaths = ["tests"]
+# These markers are registered to avoid warnings triggered by importing from
+# jupyterhub.tests.test_api.
+markers = [
+    "role",
+    "user",
+    "slow",
+    "group",
+    "services",
+]
