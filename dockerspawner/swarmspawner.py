@@ -296,7 +296,7 @@ class SwarmSpawner(DockerSpawner):
                 break
         if state != "running":
             raise RuntimeError(
-                "Service %s not running: %s" % (self.service_name, pformat(status))
+                "Service {} not running: {}".format(self.service_name, pformat(status))
             )
 
     async def stop_object(self):
@@ -304,7 +304,6 @@ class SwarmSpawner(DockerSpawner):
 
         There is no separate stop action for services
         """
-        pass
 
     async def get_ip_and_port(self):
         """Queries Docker daemon for service's IP and port.

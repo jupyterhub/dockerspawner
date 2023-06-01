@@ -113,7 +113,7 @@ class SystemUserSpawner(DockerSpawner):
         Returns a list of all the values in self.volumes or
         self.read_only_volumes.
         """
-        mount_points = super(SystemUserSpawner, self).volume_mount_points
+        mount_points = super().volume_mount_points
         mount_points.append(self.homedir)
         return mount_points
 
@@ -128,12 +128,12 @@ class SystemUserSpawner(DockerSpawner):
                 host_location: {'bind': container_location, 'ro': True}
             }
         """
-        volumes = super(SystemUserSpawner, self).volume_binds
+        volumes = super().volume_binds
         volumes[self.host_homedir] = {'bind': self.homedir, 'ro': False}
         return volumes
 
     def get_env(self):
-        env = super(SystemUserSpawner, self).get_env()
+        env = super().get_env()
         # relies on NB_USER and NB_UID handling in jupyter/docker-stacks
         env.update(
             dict(
@@ -223,4 +223,4 @@ class SystemUserSpawner(DockerSpawner):
                 f"user_id for {self.user.name} not set, but group_id is {self.group_id}. This will have no effect."
             )
 
-        return super(SystemUserSpawner, self).start()
+        return super().start()
