@@ -1,69 +1,60 @@
 # How to make a release
 
-`dockerspawner` is a package [available on
-PyPI](https://pypi.org/project/dockerspawner/).
-The PyPI release is done automatically by TravisCI when a tag
-is pushed.
+`dockerspawner` is a package available on [PyPI] and [conda-forge].
 
-For you to follow along according to these instructions, you need
-to have push rights to the [dockerspawner GitHub
-repository](https://github.com/jupyterhub/dockerspawner).
+These are the instructions on how to make a release.
+
+## Pre-requisites
+
+- Push rights to this GitHub repository
 
 ## Steps to make a release
 
-1. Checkout main and make sure it is up to date.
+1. Create a PR updating `docs/source/changelog.md` with [github-activity] and
+   continue when its merged.
 
-   ```bash
-   ORIGIN=${ORIGIN:-origin} # set to the canonical remote, e.g. 'upstream' if 'origin' is not the official repo
+   Advice on this procedure can be found in [this team compass
+   issue](https://github.com/jupyterhub/team-compass/issues/563).
+
+2. Checkout main and make sure it is up to date.
+
+   ```shell
    git checkout main
-   git fetch $ORIGIN main
-   git reset --hard $ORIGIN/main
-   # WARNING! This next command deletes any untracked files in the repo
-   git clean -xfd
+   git fetch origin main
+   git reset --hard origin/main
    ```
 
-1. Update [docs/source/changelog.md](docs/source/changelog.md) and add it to
-   the working tree.
+3. Update the version, make commits, and push a git tag with `tbump`.
 
-   ```bash
-   git add docs/source/changelog.md
+   ```shell
+   pip install tbump
    ```
 
-   Tip: Identifying the changes can be made easier with the help of the
-   [executablebooks/github-activity](https://github.com/executablebooks/github-activity)
-   utility.
+   `tbump` will ask for confirmation before doing anything.
 
-1. Set the `version_info` variable in [\_version.py](dockerspawner/_version.py)
-   appropriately and make a commit.
-
-   ```bash
-   git add dockerspawner/_version.py
-   VERSION=...  # e.g. 1.2.3
-   git commit -m "release $VERSION"
+   ```shell
+   # Example versions to set: 1.0.0, 1.0.0b1
+   VERSION=
+   tbump ${VERSION}
    ```
 
-   Tip: You can get the current project version by checking the [latest
-   tag on GitHub](https://github.com/jupyterhub/dockerspawner/tags).
+   Following this, the [CI system] will build and publish a release.
 
-1. Create a git tag for the release commit.
+4. Reset the version back to dev, e.g. `1.0.1.dev` after releasing `1.0.0`.
 
-   ```bash
-   git tag -a $VERSION -m "release $VERSION"
-   # then verify you tagged the right commit
-   git log
+   ```shell
+   # Example version to set: 1.0.1.dev
+   NEXT_VERSION=
+   tbump --no-tag ${NEXT_VERSION}.dev
    ```
 
-1. Reset the `version_info` variable in
-   [\_version.py](dockerspawner/_version.py) appropriately with an incremented
-   patch version and a `dev` element, then make a commit.
+5. Following the release to PyPI, an automated PR should arrive within 24 hours
+   to [conda-forge/dockerspawner-feedstock] with instructions on releasing to
+   conda-forge. You are welcome to volunteer doing this, but aren't required as
+   part of making this release to PyPI.
 
-   ```bash
-   git add dockerspawner/_version.py
-   git commit -m "back to dev"
-   ```
-
-1. Push your two commits.
-
-   ```bash
-   git push $ORIGIN main --follow-tags
-   ```
+[github-activity]: https://github.com/executablebooks/github-activity
+[pypi]: https://pypi.org/project/dockerspawner/
+[conda-forge]: https://anaconda.org/conda-forge/dockerspawner
+[conda-forge/dockerspawner-feedstock]: https://github.com/conda-forge/dockerspawner-feedstock
+[ci system]: https://github.com/jupyterhub/dockerspawner/actions/workflows/release.yaml

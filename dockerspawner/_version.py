@@ -1,14 +1,7 @@
-"""dockerspawner version info"""
-# Copyright (c) Jupyter Development Team.
-# Distributed under the terms of the Modified BSD License.
+# __version__ should be updated using tbump, based on configuration in
+# pyproject.toml, according to instructions in RELEASE.md.
+#
+__version__ = "12.2.0.dev"
 
-version_info = (
-    12,
-    2,
-    0,
-    'dev',  # comment-out this line for a release
-)
-__version__ = '.'.join(map(str, version_info[:3]))
-
-if len(version_info) > 3:
-    __version__ = '%s%s' % (__version__, version_info[3])
+# version_info looks like (1, 2, 3, "dev") if __version__ is 1.2.3.dev
+version_info = tuple(int(p) if p.isdigit() else p for p in __version__.split("."))
