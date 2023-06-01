@@ -1,7 +1,6 @@
 """Tests for SwarmSpawner"""
 import asyncio
 
-import pytest
 from jupyterhub.tests.mocking import public_url
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.utils import url_path_join

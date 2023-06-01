@@ -1,4 +1,29 @@
+#
+# Config reference: https://pre-commit.com/#pre-commit-configyaml---top-level
+#
+# Common tasks
+#
+# - Run on all files:   pre-commit run --all-files
+# - Register git hooks: pre-commit install --install-hooks
+#
 repos:
+  # Autoformat: Python code, syntax patterns are modernized
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.4.0
+    hooks:
+      - id: pyupgrade
+        args:
+          - --py38-plus
+
+  # Autoformat: Python code
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.1.1
+    hooks:
+      - id: autoflake
+        # args ref: https://github.com/PyCQA/autoflake#advanced-usage
+        args:
+          - --in-place
+
   # Autoformat: Python
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0

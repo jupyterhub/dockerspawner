@@ -57,7 +57,7 @@ def pytest_collection_modifyitems(items):
 
 
 @pytest.fixture
-def app(jupyterhub_app):
+def app(jupyterhub_app):  # noqa: F811
     app = jupyterhub_app
     app.config.DockerSpawner.prefix = "dockerspawner-test"
     # If it's a prerelease e.g. (2, 0, 0, 'rc4', '') use full tag

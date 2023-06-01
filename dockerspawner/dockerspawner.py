@@ -46,7 +46,7 @@ class UnicodeOrFalse(Unicode):
         if value is False:
             return value
 
-        return super(UnicodeOrFalse, self).validate(obj, value)
+        return super().validate(obj, value)
 
 
 import jupyterhub
@@ -888,7 +888,7 @@ class DockerSpawner(Spawner):
         return self._render_templates(self.name_template)
 
     def load_state(self, state):
-        super(DockerSpawner, self).load_state(state)
+        super().load_state(state)
         if "container_id" in state:
             # backward-compatibility for dockerspawner < 0.10
             self.object_id = state.get("container_id")
@@ -906,7 +906,7 @@ class DockerSpawner(Spawner):
             )
 
     def get_state(self):
-        state = super(DockerSpawner, self).get_state()
+        state = super().get_state()
         if self.object_id:
             state["object_id"] = self.object_id
             # persist object_name if running
@@ -1046,7 +1046,9 @@ class DockerSpawner(Spawner):
         if image not in allowed_images:
             raise web.HTTPError(
                 400,
-                "Image %s not in allowed list: %s" % (image, ', '.join(allowed_images)),
+                "Image {} not in allowed list: {}".format(
+                    image, ', '.join(allowed_images)
+                ),
             )
         # resolve image alias to actual image name
         return allowed_images[image]

@@ -169,14 +169,12 @@ async def test_image_pull_policy(dockerspawner_configured_app):
     tag = "1.29.1"  # a version that's definitely not latest
     # ensure image isn't present
     try:
-        await asyncio.wrap_future(
-            spawner.docker("remove_image", "{}:{}".format(repo, tag))
-        )
+        await asyncio.wrap_future(spawner.docker("remove_image", f"{repo}:{tag}"))
     except docker.errors.ImageNotFound:
         pass
 
     spawner.pull_policy = "ifnotpresent"
-    image = "{}:{}".format(repo, tag)
+    image = f"{repo}:{tag}"
     # should trigger a pull
     await spawner.pull_image(image)
     # verify that the image exists now
