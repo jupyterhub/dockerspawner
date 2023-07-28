@@ -195,6 +195,23 @@ class DockerSpawner(Spawner):
     def _ip_default(self):
         return "0.0.0.0"
 
+    initial_user = Unicode(
+        "jovyan",
+        help="""
+        The initial user with which to start the container
+
+        The [default user for Jupyter Docker stacks](https://jupyter-docker-stacks.readthedocs.io/en/latest/using/selecting.html#jupyter-docker-stacks-foundation) is 'jovyan'
+
+        You may need to set this value to 'root', which is equivalent to
+        `docker run --user root`. This is necessary when e.g. changing jovyan's
+        default UID or home directory permissions
+
+        Jupyter Docker stacks will switch back to jovyan before starting the notebook server (e.g. JupyterLab)
+        The end-user within the container *will not* be the user set here, unless you are using a modified image
+        """,
+        config=True,
+    )
+
     container_image = Unicode(
         "jupyterhub/singleuser:%s" % _jupyterhub_xy,
         help="Deprecated, use `DockerSpawner.image.`",
@@ -1123,6 +1140,7 @@ class DockerSpawner(Spawner):
             volumes=self.volume_mount_points,
             name=self.container_name,
             command=(await self.get_command()),
+            user=self.initial_user,
         )
 
         # ensure internal port is exposed
