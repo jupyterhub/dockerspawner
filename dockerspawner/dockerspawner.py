@@ -148,7 +148,7 @@ class DockerSpawner(Spawner):
     # but the host ip of the port forwarded to the container
     # when use_internal_ip is False
     container_ip = Unicode(
-        "127.0.0.1", help="Deprecated, use `DockerSpawner.host_ip`", config=True
+        "127.0.0.1", help="Deprecated, use ``DockerSpawner.host_ip``", config=True
     )
 
     host_ip = Unicode(
@@ -159,7 +159,7 @@ class DockerSpawner(Spawner):
         in cases where the Hub and/or proxy are on different machines
         from the user containers.
 
-        Only used when use_internal_ip = False.
+        Only used when ``use_internal_ip = False``.
         """,
         config=True,
     )
@@ -179,7 +179,7 @@ class DockerSpawner(Spawner):
         8888,
         min=1,
         max=65535,
-        help="Deprecated, use `DockerSpawner.port.`",
+        help="Deprecated, use ``DockerSpawner.port``.",
         config=True,
     )
 
@@ -197,7 +197,7 @@ class DockerSpawner(Spawner):
 
     container_image = Unicode(
         "jupyterhub/singleuser:%s" % _jupyterhub_xy,
-        help="Deprecated, use `DockerSpawner.image.`",
+        help="Deprecated, use ``DockerSpawner.image``.",
         config=True,
     )
 
@@ -210,7 +210,7 @@ class DockerSpawner(Spawner):
         the Hub itself installed.
 
         If the default command of the image does not launch
-        jupyterhub-singleuser, set `c.Spawner.cmd` to
+        jupyterhub-singleuser, set ``c.Spawner.cmd`` to
         launch jupyterhub-singleuser, e.g.
 
         Any of the jupyter docker-stacks should work without additional config,
@@ -220,7 +220,7 @@ class DockerSpawner(Spawner):
 
     image_whitelist = Union(
         [Any(), Dict(), List()],
-        help="Deprecated, use `DockerSpawner.allowed_images`.",
+        help="Deprecated, use ``DockerSpawner.allowed_images``.",
         config=True,
     )
 
@@ -245,7 +245,7 @@ class DockerSpawner(Spawner):
         The callable should return a dict or list as above.
 
         .. versionchanged:: 12.0
-            `DockerSpawner.image_whitelist` renamed to `allowed_images`
+            ``DockerSpawner.image_whitelist`` renamed to ``allowed_images``
 
         """,
     )
@@ -330,11 +330,11 @@ class DockerSpawner(Spawner):
     )
 
     container_prefix = Unicode(
-        config=True, help="Deprecated, use `DockerSpawner.prefix`."
+        config=True, help="Deprecated, use ``DockerSpawner.prefix``."
     )
 
     container_name_template = Unicode(
-        config=True, help="Deprecated, use `DockerSpawner.name_template`."
+        config=True, help="Deprecated, use ``DockerSpawner.name_template``."
     )
 
     prefix = Unicode(
@@ -356,7 +356,7 @@ class DockerSpawner(Spawner):
             {raw_username} can be used for the original, not escaped username
             (may contain uppercase, special characters).
             It is important to include {servername} if JupyterHub's "named
-            servers" are enabled (JupyterHub.allow_named_servers = True).
+            servers" are enabled (``JupyterHub.allow_named_servers = True``).
             If the server is named, the default name_template is
             "{prefix}-{username}--{servername}". If it is unnamed, the default
             name_template is "{prefix}-{username}".
@@ -547,7 +547,7 @@ class DockerSpawner(Spawner):
     )
     tls = tls_verify = tls_ca = tls_cert = tls_key = tls_assert_hostname = Any(
         config=True,
-        help="""Deprecated, use `DockerSpawner.tls_config` dict to set any TLS options.""",
+        help="""Deprecated, use ``DockerSpawner.tls_config`` dict to set any TLS options.""",
     )
 
     @observe(
@@ -561,14 +561,14 @@ class DockerSpawner(Spawner):
         )
 
     remove_containers = Bool(
-        False, config=True, help="Deprecated, use `DockerSpawner.remove`."
+        False, config=True, help="Deprecated, use ``DockerSpawner.remove``."
     )
 
     remove = Bool(
         False,
         config=True,
         help="""
-        If True, delete containers when servers are stopped.
+        If ``True``, delete containers when servers are stopped.
 
         This will destroy any data in the container not stored in mounted volumes.
         """,
@@ -581,7 +581,17 @@ class DockerSpawner(Spawner):
         return not self.remove
 
     extra_create_kwargs = Dict(
-        config=True, help="Additional args to pass for container create"
+        config=True,
+        help="""Additional args to pass for container create
+
+        For example, to change the user the container is started as::
+
+            c.DockerSpawner.extra_create_kwargs = {
+                "user": "root" # Can also be an integer UID
+            }
+
+        The above is equivalent to ``docker run --user root``
+        """
     )
     extra_host_config = Dict(
         config=True, help="Additional args to create_host_config for container create"
@@ -670,7 +680,7 @@ class DockerSpawner(Spawner):
             Enable the usage of the internal docker ip. This is useful if you are running
             jupyterhub (as a container) and the user containers within the same docker network.
             E.g. by mounting the docker socket of the host into the jupyterhub container.
-            Default is True if using a docker network, False if bridge or host networking is used.
+            Default is ``True`` if using a docker network, ``False`` if bridge or host networking is used.
             """
         ),
     )
@@ -965,7 +975,7 @@ class DockerSpawner(Spawner):
         )
 
     async def poll(self):
-        """Check for my id in `docker ps`"""
+        """Check for my id in ``docker ps``"""
         container = await self.get_object()
         if not container:
             self.log.warning("Container not found: %s", self.container_name)
@@ -1167,14 +1177,14 @@ class DockerSpawner(Spawner):
     async def start_object(self):
         """Actually start the container/service
 
-        e.g. calling `docker start`
+        e.g. calling ``docker start``
         """
         await self.docker("start", self.container_id)
 
     async def stop_object(self):
         """Stop the container/service
 
-        e.g. calling `docker stop`. Does not remove the container.
+        e.g. calling ``docker stop``. Does not remove the container.
         """
         try:
             await self.docker("stop", self.container_id)
@@ -1234,7 +1244,7 @@ class DockerSpawner(Spawner):
         Additional arguments to create/host config/etc. can be specified
         via .extra_create_kwargs and .extra_host_config attributes.
 
-        If the container exists and `c.DockerSpawner.remove` is true, then
+        If the container exists and ``c.DockerSpawner.remove`` is ``True``, then
         the container is removed first. Otherwise, the existing containers
         will be restarted.
         """
@@ -1388,7 +1398,7 @@ class DockerSpawner(Spawner):
     async def stop(self, now=False):
         """Stop the container
 
-        Will remove the container if `c.DockerSpawner.remove` is `True`.
+        Will remove the container if ``c.DockerSpawner.remove`` is ``True``.
 
         Consider using pause/unpause when docker-py adds support.
         """
