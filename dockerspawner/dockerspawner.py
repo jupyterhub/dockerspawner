@@ -591,7 +591,7 @@ class DockerSpawner(Spawner):
             }
 
         The above is equivalent to ``docker run --user root``
-        """
+        """,
     )
     extra_host_config = Dict(
         config=True, help="Additional args to create_host_config for container create"
