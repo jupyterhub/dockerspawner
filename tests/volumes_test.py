@@ -20,7 +20,9 @@ def test_binds(monkeypatch):
     d.volumes = {"a": "b", "c": "d", "e": "f"}
     assert d.volume_mount_points == ["b", "d", "f"]
     d.volumes = {"/nfs/{username}": {"bind": "/home/{username}", "mode": "z"}}
-    assert d.volume_binds == {"/nfs/xyz": {"bind": "/home/xyz", "mode": "z", "propagation": 'rprivate'}}
+    assert d.volume_binds == {
+        "/nfs/xyz": {"bind": "/home/xyz", "mode": "z", "propagation": 'rprivate'}
+    }
     assert d.volume_mount_points == ["/home/xyz"]
 
 
@@ -35,7 +37,13 @@ def test_volume_naming_configuration(monkeypatch):
         return "THIS IS A TEST"
 
     d.format_volume_name = test_format
-    assert d.volume_binds == {"THIS IS A TEST": {"bind": "THIS IS A TEST", "mode": "z", "propagation": 'rprivate'}}
+    assert d.volume_binds == {
+        "THIS IS A TEST": {
+            "bind": "THIS IS A TEST",
+            "mode": "z",
+            "propagation": 'rprivate',
+        }
+    }
     assert d.volume_mount_points == ["THIS IS A TEST"]
 
 
@@ -46,7 +54,11 @@ def test_default_format_volume_name(monkeypatch):
     d.user = types.SimpleNamespace(name="user@email.com")
     d.volumes = {"data/{username}": {"bind": "/home/{raw_username}", "mode": "z"}}
     assert d.volume_binds == {
-        "data/user-40email-2ecom": {"bind": "/home/user@email.com", "mode": "z", "propagation": 'rprivate'}
+        "data/user-40email-2ecom": {
+            "bind": "/home/user@email.com",
+            "mode": "z",
+            "propagation": 'rprivate',
+        }
     }
     assert d.volume_mount_points == ["/home/user@email.com"]
 
@@ -60,7 +72,11 @@ def test_escaped_format_volume_name(monkeypatch):
     d.volumes = {"data/{username}": {"bind": "/home/{username}", "mode": "z"}}
     d.format_volume_name = dockerspawner.volumenamingstrategy.escaped_format_volume_name
     assert d.volume_binds == {
-        "data/user-40email-2ecom": {"bind": "/home/user-40email-2ecom", "mode": "z", "propagation": 'rprivate'}
+        "data/user-40email-2ecom": {
+            "bind": "/home/user-40email-2ecom",
+            "mode": "z",
+            "propagation": 'rprivate',
+        }
     }
     assert d.volume_mount_points == ["/home/user-40email-2ecom"]
 
