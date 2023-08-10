@@ -1419,12 +1419,15 @@ class DockerSpawner(Spawner):
             return self.format_volume_name(v, self)
 
         for k, v in volumes.items():
-            m = mode
+            rw = mode
+            p = 'rprivate'
             if isinstance(v, dict):
                 if "mode" in v:
-                    m = v["mode"]
+                    rw = v["mode"]
+                if "propagation" in v:
+                    p = v["propagation"]
                 v = v["bind"]
-            binds[_fmt(k)] = {"bind": _fmt(v), "mode": m}
+            binds[_fmt(k)] = {"bind": _fmt(v), "mode": rw, 'propagation': p}
         return binds
 
     def _render_templates(self, obj, ns=None):
