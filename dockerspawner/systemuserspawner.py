@@ -33,6 +33,21 @@ class SystemUserSpawner(DockerSpawner):
             """
         ),
     )
+    
+    image_homedir_propagation = Unicode(
+        "rprivate",
+        config=True,
+        help=dedent(
+            """
+            Mode for bind mount propagation. Possible values are
+            `rshared`,`shared`,`rprivate`, `private`, `rslave`, `slave`.
+            default is `rprivate`.
+            This is only interpreted by docker-py if patched  (see:
+            https://github.com/jannefleischer/docker-py/commit/786d55de465e72d0bb4b318272a2d020e43ff54a
+            ) and run on linux - no support for Docker Desktop.
+            """
+        ),
+    )
 
     run_as_root = Bool(
         False,
@@ -118,6 +133,16 @@ class SystemUserSpawner(DockerSpawner):
         return mount_points
 
     @property
+    def homedirpropagation(self):
+        """
+        Setting for the propagation mode for home dir. Wrong values are defaulted to `rprivate`.
+        """
+        if self.image_homedir_propagation in ('rshared','shared','rprivate', 'private', 'rslave', 'slave'):
+            return self.image_homedir_propagation
+        else: 
+            return 'rprivate'
+        
+    @property
     def volume_binds(self):
         """
         The second half of declaring a volume with docker-py happens when you
@@ -129,7 +154,7 @@ class SystemUserSpawner(DockerSpawner):
             }
         """
         volumes = super().volume_binds
-        volumes[self.host_homedir] = {'bind': self.homedir, 'ro': False}
+        volumes[self.host_homedir] = {'bind': self.homedir, 'ro': False, 'propagation': self.homedirpropagation}
         return volumes
 
     def get_env(self):
