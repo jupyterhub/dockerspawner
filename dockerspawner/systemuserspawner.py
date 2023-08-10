@@ -33,7 +33,7 @@ class SystemUserSpawner(DockerSpawner):
             """
         ),
     )
-    
+
     image_homedir_propagation = Unicode(
         "rprivate",
         config=True,
@@ -137,11 +137,18 @@ class SystemUserSpawner(DockerSpawner):
         """
         Setting for the propagation mode for home dir. Wrong values are defaulted to `rprivate`.
         """
-        if self.image_homedir_propagation in ('rshared','shared','rprivate', 'private', 'rslave', 'slave'):
+        if self.image_homedir_propagation in (
+            'rshared',
+            'shared',
+            'rprivate',
+            'private',
+            'rslave',
+            'slave',
+        ):
             return self.image_homedir_propagation
-        else: 
+        else:
             return 'rprivate'
-        
+
     @property
     def volume_binds(self):
         """
@@ -154,7 +161,11 @@ class SystemUserSpawner(DockerSpawner):
             }
         """
         volumes = super().volume_binds
-        volumes[self.host_homedir] = {'bind': self.homedir, 'ro': False, 'propagation': self.homedirpropagation}
+        volumes[self.host_homedir] = {
+            'bind': self.homedir,
+            'ro': False,
+            'propagation': self.homedirpropagation,
+        }
         return volumes
 
     def get_env(self):
