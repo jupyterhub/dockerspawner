@@ -897,6 +897,11 @@ class DockerSpawner(Spawner):
         """Render the name of our container/service using name_template"""
         return self._render_templates(self.name_template)
 
+    @observe("image")
+    def _image_changed(self, change):
+        # re-render object name if image changes
+        self.object_name = self._object_name_default()
+
     def load_state(self, state):
         super().load_state(state)
         if "container_id" in state:
