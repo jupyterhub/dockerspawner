@@ -55,6 +55,24 @@ import jupyterhub
 _jupyterhub_xy = "%i.%i" % (jupyterhub.version_info[:2])
 
 
+def _deep_merge(dest, src):
+    """Merge dict `src` into `dest`, recursively
+
+    Modifies `dest` in-place, returns dest
+    """
+    for key, value in src.items():
+        if key in dest:
+            dest_value = dest[key]
+            if isinstance(dest_value, dict) and isinstance(value, dict):
+                dest[key] = _deep_merge(dest_value, value)
+            else:
+                dest[key] = value
+        else:
+            dest[key] = value
+
+    return dest
+
+
 class DockerSpawner(Spawner):
     """A Spawner for JupyterHub that runs each user's server in a separate docker container"""
 
@@ -1162,14 +1180,16 @@ class DockerSpawner(Spawner):
         extra_create_kwargs = self._eval_if_callable(self.extra_create_kwargs)
         if inspect.isawaitable(extra_create_kwargs):
             extra_create_kwargs = await extra_create_kwargs
+        extra_create_kwargs = self._render_templates(extra_create_kwargs)
         extra_host_config = self._eval_if_callable(self.extra_host_config)
         if inspect.isawaitable(extra_host_config):
             extra_host_config = await extra_host_config
+        extra_host_config = self._render_templates(extra_host_config)
 
         # ensure internal port is exposed
         create_kwargs["ports"] = {"%i/tcp" % self.port: None}
 
-        create_kwargs.update(self._render_templates(extra_create_kwargs))
+        _deep_merge(create_kwargs, extra_create_kwargs)
 
         # build the dictionary of keyword arguments for host_config
         host_config = dict(
@@ -1193,7 +1213,7 @@ class DockerSpawner(Spawner):
 
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}
-        host_config.update(self._render_templates(extra_host_config))
+        _deep_merge(host_config, extra_host_config)
         host_config.setdefault("network_mode", self.network_name)
 
         self.log.debug("Starting host with config: %s", host_config)
