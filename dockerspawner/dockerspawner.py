@@ -2,6 +2,7 @@
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
 import asyncio
+import inspect
 import os
 import string
 import warnings
@@ -580,7 +581,8 @@ class DockerSpawner(Spawner):
         # so JupyterHub >= 0.7.1 won't cleanup our API token
         return not self.remove
 
-    extra_create_kwargs = Dict(
+    extra_create_kwargs = Union(
+        [Callable(), Dict()],
         config=True,
         help="""Additional args to pass for container create
 
@@ -590,11 +592,29 @@ class DockerSpawner(Spawner):
                 "user": "root" # Can also be an integer UID
             }
 
-        The above is equivalent to ``docker run --user root``
+        The above is equivalent to ``docker run --user root``.
+
+        If a callable, will be called with the Spawner as the only argument,
+        must return the same dictionary structure, and may be async.
+
+        .. versionchanged:: 13
+
+            Added callable support.
         """,
     )
-    extra_host_config = Dict(
-        config=True, help="Additional args to create_host_config for container create"
+    extra_host_config = Union(
+        [Callable(), Dict()],
+        config=True,
+        help="""
+        Additional args to create_host_config for container create.
+
+        If a callable, will be called with the Spawner as the only argument,
+        must return the same dictionary structure, and may be async.
+
+        .. versionchanged:: 13
+
+            Added callable support.
+        """,
     )
 
     escape = Any(
@@ -1139,11 +1159,17 @@ class DockerSpawner(Spawner):
             name=self.container_name,
             command=(await self.get_command()),
         )
+        extra_create_kwargs = self._eval_if_callable(self.extra_create_kwargs)
+        if inspect.isawaitable(extra_create_kwargs):
+            extra_create_kwargs = await extra_create_kwargs
+        extra_host_config = self._eval_if_callable(self.extra_host_config)
+        if inspect.isawaitable(extra_host_config):
+            extra_host_config = await extra_host_config
 
         # ensure internal port is exposed
         create_kwargs["ports"] = {"%i/tcp" % self.port: None}
 
-        create_kwargs.update(self._render_templates(self.extra_create_kwargs))
+        create_kwargs.update(self._render_templates(extra_create_kwargs))
 
         # build the dictionary of keyword arguments for host_config
         host_config = dict(
@@ -1160,14 +1186,14 @@ class DockerSpawner(Spawner):
             # docker cpu units are in microseconds
             # cpu_period default is 100ms
             # cpu_quota is cpu_period * cpu_limit
-            cpu_period = host_config["cpu_period"] = self.extra_host_config.get(
+            cpu_period = host_config["cpu_period"] = extra_host_config.get(
                 "cpu_period", 100_000
             )
             host_config["cpu_quota"] = int(self.cpu_limit * cpu_period)
 
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}
-        host_config.update(self._render_templates(self.extra_host_config))
+        host_config.update(self._render_templates(extra_host_config))
         host_config.setdefault("network_mode", self.network_name)
 
         self.log.debug("Starting host with config: %s", host_config)
@@ -1243,31 +1269,13 @@ class DockerSpawner(Spawner):
                 self.log.info("pulling image %s", image)
                 await self.docker('pull', repo, tag)
 
-    async def start(self, image=None, extra_create_kwargs=None, extra_host_config=None):
+    async def start(self):
         """Start the single-user server in a docker container.
-
-        Additional arguments to create/host config/etc. can be specified
-        via .extra_create_kwargs and .extra_host_config attributes.
 
         If the container exists and ``c.DockerSpawner.remove`` is ``True``, then
         the container is removed first. Otherwise, the existing containers
         will be restarted.
         """
-
-        if image:
-            self.log.warning("Specifying image via .start args is deprecated")
-            self.image = image
-        if extra_create_kwargs:
-            self.log.warning(
-                "Specifying extra_create_kwargs via .start args is deprecated"
-            )
-            self.extra_create_kwargs.update(extra_create_kwargs)
-        if extra_host_config:
-            self.log.warning(
-                "Specifying extra_host_config via .start args is deprecated"
-            )
-            self.extra_host_config.update(extra_host_config)
-
         # image priority:
         # 1. user options (from spawn options form)
         # 2. self.image from config
