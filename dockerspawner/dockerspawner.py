@@ -196,13 +196,13 @@ class DockerSpawner(Spawner):
         return "0.0.0.0"
 
     container_image = Unicode(
-        "jupyterhub/singleuser:%s" % _jupyterhub_xy,
+        "quay.io/jupyterhub/singleuser:%s" % _jupyterhub_xy,
         help="Deprecated, use ``DockerSpawner.image``.",
         config=True,
     )
 
     image = Unicode(
-        "jupyterhub/singleuser:%s" % _jupyterhub_xy,
+        "quay.io/jupyterhub/singleuser:%s" % _jupyterhub_xy,
         config=True,
         help="""The image to use for single-user servers.
 
