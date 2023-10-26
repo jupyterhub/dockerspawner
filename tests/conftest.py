@@ -63,7 +63,7 @@ def app(jupyterhub_app):  # noqa: F811
     # If it's a prerelease e.g. (2, 0, 0, 'rc4', '') use full tag
     if len(jh_version_info) > 3 and jh_version_info[3]:
         tag = jupyterhub.__version__
-        app.config.DockerSpawner.image = f"jupyterhub/singleuser:{tag}"
+        app.config.DockerSpawner.image = f"quay.io/jupyterhub/singleuser:{tag}"
     return app
 
 
