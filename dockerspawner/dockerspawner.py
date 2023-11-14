@@ -654,22 +654,13 @@ class DockerSpawner(Spawner):
 
     hub_ip_connect = Unicode(
         config=True,
-        help=dedent(
-            """
-            If set, DockerSpawner will configure the containers to use
-            the specified IP to connect the hub api.  This is useful
-            when the hub_api is bound to listen on all ports or is
-            running inside of a container.
-            """
-        ),
+        help="DEPRECATED since JupyterHub 0.8. Use c.JupyterHub.hub_connect_ip.",
     )
 
     @observe("hub_ip_connect")
     def _ip_connect_changed(self, change):
-        warnings.warn(
-            "DockerSpawner.hub_ip_connect is no longer needed with JupyterHub 0.8."
-            "  Use JupyterHub.hub_connect_ip instead.",
-            DeprecationWarning,
+        self.log.warning(
+            f"Ignoring DockerSpawner.hub_ip_connect={change.new!r}, which has ben deprected since JupyterHub 0.8. Use c.JupyterHub.hub_connect_ip instead."
         )
 
     use_internal_ip = Bool(
@@ -933,29 +924,9 @@ class DockerSpawner(Spawner):
             )
         return state
 
-    def _public_hub_api_url(self):
-        proto, path = self.hub.api_url.split("://", 1)
-        ip, rest = path.split(":", 1)
-        return "{proto}://{ip}:{rest}".format(
-            proto=proto, ip=self.hub_ip_connect, rest=rest
-        )
-
     def _env_keep_default(self):
         """Don't inherit any env from the parent process"""
         return []
-
-    def get_args(self):
-        args = super().get_args()
-        if self.hub_ip_connect:
-            # JupyterHub 0.7 specifies --hub-api-url
-            # on the command-line, which is hard to update
-            for idx, arg in enumerate(list(args)):
-                if arg.startswith("--hub-api-url="):
-                    args.pop(idx)
-                    break
-
-            args.append("--hub-api-url=%s" % self._public_hub_api_url())
-        return args
 
     def get_env(self):
         env = super().get_env()
