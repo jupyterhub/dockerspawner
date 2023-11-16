@@ -13,26 +13,11 @@ def get_options_form(spawner):
 
 c.DockerSpawner.options_form = get_options_form
 
-from dockerspawner import DockerSpawner
+# specify that DockerSpawner should accept any image from user input
+c.DockerSpawner.allowed_images = "*"
 
-
-class CustomDockerSpawner(DockerSpawner):
-    def options_from_form(self, formdata):
-        options = {}
-        image_form_list = formdata.get("image", [])
-        if image_form_list and image_form_list[0]:
-            options["image"] = image_form_list[0].strip()
-            self.log.info(f"User selected image: {options['image']}")
-        return options
-
-    def load_user_options(self, options):
-        image = options.get("image")
-        if image:
-            self.log.info(f"Loading image {image}")
-            self.image = image
-
-
-c.JupyterHub.spawner_class = CustomDockerSpawner
+# tell JupyterHub to use DockerSpawner
+c.JupyterHub.spawner_class = "docker"
 
 # the rest of the config is testing boilerplate
 # to make the Hub connectable from the containers

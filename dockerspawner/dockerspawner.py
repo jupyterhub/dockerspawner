@@ -261,43 +261,56 @@ class DockerSpawner(Spawner):
 
         If a callable, will be called with the Spawner instance as its only argument.
         The user is accessible as spawner.user.
-        The callable should return a dict or list as above.
+        The callable should return a dict or list or None as above.
+
+        If empty (default), the value from ``image`` is used and
+        any attempt to specify the image via user_options will result in an error.
+
+        .. versionchanged:: 13
+            Empty allowed_images means no user-specified images are allowed.
+            This is the default.
+            Prior to 13, restricting to single image required a length-1 list,
+            e.g. ``allowed_images = [image]``.
+
+        .. versionadded:: 13
+            To allow any image, specify ``allowed_images = "*"``.
 
         .. versionchanged:: 12.0
             ``DockerSpawner.image_whitelist`` renamed to ``allowed_images``
-
         """,
     )
 
     @validate('allowed_images')
-    def _allowed_images_dict(self, proposal):
+    def _validate_allowed_images(self, proposal):
         """cast allowed_images to a dict
 
         If passing a list, cast it to a {item:item}
         dict where the keys and values are the same.
         """
-        allowed_images = proposal.value
-        if isinstance(allowed_images, list):
+        allowed_images = proposal["value"]
+        if isinstance(allowed_images, str):
+            if allowed_images != "*":
+                raise ValueError(
+                    f"'*' (all images) is the only accepted string value for allowed_images, got {allowed_images!r}. Use a list: `[{allowed_images!r}]` if you want to allow just one image."
+                )
+        elif isinstance(allowed_images, list):
             allowed_images = {item: item for item in allowed_images}
         return allowed_images
 
     def _get_allowed_images(self):
         """Evaluate allowed_images callable
 
-        Or return the list as-is if it's already a dict
+        Always returns a dict or None
         """
         if callable(self.allowed_images):
             allowed_images = self.allowed_images(self)
-            if not isinstance(allowed_images, dict):
-                # always return a dict
-                allowed_images = {item: item for item in allowed_images}
-            return allowed_images
+            return self._validate_allowed_images({"value": allowed_images})
         return self.allowed_images
 
     @default('options_form')
     def _default_options_form(self):
         allowed_images = self._get_allowed_images()
-        if len(allowed_images) <= 1:
+        if allowed_images == "*" or len(allowed_images) <= 1:
             # default form only when there are images to choose from
             return ''
         # form derived from wrapspawner.ProfileSpawner
@@ -1065,8 +1078,10 @@ class DockerSpawner(Spawner):
 
     async def check_allowed(self, image):
         allowed_images = self._get_allowed_images()
-        if not allowed_images:
+        if allowed_images == "*":
             return image
+        elif not allowed_images:
+            raise web.HTTPError(400, "Specifying image to launch is not allowed")
         if image not in allowed_images:
             raise web.HTTPError(
                 400,
