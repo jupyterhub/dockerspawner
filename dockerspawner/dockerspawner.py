@@ -891,6 +891,8 @@ class DockerSpawner(Spawner):
             args = dict(mount)
             args["source"] = _fmt(mount["source"])
             args["target"] = _fmt(mount["target"])
+            args["type"] = mount.get("type", "volume")
+            args["read_only"] = mount.get("read_only", False)
             mounts.append(Mount(**args))
         return mounts
 
