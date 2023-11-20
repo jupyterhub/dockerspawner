@@ -10,7 +10,7 @@ command line for details.
 
 ### 13.0 2023-11
 
-([full changelog](https://github.com/jupyterhub/dockerspawner/compare/12.1.0...955e64222447c22df6a708b7d63d90059303337d))
+([full changelog](https://github.com/jupyterhub/dockerspawner/compare/12.1.0...13.0.0))
 
 #### API and Breaking Changes
 
