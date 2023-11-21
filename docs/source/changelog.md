@@ -8,7 +8,7 @@ command line for details.
 
 ## 13
 
-### 13.0 2023-11
+### [13.0] 2023-11-21
 
 ([full changelog](https://github.com/jupyterhub/dockerspawner/compare/12.1.0...13.0.0))
 
@@ -63,7 +63,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 ## 12
 
-### [12.1] 2021-07
+### [12.1] 2021-07-22
 
 ([full changelog](https://github.com/jupyterhub/dockerspawner/compare/12.0.0...12.1.0))
 
@@ -84,7 +84,7 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 [@1kastner](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3A1kastner+updated%3A2021-03-26..2021-07-19&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amanics+updated%3A2021-03-26..2021-07-19&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aminrk+updated%3A2021-03-26..2021-07-19&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Awelcome+updated%3A2021-03-26..2021-07-19&type=Issues) | [@zeehio](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Azeehio+updated%3A2021-03-26..2021-07-19&type=Issues)
 
-### [12.0] 2021-03
+### [12.0] 2021-03-26
 
 This is a big release!
 
@@ -347,7 +347,8 @@ Some configuration has been cleaned up to be clearer and more concise:
 
 First release
 
-[unreleased]: https://github.com/jupyterhub/dockerspawner/compare/12.1.0...HEAD
+[unreleased]: https://github.com/jupyterhub/dockerspawner/compare/13.0.0...HEAD
+[13.0]: https://github.com/jupyterhub/dockerspawner/compare/12.1.0...13.0.0
 [12.1]: https://github.com/jupyterhub/dockerspawner/compare/12.0.0...12.1.0
 [12.0]: https://github.com/jupyterhub/dockerspawner/compare/0.11.1...12.0.0
 [0.11.1]: https://github.com/jupyterhub/dockerspawner/compare/0.11.0...0.11.1
