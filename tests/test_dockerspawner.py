@@ -84,32 +84,89 @@ async def test_start_stop(dockerspawner_configured_app, remove):
 
 
 def allowed_images_callable(*_):
-    return ["jupyterhub/singleuser:1.0", "jupyterhub/singleuser:1.1"]
+    return ["quay.io/jupyterhub/singleuser:4.0", "quay.io/jupyterhub/singleuser:4"]
 
 
 @pytest.mark.parametrize(
-    "allowed_images, image",
+    "allowed_images, image, ok",
     [
         (
             {
-                "1.0": "jupyterhub/singleuser:1.0",
-                "1.1": "jupyterhub/singleuser:1.1",
+                "4.0": "quay.io/jupyterhub/singleuser:4.0",
+                "4": "quay.io/jupyterhub/singleuser:4",
             },
-            "1.0",
+            "4.0",
+            True,
         ),
-        (["jupyterhub/singleuser:1.0", "jupyterhub/singleuser:1.1.0"], "1.1.0"),
-        (allowed_images_callable, "1.0"),
+        (
+            {
+                "4.0": "quay.io/jupyterhub/singleuser:4.0",
+                "4": "quay.io/jupyterhub/singleuser:4",
+            },
+            None,
+            True,
+        ),
+        (
+            [
+                "quay.io/jupyterhub/singleuser:4",
+                "quay.io/jupyterhub/singleuser:4.0",
+            ],
+            "not-in-list",
+            False,
+        ),
+        (
+            [
+                "quay.io/jupyterhub/singleuser:4.0",
+                "quay.io/jupyterhub/singleuser:4",
+            ],
+            "quay.io/jupyterhub/singleuser:4",
+            True,
+        ),
+        (
+            allowed_images_callable,
+            "quay.io/jupyterhub/singleuser:4.0",
+            True,
+        ),
+        (
+            allowed_images_callable,
+            "quay.io/jupyterhub/singleuser:3.0",
+            False,
+        ),
+        (
+            None,
+            "DEFAULT",
+            False,
+        ),
+        (
+            None,
+            None,
+            True,
+        ),
+        (
+            # explicitly allow all
+            "*",
+            "quay.io/jupyterhub/singleuser:4",
+            True,
+        ),
     ],
 )
-async def test_allowed_image(dockerspawner_configured_app, allowed_images, image):
+async def test_allowed_image(
+    user, dockerspawner_configured_app, allowed_images, image, ok
+):
     app = dockerspawner_configured_app
-    name = "checker"
-    add_user(app.db, app, name=name)
-    user = app.users[name]
+    name = user.name
     assert isinstance(user.spawner, DockerSpawner)
+    default_image = user.spawner.image  # default value
+    if image == "DEFAULT":
+        image = default_image
     user.spawner.remove_containers = True
-    user.spawner.allowed_images = allowed_images
-    token = user.new_api_token()
+    if allowed_images is not None:
+        user.spawner.allowed_images = allowed_images
+
+    if image:
+        request_body = json.dumps({"image": image})
+    else:
+        request_body = b""
     # start the server
     r = await api_request(
         app,
@@ -117,29 +174,34 @@ async def test_allowed_image(dockerspawner_configured_app, allowed_images, image
         name,
         "server",
         method="post",
-        data=json.dumps({"image": image}),
+        data=request_body,
     )
 
-    if image not in user.spawner._get_allowed_images():
-        with pytest.raises(Exception):
-            r.raise_for_status()
+    if not ok:
+        assert r.status_code == 400
         return
+    else:
+        r.raise_for_status()
+
     pending = r.status_code == 202
     while pending:
         # request again
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
         r = await api_request(app, "users", name)
         user_info = r.json()
         pending = user_info["servers"][""]["pending"]
 
-    url = url_path_join(public_url(app, user), "api/status")
-    resp = await AsyncHTTPClient().fetch(
-        url, headers={"Authorization": "token %s" % token}
-    )
-    assert resp.effective_url == url
-    resp.rethrow()
+    if image is None:
+        expected_image = default_image
+    elif isinstance(allowed_images, (list, dict)):
+        expected_image = user.spawner._get_allowed_images()[image]
+    else:
+        expected_image = image
 
-    assert resp.headers['x-jupyterhub-version'].startswith(image)
+    assert user.spawner.image == expected_image
+    obj = await user.spawner.get_object()
+    assert obj["Config"]["Image"] == expected_image
+
     r = await api_request(
         app,
         "users",
