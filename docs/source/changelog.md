@@ -12,8 +12,12 @@ command line for details.
 
 ([full changelog](https://github.com/jupyterhub/dockerspawner/compare/12.1.0...13.0.0))
 
+13.0 Fixes security vulnerability GHSA-hfgr-h3vc-p6c2, which allowed authenticated users to spawn arbitrary images
+unless `DockerSpawner.allowed_images` was specified.
+
 #### API and Breaking Changes
 
+- Add and require `DockerSpawner.allowed_images='*'` to allow any image to be spawned via `user_options`. (GHSA-hfgr-h3vc-p6c2)
 - Remove deprecated, broken hub_ip_connect [#499](https://github.com/jupyterhub/dockerspawner/pull/499) ([@minrk](https://github.com/minrk))
 - Require python 3.8+ and jupyterhub 2.3.1+ [#488](https://github.com/jupyterhub/dockerspawner/pull/488) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
 
