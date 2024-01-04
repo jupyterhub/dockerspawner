@@ -1,6 +1,5 @@
 netifaces
 notebook<7
 pytest>=3.6
-# FIXME: unpin pytest-asyncio
-pytest-asyncio>=0.17,<0.23
+pytest-asyncio>=0.17,!=0.23
 pytest-cov
