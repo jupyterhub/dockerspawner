@@ -6,9 +6,68 @@ command line for details.
 
 ## [Unreleased]
 
+## 13
+
+### [13.0] 2023-11-21
+
+([full changelog](https://github.com/jupyterhub/dockerspawner/compare/12.1.0...13.0.0))
+
+13.0 Fixes security vulnerability GHSA-hfgr-h3vc-p6c2, which allowed authenticated users to spawn arbitrary images
+unless `DockerSpawner.allowed_images` was specified.
+
+#### API and Breaking Changes
+
+- Add and require `DockerSpawner.allowed_images='*'` to allow any image to be spawned via `user_options`. (GHSA-hfgr-h3vc-p6c2)
+- Remove deprecated, broken hub_ip_connect [#499](https://github.com/jupyterhub/dockerspawner/pull/499) ([@minrk](https://github.com/minrk))
+- Require python 3.8+ and jupyterhub 2.3.1+ [#488](https://github.com/jupyterhub/dockerspawner/pull/488) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+
+#### New features added
+
+- Switch default image to quay.io [#504](https://github.com/jupyterhub/dockerspawner/pull/504) ([@yuvipanda](https://github.com/yuvipanda), [@minrk](https://github.com/minrk), [@manics](https://github.com/manics))
+- allow extra_host_config and extra_create_kwargs to be callable [#500](https://github.com/jupyterhub/dockerspawner/pull/500) ([@minrk](https://github.com/minrk))
+
+#### Enhancements made
+
+- Merge host config/create_kwargs [#501](https://github.com/jupyterhub/dockerspawner/pull/501) ([@minrk](https://github.com/minrk))
+
+#### Bugs fixed
+
+- update object_name with current image [#466](https://github.com/jupyterhub/dockerspawner/pull/466) ([@floriandeboissieu](https://github.com/floriandeboissieu), [@minrk](https://github.com/minrk))
+- Fix imagename not to include letter ':' [#464](https://github.com/jupyterhub/dockerspawner/pull/464) ([@yamaton](https://github.com/yamaton), [@minrk](https://github.com/minrk))
+- clear object_id when removing object [#447](https://github.com/jupyterhub/dockerspawner/pull/447) ([@minrk](https://github.com/minrk), [@manics](https://github.com/manics))
+
+#### Maintenance and upkeep improvements
+
+- pre-commit: add pyupgrade and autoflake, simplify flake8 config [#489](https://github.com/jupyterhub/dockerspawner/pull/489) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+- Require python 3.8+ and jupyterhub 2.3.1+ [#488](https://github.com/jupyterhub/dockerspawner/pull/488) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+- Add dependabot.yaml to bump github actions [#487](https://github.com/jupyterhub/dockerspawner/pull/487) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+- Update release workflow and RELEASE.md, set version with tbump [#486](https://github.com/jupyterhub/dockerspawner/pull/486) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+- Refresh test workflow and associated config, accept podmain test failure for now [#485](https://github.com/jupyterhub/dockerspawner/pull/485) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+- Use python 3.11 on RTD [#482](https://github.com/jupyterhub/dockerspawner/pull/482) ([@minrk](https://github.com/minrk))
+- Add test strategy for JupyterHub v3.1.1 [#479](https://github.com/jupyterhub/dockerspawner/pull/479) ([@Sheila-nk](https://github.com/Sheila-nk), [@GeorgianaElena](https://github.com/GeorgianaElena), [@minrk](https://github.com/minrk))
+- test options_form and escape [#468](https://github.com/jupyterhub/dockerspawner/pull/468) ([@Sheila-nk](https://github.com/Sheila-nk), [@minrk](https://github.com/minrk))
+- test callable allowed_images and host_ip [#467](https://github.com/jupyterhub/dockerspawner/pull/467) ([@Sheila-nk](https://github.com/Sheila-nk), [@minrk](https://github.com/minrk))
+- Test jupyterhub2 [#443](https://github.com/jupyterhub/dockerspawner/pull/443) ([@manics](https://github.com/manics), [@minrk](https://github.com/minrk))
+
+#### Documentation improvements
+
+- Add extra_create_kwargs example, plus docs readability improvements [#493](https://github.com/jupyterhub/dockerspawner/pull/493) ([@matthewwiese](https://github.com/matthewwiese), [@manics](https://github.com/manics))
+- update versions in swarm example [#454](https://github.com/jupyterhub/dockerspawner/pull/454) ([@minrk](https://github.com/minrk), [@GeorgianaElena](https://github.com/GeorgianaElena))
+- add generate-certs service to internal-ssl example [#446](https://github.com/jupyterhub/dockerspawner/pull/446) ([@minrk](https://github.com/minrk), [@manics](https://github.com/manics))
+- Add Podman to docs [#444](https://github.com/jupyterhub/dockerspawner/pull/444) ([@manics](https://github.com/manics), [@minrk](https://github.com/minrk))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/dockerspawner/graphs/contributors?from=2021-07-22&to=2023-11-20&type=c))
+
+@consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AconsideRatio+updated%3A2021-07-22..2023-11-20&type=Issues)) | @floriandeboissieu ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Afloriandeboissieu+updated%3A2021-07-22..2023-11-20&type=Issues)) | @gatoniel ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Agatoniel+updated%3A2021-07-22..2023-11-20&type=Issues)) | @GeorgianaElena ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AGeorgianaElena+updated%3A2021-07-22..2023-11-20&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amanics+updated%3A2021-07-22..2023-11-20&type=Issues)) | @matthewwiese ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amatthewwiese+updated%3A2021-07-22..2023-11-20&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aminrk+updated%3A2021-07-22..2023-11-20&type=Issues)) | @Sheila-nk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3ASheila-nk+updated%3A2021-07-22..2023-11-20&type=Issues)) | @yamaton ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ayamaton+updated%3A2021-07-22..2023-11-20&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ayuvipanda+updated%3A2021-07-22..2023-11-20&type=Issues))
+
 ## 12
 
-### [12.1] 2021-07
+### [12.1] 2021-07-22
 
 ([full changelog](https://github.com/jupyterhub/dockerspawner/compare/12.0.0...12.1.0))
 
@@ -29,7 +88,7 @@ command line for details.
 
 [@1kastner](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3A1kastner+updated%3A2021-03-26..2021-07-19&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amanics+updated%3A2021-03-26..2021-07-19&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aminrk+updated%3A2021-03-26..2021-07-19&type=Issues) | [@welcome](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Awelcome+updated%3A2021-03-26..2021-07-19&type=Issues) | [@zeehio](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Azeehio+updated%3A2021-03-26..2021-07-19&type=Issues)
 
-### [12.0] 2021-03
+### [12.0] 2021-03-26
 
 This is a big release!
 
@@ -292,7 +351,8 @@ Some configuration has been cleaned up to be clearer and more concise:
 
 First release
 
-[unreleased]: https://github.com/jupyterhub/dockerspawner/compare/12.1.0...HEAD
+[unreleased]: https://github.com/jupyterhub/dockerspawner/compare/13.0.0...HEAD
+[13.0]: https://github.com/jupyterhub/dockerspawner/compare/12.1.0...13.0.0
 [12.1]: https://github.com/jupyterhub/dockerspawner/compare/12.0.0...12.1.0
 [12.0]: https://github.com/jupyterhub/dockerspawner/compare/0.11.1...12.0.0
 [0.11.1]: https://github.com/jupyterhub/dockerspawner/compare/0.11.0...0.11.1

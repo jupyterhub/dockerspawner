@@ -15,6 +15,7 @@ from jupyterhub.tests.conftest import app as jupyterhub_app  # noqa: F401
 from jupyterhub.tests.conftest import event_loop  # noqa: F401
 from jupyterhub.tests.conftest import io_loop  # noqa: F401
 from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
+from jupyterhub.tests.conftest import user  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
 
 from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
@@ -63,7 +64,7 @@ def app(jupyterhub_app):  # noqa: F811
     # If it's a prerelease e.g. (2, 0, 0, 'rc4', '') use full tag
     if len(jh_version_info) > 3 and jh_version_info[3]:
         tag = jupyterhub.__version__
-        app.config.DockerSpawner.image = f"jupyterhub/singleuser:{tag}"
+        app.config.DockerSpawner.image = f"quay.io/jupyterhub/singleuser:{tag}"
     return app
 
 

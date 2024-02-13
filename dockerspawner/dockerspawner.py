@@ -2,6 +2,7 @@
 A Spawner for JupyterHub that runs each user's server in a separate docker container
 """
 import asyncio
+import inspect
 import os
 import string
 import warnings
@@ -52,6 +53,24 @@ class UnicodeOrFalse(Unicode):
 import jupyterhub
 
 _jupyterhub_xy = "%i.%i" % (jupyterhub.version_info[:2])
+
+
+def _deep_merge(dest, src):
+    """Merge dict `src` into `dest`, recursively
+
+    Modifies `dest` in-place, returns dest
+    """
+    for key, value in src.items():
+        if key in dest:
+            dest_value = dest[key]
+            if isinstance(dest_value, dict) and isinstance(value, dict):
+                dest[key] = _deep_merge(dest_value, value)
+            else:
+                dest[key] = value
+        else:
+            dest[key] = value
+
+    return dest
 
 
 class DockerSpawner(Spawner):
@@ -196,13 +215,13 @@ class DockerSpawner(Spawner):
         return "0.0.0.0"
 
     container_image = Unicode(
-        "jupyterhub/singleuser:%s" % _jupyterhub_xy,
+        "quay.io/jupyterhub/singleuser:%s" % _jupyterhub_xy,
         help="Deprecated, use ``DockerSpawner.image``.",
         config=True,
     )
 
     image = Unicode(
-        "jupyterhub/singleuser:%s" % _jupyterhub_xy,
+        "quay.io/jupyterhub/singleuser:%s" % _jupyterhub_xy,
         config=True,
         help="""The image to use for single-user servers.
 
@@ -242,43 +261,56 @@ class DockerSpawner(Spawner):
 
         If a callable, will be called with the Spawner instance as its only argument.
         The user is accessible as spawner.user.
-        The callable should return a dict or list as above.
+        The callable should return a dict or list or None as above.
+
+        If empty (default), the value from ``image`` is used and
+        any attempt to specify the image via user_options will result in an error.
+
+        .. versionchanged:: 13
+            Empty allowed_images means no user-specified images are allowed.
+            This is the default.
+            Prior to 13, restricting to single image required a length-1 list,
+            e.g. ``allowed_images = [image]``.
+
+        .. versionadded:: 13
+            To allow any image, specify ``allowed_images = "*"``.
 
         .. versionchanged:: 12.0
             ``DockerSpawner.image_whitelist`` renamed to ``allowed_images``
-
         """,
     )
 
     @validate('allowed_images')
-    def _allowed_images_dict(self, proposal):
+    def _validate_allowed_images(self, proposal):
         """cast allowed_images to a dict
 
         If passing a list, cast it to a {item:item}
         dict where the keys and values are the same.
         """
-        allowed_images = proposal.value
-        if isinstance(allowed_images, list):
+        allowed_images = proposal["value"]
+        if isinstance(allowed_images, str):
+            if allowed_images != "*":
+                raise ValueError(
+                    f"'*' (all images) is the only accepted string value for allowed_images, got {allowed_images!r}. Use a list: `[{allowed_images!r}]` if you want to allow just one image."
+                )
+        elif isinstance(allowed_images, list):
             allowed_images = {item: item for item in allowed_images}
         return allowed_images
 
     def _get_allowed_images(self):
         """Evaluate allowed_images callable
 
-        Or return the list as-is if it's already a dict
+        Always returns a dict or None
         """
         if callable(self.allowed_images):
             allowed_images = self.allowed_images(self)
-            if not isinstance(allowed_images, dict):
-                # always return a dict
-                allowed_images = {item: item for item in allowed_images}
-            return allowed_images
+            return self._validate_allowed_images({"value": allowed_images})
         return self.allowed_images
 
     @default('options_form')
     def _default_options_form(self):
         allowed_images = self._get_allowed_images()
-        if len(allowed_images) <= 1:
+        if allowed_images == "*" or len(allowed_images) <= 1:
             # default form only when there are images to choose from
             return ''
         # form derived from wrapspawner.ProfileSpawner
@@ -580,7 +612,8 @@ class DockerSpawner(Spawner):
         # so JupyterHub >= 0.7.1 won't cleanup our API token
         return not self.remove
 
-    extra_create_kwargs = Dict(
+    extra_create_kwargs = Union(
+        [Callable(), Dict()],
         config=True,
         help="""Additional args to pass for container create
 
@@ -590,11 +623,29 @@ class DockerSpawner(Spawner):
                 "user": "root" # Can also be an integer UID
             }
 
-        The above is equivalent to ``docker run --user root``
+        The above is equivalent to ``docker run --user root``.
+
+        If a callable, will be called with the Spawner as the only argument,
+        must return the same dictionary structure, and may be async.
+
+        .. versionchanged:: 13
+
+            Added callable support.
         """,
     )
-    extra_host_config = Dict(
-        config=True, help="Additional args to create_host_config for container create"
+    extra_host_config = Union(
+        [Callable(), Dict()],
+        config=True,
+        help="""
+        Additional args to create_host_config for container create.
+
+        If a callable, will be called with the Spawner as the only argument,
+        must return the same dictionary structure, and may be async.
+
+        .. versionchanged:: 13
+
+            Added callable support.
+        """,
     )
 
     escape = Any(
@@ -654,22 +705,13 @@ class DockerSpawner(Spawner):
 
     hub_ip_connect = Unicode(
         config=True,
-        help=dedent(
-            """
-            If set, DockerSpawner will configure the containers to use
-            the specified IP to connect the hub api.  This is useful
-            when the hub_api is bound to listen on all ports or is
-            running inside of a container.
-            """
-        ),
+        help="DEPRECATED since JupyterHub 0.8. Use c.JupyterHub.hub_connect_ip.",
     )
 
     @observe("hub_ip_connect")
     def _ip_connect_changed(self, change):
-        warnings.warn(
-            "DockerSpawner.hub_ip_connect is no longer needed with JupyterHub 0.8."
-            "  Use JupyterHub.hub_connect_ip instead.",
-            DeprecationWarning,
+        self.log.warning(
+            f"Ignoring DockerSpawner.hub_ip_connect={change.new!r}, which has ben deprected since JupyterHub 0.8. Use c.JupyterHub.hub_connect_ip instead."
         )
 
     use_internal_ip = Bool(
@@ -897,6 +939,11 @@ class DockerSpawner(Spawner):
         """Render the name of our container/service using name_template"""
         return self._render_templates(self.name_template)
 
+    @observe("image")
+    def _image_changed(self, change):
+        # re-render object name if image changes
+        self.object_name = self._object_name_default()
+
     def load_state(self, state):
         super().load_state(state)
         if "container_id" in state:
@@ -928,29 +975,9 @@ class DockerSpawner(Spawner):
             )
         return state
 
-    def _public_hub_api_url(self):
-        proto, path = self.hub.api_url.split("://", 1)
-        ip, rest = path.split(":", 1)
-        return "{proto}://{ip}:{rest}".format(
-            proto=proto, ip=self.hub_ip_connect, rest=rest
-        )
-
     def _env_keep_default(self):
         """Don't inherit any env from the parent process"""
         return []
-
-    def get_args(self):
-        args = super().get_args()
-        if self.hub_ip_connect:
-            # JupyterHub 0.7 specifies --hub-api-url
-            # on the command-line, which is hard to update
-            for idx, arg in enumerate(list(args)):
-                if arg.startswith("--hub-api-url="):
-                    args.pop(idx)
-                    break
-
-            args.append("--hub-api-url=%s" % self._public_hub_api_url())
-        return args
 
     def get_env(self):
         env = super().get_env()
@@ -1051,8 +1078,10 @@ class DockerSpawner(Spawner):
 
     async def check_allowed(self, image):
         allowed_images = self._get_allowed_images()
-        if not allowed_images:
+        if allowed_images == "*":
             return image
+        elif not allowed_images:
+            raise web.HTTPError(400, "Specifying image to launch is not allowed")
         if image not in allowed_images:
             raise web.HTTPError(
                 400,
@@ -1134,11 +1163,19 @@ class DockerSpawner(Spawner):
             name=self.container_name,
             command=(await self.get_command()),
         )
+        extra_create_kwargs = self._eval_if_callable(self.extra_create_kwargs)
+        if inspect.isawaitable(extra_create_kwargs):
+            extra_create_kwargs = await extra_create_kwargs
+        extra_create_kwargs = self._render_templates(extra_create_kwargs)
+        extra_host_config = self._eval_if_callable(self.extra_host_config)
+        if inspect.isawaitable(extra_host_config):
+            extra_host_config = await extra_host_config
+        extra_host_config = self._render_templates(extra_host_config)
 
         # ensure internal port is exposed
         create_kwargs["ports"] = {"%i/tcp" % self.port: None}
 
-        create_kwargs.update(self._render_templates(self.extra_create_kwargs))
+        _deep_merge(create_kwargs, extra_create_kwargs)
 
         # build the dictionary of keyword arguments for host_config
         host_config = dict(
@@ -1155,14 +1192,14 @@ class DockerSpawner(Spawner):
             # docker cpu units are in microseconds
             # cpu_period default is 100ms
             # cpu_quota is cpu_period * cpu_limit
-            cpu_period = host_config["cpu_period"] = self.extra_host_config.get(
+            cpu_period = host_config["cpu_period"] = extra_host_config.get(
                 "cpu_period", 100_000
             )
             host_config["cpu_quota"] = int(self.cpu_limit * cpu_period)
 
         if not self.use_internal_ip:
             host_config["port_bindings"] = {self.port: (self.host_ip,)}
-        host_config.update(self._render_templates(self.extra_host_config))
+        _deep_merge(host_config, extra_host_config)
         host_config.setdefault("network_mode", self.network_name)
 
         self.log.debug("Starting host with config: %s", host_config)
@@ -1238,31 +1275,13 @@ class DockerSpawner(Spawner):
                 self.log.info("pulling image %s", image)
                 await self.docker('pull', repo, tag)
 
-    async def start(self, image=None, extra_create_kwargs=None, extra_host_config=None):
+    async def start(self):
         """Start the single-user server in a docker container.
-
-        Additional arguments to create/host config/etc. can be specified
-        via .extra_create_kwargs and .extra_host_config attributes.
 
         If the container exists and ``c.DockerSpawner.remove`` is ``True``, then
         the container is removed first. Otherwise, the existing containers
         will be restarted.
         """
-
-        if image:
-            self.log.warning("Specifying image via .start args is deprecated")
-            self.image = image
-        if extra_create_kwargs:
-            self.log.warning(
-                "Specifying extra_create_kwargs via .start args is deprecated"
-            )
-            self.extra_create_kwargs.update(extra_create_kwargs)
-        if extra_host_config:
-            self.log.warning(
-                "Specifying extra_host_config via .start args is deprecated"
-            )
-            self.extra_host_config.update(extra_host_config)
-
         # image priority:
         # 1. user options (from spawn options form)
         # 2. self.image from config

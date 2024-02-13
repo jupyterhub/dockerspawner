@@ -46,7 +46,7 @@ class bdist_egg_disabled(bdist_egg):
 setup_args = dict(
     name='dockerspawner',
     packages=['dockerspawner'],
-    version="12.2.0.dev",
+    version="13.1.0.dev",
     description="""Dockerspawner: A custom spawner for Jupyterhub.""",
     long_description="Spawn single-user servers with Docker.",
     author="Jupyter Development Team",

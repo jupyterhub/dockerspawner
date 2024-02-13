@@ -1,6 +1,6 @@
 # Picking or building a Docker image
 
-By default, DockerSpawner uses the `jupyterhub/singleuser` image
+By default, DockerSpawner uses the `quay.io/jupyterhub/singleuser` image
 with the appropriate tag that pins the right version of JupyterHub,
 but you can also build your own image.
 
@@ -13,7 +13,7 @@ and are encouraged as the image of choice. Make sure to pick a tag!
 Example:
 
 ```python
-c.DockerSpawner.image = 'jupyter/scipy-notebook:67b8fb91f950'
+c.DockerSpawner.image = 'quay.io/jupyter/scipy-notebook:2023-10-23'
 ```
 
 The docker-stacks are moving targets with always changing versions.
@@ -37,8 +37,8 @@ the appropriate JupyterHub version and the Jupyter notebook package.
 For instance, from the docker-stacks, pin your JupyterHub version and you are done:
 
 ```Dockerfile
-FROM jupyter/scipy-notebook:67b8fb91f950
-ARG JUPYTERHUB_VERSION=1.3.0
+FROM quay.io/jupyter/scipy-notebook:67b8fb91f950
+ARG JUPYTERHUB_VERSION=4.0.2
 RUN pip3 install --no-cache \
     jupyterhub==$JUPYTERHUB_VERSION
 ```
@@ -48,10 +48,10 @@ Or for the absolute minimal JupyterHub user image starting only from the base Py
 **NOTE: make sure to pick the jupyterhub version you are using!**
 
 ```Dockerfile
-FROM python:3.8
+FROM python:3.11
 RUN pip3 install \
-    'jupyterhub==1.3.*' \
-    'notebook==6.*'
+    'jupyterhub==4.*' \
+    'notebook==7.*'
 
 # create a user, since we don't want to run as root
 RUN useradd -m jovyan
