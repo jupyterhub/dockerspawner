@@ -330,12 +330,16 @@ class DockerSpawner(Spawner):
             options=options
         )
 
-    def options_from_form(self, formdata):
-        """Turn options formdata into user_options"""
-        options = {}
-        if 'image' in formdata:
-            options['image'] = formdata['image'][0]
-        return options
+    @default("options_from_form")
+    def _default_options_from_form(self):
+        def options_from_form(formdata):
+            """Turn options formdata into user_options"""
+            options = {}
+            if 'image' in formdata:
+                options['image'] = formdata['image'][0]
+            return options
+
+        return options_from_form
 
     pull_policy = CaselessStrEnum(
         ["always", "ifnotpresent", "never", "skip"],
