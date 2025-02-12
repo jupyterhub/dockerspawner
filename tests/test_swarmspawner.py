@@ -1,4 +1,5 @@
 """Tests for SwarmSpawner"""
+
 import asyncio
 
 from jupyterhub.tests.mocking import public_url

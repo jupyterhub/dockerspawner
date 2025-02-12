@@ -1,6 +1,7 @@
 """
 A Spawner for JupyterHub that runs each user's server in a separate docker service
 """
+
 import asyncio
 from pprint import pformat
 from textwrap import dedent
@@ -201,9 +202,9 @@ class SwarmSpawner(DockerSpawner):
             mem_limit=self.mem_limit,
             mem_reservation=self.mem_guarantee,
             cpu_limit=int(self.cpu_limit * 1e9) if self.cpu_limit else None,
-            cpu_reservation=int(self.cpu_guarantee * 1e9)
-            if self.cpu_guarantee
-            else None,
+            cpu_reservation=(
+                int(self.cpu_guarantee * 1e9) if self.cpu_guarantee else None
+            ),
         )
         resources_kwargs.update(self.extra_resources_spec)
         resources_spec = Resources(**resources_kwargs)

@@ -1,4 +1,5 @@
 """pytest config for dockerspawner tests"""
+
 import inspect
 import json
 import os
