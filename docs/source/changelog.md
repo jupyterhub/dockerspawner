@@ -8,7 +8,7 @@ command line for details.
 
 ## 14
 
-### 14.0.0 2024-02
+### 14.0.0 2024-02-12
 
 14.0.0 is a small release.
 It is designated a major revision because it drops support for Python < 3.9 and JupyterHub < 4.
