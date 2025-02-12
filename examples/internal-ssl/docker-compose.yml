@@ -1,9 +1,6 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-# JupyterHub docker-compose configuration file
-version: "3"
-
 services:
   proxy:
     depends_on:
@@ -11,7 +8,7 @@ services:
         condition: service_completed_successfully
 
     container_name: proxy
-    image: jupyterhub/configurable-http-proxy:4
+    image: quay.io/jupyterhub/configurable-http-proxy:4
     restart: always
     environment:
       CONFIGPROXY_AUTH_TOKEN: ${CONFIGPROXY_AUTH_TOKEN}
@@ -110,13 +107,13 @@ services:
 
 volumes:
   data:
-    external:
-      name: ${DATA_VOLUME_HOST}
+    name: ${DATA_VOLUME_HOST}
+    external: true
   ssl:
-    external:
-      name: ${SSL_VOLUME_HOST}
+    name: ${SSL_VOLUME_HOST}
+    external: true
 
 networks:
   default:
-    external:
-      name: ${DOCKER_NETWORK_NAME}
+    name: ${DOCKER_NETWORK_NAME}
+    external: true

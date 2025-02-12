@@ -14,7 +14,7 @@ hub_url = 'http://localhost:8000'
 
 @pytest.fixture(scope='session')
 def compose_build():
-    check_call(['docker-compose', 'build'], cwd=here)
+    check_call(['docker', 'compose', 'build'], cwd=here)
 
 
 @pytest.fixture(scope='session')
@@ -49,7 +49,7 @@ def volumes_and_networks():
 
 @pytest.fixture(scope='session')
 def compose_up(volumes_and_networks, compose_build):
-    p = Popen(['docker-compose', 'up'], cwd=here)
+    p = Popen(['docker', 'compose', 'up'], cwd=here)
     for i in range(60):
         try:
             r = requests.get(hub_url + '/hub/')
@@ -57,19 +57,19 @@ def compose_up(volumes_and_networks, compose_build):
         except Exception:
             time.sleep(1)
             if p.poll() is not None:
-                raise RuntimeError("`docker-compose up` failed")
+                raise RuntimeError("`docker compose up` failed")
         else:
             break
     else:
         p.terminate()
-        check_call(['docker-compose', 'rm', '-s', '-f'], cwd=here)
+        check_call(['docker', 'compose', 'rm', '-s', '-f'], cwd=here)
         raise TimeoutError("hub never showed up at %s" % hub_url)
 
     try:
         yield
     finally:
         p.terminate()
-        check_call(['docker-compose', 'rm', '-s', '-f'], cwd=here)
+        check_call(['docker', 'compose', 'rm', '-s', '-f'], cwd=here)
 
 
 def test_internal_ssl(compose_up):
