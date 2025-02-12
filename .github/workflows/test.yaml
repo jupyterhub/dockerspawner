@@ -31,12 +31,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python-version: "3.8"
-            pip-install-spec: "jupyterhub==2.3.1 sqlalchemy==1.*"
+          # jupyterhub 4 works with pytest-asyncio 0.25
+          # but requires some deprecated features,
+          # so don't let it upgrade further
           - python-version: "3.9"
-            pip-install-spec: "jupyterhub==3.*"
+            pip-install-spec: "jupyterhub==4.* sqlalchemy==1.* pytest-asyncio==0.25.*"
           - python-version: "3.11"
-            pip-install-spec: "jupyterhub==4.*"
+            pip-install-spec: "jupyterhub==4.* pytest-asyncio==0.25.*"
             test-variation: podman
           - python-version: "3.12"
             pip-install-spec: "jupyterhub==5.*"

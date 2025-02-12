@@ -9,15 +9,19 @@ from unittest import mock
 import jupyterhub
 import netifaces
 import pytest
+import pytest_asyncio
 from docker import from_env as docker_from_env
 from docker.errors import APIError
 from jupyterhub import version_info as jh_version_info
 from jupyterhub.tests.conftest import app as jupyterhub_app  # noqa: F401
-from jupyterhub.tests.conftest import event_loop  # noqa: F401
 from jupyterhub.tests.conftest import io_loop  # noqa: F401
 from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
 from jupyterhub.tests.conftest import user  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
+
+if 'event_loop' in inspect.signature(io_loop).parameters:
+    # older JupyterHub (< 5.x), io_loop requires deprecated event_loop
+    from jupyterhub.tests.conftest import event_loop  # noqa: F401
 
 from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
 
@@ -46,16 +50,19 @@ else:
 
 
 def pytest_collection_modifyitems(items):
-    """This function is automatically run by pytest passing all collected test
-    functions.
-
-    We use it to add asyncio marker to all async tests and assert we don't use
-    test functions that are async generators which wouldn't make sense.
-    """
-    for item in items:
-        if inspect.iscoroutinefunction(item.obj):
-            item.add_marker('asyncio')
-        assert not inspect.isasyncgenfunction(item.obj)
+    # apply loop_scope="module" to all async tests by default
+    # this can be hopefully be removed in favor of config if
+    # https://github.com/pytest-dev/pytest-asyncio/issues/793
+    # is addressed
+    pytest_asyncio_tests = (
+        item for item in items if pytest_asyncio.is_async_test(item)
+    )
+    asyncio_scope_marker = pytest.mark.asyncio(loop_scope="module")
+    for async_test in pytest_asyncio_tests:
+        # add asyncio marker _if_ not already present
+        asyncio_marker = async_test.get_closest_marker('asyncio')
+        if not asyncio_marker or not asyncio_marker.kwargs:
+            async_test.add_marker(asyncio_scope_marker, append=False)
 
 
 @pytest.fixture
@@ -89,9 +96,10 @@ def dockerspawner_configured_app(app, named_servers):
 @pytest.fixture
 def swarmspawner_configured_app(app, named_servers):
     """Configure JupyterHub to use DockerSpawner"""
-    with mock.patch.dict(
-        app.tornado_settings, {"spawner_class": SwarmSpawner}
-    ), mock.patch.dict(app.config.SwarmSpawner, {"network_name": "bridge"}):
+    with (
+        mock.patch.dict(app.tornado_settings, {"spawner_class": SwarmSpawner}),
+        mock.patch.dict(app.config.SwarmSpawner, {"network_name": "bridge"}),
+    ):
         yield app
 
 

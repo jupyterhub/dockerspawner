@@ -24,7 +24,6 @@ profile = "black"
 [tool.black]
 skip-string-normalization = true
 target_version = [
-    "py38",
     "py39",
     "py310",
     "py311",
@@ -38,6 +37,7 @@ target_version = [
 [tool.pytest.ini_options]
 addopts = "--verbose --color=yes --durations=10 --maxfail=1"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "module"
 testpaths = ["tests"]
 # These markers are registered to avoid warnings triggered by importing from
 # jupyterhub.tests.test_api.
