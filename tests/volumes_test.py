@@ -12,10 +12,10 @@ def test_binds(monkeypatch):
 
     d = DockerSpawner()
     d.user = types.SimpleNamespace(name="xyz")
-    d.volumes = {"a": "b", "c": {"bind": "d", "mode": "Z"}}
+    d.volumes = {"a": "b", "c": {"bind": "d", "mode": "Z", "propagation": "rprivate"}}
     assert d.volume_binds == {
         "a": {"bind": "b", "mode": "rw"},
-        "c": {"bind": "d", "mode": "Z"},
+        "c": {"bind": "d", "mode": "Z", "propagation": 'rprivate'},
     }
     d.volumes = {"a": "b", "c": "d", "e": "f"}
     assert d.volume_mount_points == ["b", "d", "f"]

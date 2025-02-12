@@ -1014,7 +1014,9 @@ class DockerSpawner(Spawner):
 
         container_state = container["State"]
         self.log.debug(
-            "Container %s status: %s", self.container_id[:7], json.dumps(container_state, ensure_ascii=False)
+            "Container %s status: %s",
+            self.container_id[:7],
+            json.dumps(container_state, ensure_ascii=False),
         )
 
         if container_state["Running"]:
@@ -1453,11 +1455,16 @@ class DockerSpawner(Spawner):
 
         for k, v in volumes.items():
             m = mode
+            propagation = None
             if isinstance(v, dict):
                 if "mode" in v:
                     m = v["mode"]
+                if "propagation" in v:
+                    propagation = v["propagation"]
                 v = v["bind"]
-            binds[_fmt(k)] = {"bind": _fmt(v), "mode": m}
+            binds[_fmt(k)] = bind = {"bind": _fmt(v), "mode": m}
+            if propagation:
+                bind["propagation"] = propagation
         return binds
 
     def _render_templates(self, obj, ns=None):

@@ -34,6 +34,22 @@ class SystemUserSpawner(DockerSpawner):
         ),
     )
 
+    homedir_bind_propagation = Unicode(
+        "",
+        config=True,
+        help=dedent(
+            """
+            Mode for bind mount propagation for home directory.
+
+            Requires docker-py 7.0.
+
+            See https://docs.docker.com/engine/storage/bind-mounts/#configure-bind-propagation
+
+            .. versionadded:: 13.1
+            """
+        ),
+    )
+
     run_as_root = Bool(
         False,
         config=True,
@@ -129,7 +145,12 @@ class SystemUserSpawner(DockerSpawner):
             }
         """
         volumes = super().volume_binds
-        volumes[self.host_homedir] = {'bind': self.homedir, 'ro': False}
+        volumes[self.host_homedir] = home_volume = {
+            'bind': self.homedir,
+            'ro': False,
+        }
+        if self.homedir_bind_propagation:
+            home_volume["propagation"] = self.homedir_bind_propagation
         return volumes
 
     def get_env(self):
