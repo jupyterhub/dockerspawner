@@ -3,13 +3,13 @@ A Spawner for JupyterHub that runs each user's server in a separate docker conta
 """
 import asyncio
 import inspect
+import json
 import os
 import string
 import warnings
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from io import BytesIO
-from pprint import pformat
 from tarfile import TarFile, TarInfo
 from textwrap import dedent, indent
 from urllib.parse import urlparse
@@ -330,12 +330,16 @@ class DockerSpawner(Spawner):
             options=options
         )
 
-    def options_from_form(self, formdata):
-        """Turn options formdata into user_options"""
-        options = {}
-        if 'image' in formdata:
-            options['image'] = formdata['image'][0]
-        return options
+    @default("options_from_form")
+    def _default_options_from_form(self):
+        def options_from_form(formdata):
+            """Turn options formdata into user_options"""
+            options = {}
+            if 'image' in formdata:
+                options['image'] = formdata['image'][0]
+            return options
+
+        return options_from_form
 
     pull_policy = CaselessStrEnum(
         ["always", "ifnotpresent", "never", "skip"],
@@ -1010,7 +1014,7 @@ class DockerSpawner(Spawner):
 
         container_state = container["State"]
         self.log.debug(
-            "Container %s status: %s", self.container_id[:7], pformat(container_state)
+            "Container %s status: %s", self.container_id[:7], json.dumps(container_state, ensure_ascii=False)
         )
 
         if container_state["Running"]:

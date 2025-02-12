@@ -14,6 +14,7 @@ from jupyterhub.tests.mocking import public_url
 from jupyterhub.tests.test_api import add_user, api_request
 from jupyterhub.utils import url_path_join
 from tornado.httpclient import AsyncHTTPClient
+from traitlets.config import Config
 
 from dockerspawner import DockerSpawner
 
@@ -409,6 +410,11 @@ def test_options_from_form():
     spawner = DockerSpawner()
     formdata = {'image': ['1.0', '1.1']}
     assert spawner.options_from_form(formdata) == {'image': '1.0'}
+
+    config = Config()
+    config.DockerSpawner.options_from_form = lambda formdata: {"ok": True}
+    spawner = DockerSpawner(config=config)
+    assert spawner.options_from_form(formdata) == {"ok": True}
 
 
 @pytest.mark.parametrize("escape_type", ("legacy", escape))
