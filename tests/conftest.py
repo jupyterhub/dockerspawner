@@ -1,6 +1,5 @@
 """pytest config for dockerspawner tests"""
 
-import inspect
 import json
 import os
 from textwrap import indent
@@ -9,15 +8,16 @@ from unittest import mock
 import jupyterhub
 import netifaces
 import pytest
+import pytest_asyncio
 from docker import from_env as docker_from_env
 from docker.errors import APIError
 from jupyterhub import version_info as jh_version_info
 from jupyterhub.tests.conftest import app as jupyterhub_app  # noqa: F401
-from jupyterhub.tests.conftest import event_loop  # noqa: F401
 from jupyterhub.tests.conftest import io_loop  # noqa: F401
 from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
 from jupyterhub.tests.conftest import user  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
+from packaging.version import parse as parse_version
 
 from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
 
@@ -45,17 +45,32 @@ else:
         ][0]['addr']
 
 
-def pytest_collection_modifyitems(items):
-    """This function is automatically run by pytest passing all collected test
-    functions.
+_pytest_asyncio_24 = parse_version(pytest_asyncio.__version__) >= parse_version(
+    "0.24.0.dev0"
+)
 
-    We use it to add asyncio marker to all async tests and assert we don't use
-    test functions that are async generators which wouldn't make sense.
-    """
-    for item in items:
-        if inspect.iscoroutinefunction(item.obj):
-            item.add_marker('asyncio')
-        assert not inspect.isasyncgenfunction(item.obj)
+if not _pytest_asyncio_24:
+    # can remove this when we require pytest-asyncio 0.24
+    from jupyterhub.tests.conftest import event_loop  # noqa: F401
+
+
+def pytest_collection_modifyitems(items):
+    if _pytest_asyncio_24:
+        # apply loop_scope="module" to all async tests by default
+        # this is only for pytest_asyncio >= 0.24
+        # pytest_asyncio < 0.24 uses overridden `event_loop` fixture
+        # this can be hopefully be removed in favor of config if
+        # https://github.com/pytest-dev/pytest-asyncio/issues/793
+        # is addressed
+        pytest_asyncio_tests = (
+            item for item in items if pytest_asyncio.is_async_test(item)
+        )
+        asyncio_scope_marker = pytest.mark.asyncio(loop_scope="module")
+        for async_test in pytest_asyncio_tests:
+            # add asyncio marker _if_ not already present
+            asyncio_marker = async_test.get_closest_marker('asyncio')
+            if not asyncio_marker or not asyncio_marker.kwargs:
+                async_test.add_marker(asyncio_scope_marker, append=False)
 
 
 @pytest.fixture
