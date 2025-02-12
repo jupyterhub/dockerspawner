@@ -3,11 +3,12 @@
 import inspect
 import json
 import os
+from socket import AddressFamily
 from textwrap import indent
 from unittest import mock
 
 import jupyterhub
-import netifaces
+import psutil
 import pytest
 import pytest_asyncio
 from docker import from_env as docker_from_env
@@ -38,15 +39,19 @@ else:
     # on GHA, the ip for hostname resolves to a 10.x
     # address that is not connectable from within containers
     # but the docker0 address is connectable
-    docker_interfaces = sorted(
-        iface for iface in netifaces.interfaces() if 'docker' in iface
-    )
-    if docker_interfaces:
-        iface = docker_interfaces[0]
-        print(f"Found docker interfaces: {docker_interfaces}, using {iface}")
-        MockHub.hub_connect_ip = netifaces.ifaddresses(docker_interfaces[0])[
-            netifaces.AF_INET
-        ][0]['addr']
+    for iface, addrs in psutil.net_if_addrs().items():
+        if 'docker' not in iface:
+            continue
+        ipv4_addrs = [addr for addr in addrs if addr.family == AddressFamily.AF_INET]
+        if not ipv4_addrs:
+            print(f"No ipv4 addr for {iface}: {addrs}")
+            continue
+        ipv4 = ipv4_addrs[0]
+        print(f"Found docker interfaces, using {iface}: {ipv4}")
+        MockHub.hub_connect_ip = ipv4.address
+        break
+    else:
+        print(f"Did not find docker interface in: {', '.join(psutil.net_if_addrs())}")
 
 
 def pytest_collection_modifyitems(items):

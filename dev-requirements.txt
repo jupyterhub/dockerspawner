@@ -1,5 +1,4 @@
-netifaces
-notebook<7
+psutil
 pytest>=3.6
 pytest-asyncio>=0.25
 pytest-cov
