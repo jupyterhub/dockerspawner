@@ -1,6 +1,6 @@
-FROM jupyterhub/jupyterhub:4
+FROM jupyterhub/jupyterhub:5
 
-COPY setup.py requirements.txt /src/dockerspawner/
+COPY pyproject.toml setup.py requirements.txt /src/dockerspawner/
 COPY dockerspawner /src/dockerspawner/dockerspawner
 RUN pip install /src/dockerspawner
 
