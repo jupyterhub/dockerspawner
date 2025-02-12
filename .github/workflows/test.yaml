@@ -37,12 +37,12 @@ jobs:
             pip-install-spec: "jupyterhub==3.*"
           - python-version: "3.11"
             pip-install-spec: "jupyterhub==4.*"
-          - python-version: "3.11"
-            pip-install-spec: "jupyterhub==4.*"
-            test-variation: internal-ssl
-          - python-version: "3.11"
-            pip-install-spec: "jupyterhub==4.*"
             test-variation: podman
+          - python-version: "3.12"
+            pip-install-spec: "jupyterhub==5.*"
+            test-variation: internal-ssl
+          - python-version: "3.13"
+            pip-install-spec: "jupyterhub==5.*"
 
     steps:
       - uses: actions/checkout@v4
