@@ -25,7 +25,7 @@ for more information about features and usage.
 
 ## Prerequisites
 
-Python 3.8 or above and JupyterHub 2.3.1 or above is required.
+Python 3.9 or above and JupyterHub 4 or above is required.
 
 ## Installation
 
