@@ -1,5 +1,6 @@
 """pytest config for dockerspawner tests"""
 
+import inspect
 import json
 import os
 from textwrap import indent
@@ -17,6 +18,10 @@ from jupyterhub.tests.conftest import io_loop  # noqa: F401
 from jupyterhub.tests.conftest import ssl_tmpdir  # noqa: F401
 from jupyterhub.tests.conftest import user  # noqa: F401
 from jupyterhub.tests.mocking import MockHub
+
+if 'event_loop' in inspect.signature(io_loop).parameters:
+    # older JupyterHub (< 5.x), io_loop requires deprecated event_loop
+    from jupyterhub.tests.conftest import event_loop  # noqa: F401
 
 from dockerspawner import DockerSpawner, SwarmSpawner, SystemUserSpawner
 
