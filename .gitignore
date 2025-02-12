@@ -65,6 +65,7 @@ src
 
 # Pycharm
 .idea
+.DS_Store
 
 # test files
 .pytest_cache

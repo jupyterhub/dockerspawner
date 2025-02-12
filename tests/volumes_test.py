@@ -1,5 +1,4 @@
-"""Test volume manipulation logic
-"""
+"""Test volume manipulation logic"""
 
 import types
 

@@ -1,4 +1,5 @@
 """Tests for SwarmSpawner"""
+
 from getpass import getuser
 
 from jupyterhub.tests.mocking import public_url
