@@ -45,7 +45,7 @@ class SystemUserSpawner(DockerSpawner):
 
             See https://docs.docker.com/engine/storage/bind-mounts/#configure-bind-propagation
 
-            .. versionadded:: 13.1
+            .. versionadded:: 14
             """
         ),
     )

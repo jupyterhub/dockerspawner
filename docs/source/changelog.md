@@ -6,6 +6,50 @@ command line for details.
 
 ## [Unreleased]
 
+## 14
+
+### 14.0.0 2024-02-12
+
+14.0.0 is a small release.
+It is designated a major revision because it drops support for Python < 3.9 and JupyterHub < 4.
+
+([full changelog](https://github.com/jupyterhub/dockerspawner/compare/13.0.0...14.0.0))
+
+#### API and Breaking Changes
+
+- require Python 3.9, jupyterhub 4, unpin pytest-asyncio [#530](https://github.com/jupyterhub/dockerspawner/pull/530) ([@minrk](https://github.com/minrk))
+
+#### New features added
+
+- support for bind propagation [#526](https://github.com/jupyterhub/dockerspawner/pull/526) ([@jannefleischer](https://github.com/jannefleischer), [@minrk](https://github.com/minrk))
+
+#### Enhancements made
+
+- compact debug log into single line [#521](https://github.com/jupyterhub/dockerspawner/pull/521) ([@haobibo](https://github.com/haobibo), [@minrk](https://github.com/minrk))
+
+#### Bugs fixed
+
+- Support options_from_form config [#525](https://github.com/jupyterhub/dockerspawner/pull/525) ([@akhmerov](https://github.com/akhmerov), [@minrk](https://github.com/minrk))
+
+#### Maintenance and upkeep improvements
+
+- update some test dependencies [#531](https://github.com/jupyterhub/dockerspawner/pull/531) ([@minrk](https://github.com/minrk))
+- update test versions in ci [#529](https://github.com/jupyterhub/dockerspawner/pull/529) ([@minrk](https://github.com/minrk))
+- update internal-ssl test for current docker compose [#527](https://github.com/jupyterhub/dockerspawner/pull/527) ([@minrk](https://github.com/minrk))
+
+#### Documentation improvements
+
+- Document c.DockerSpawner.mounts [#510](https://github.com/jupyterhub/dockerspawner/pull/510) ([@zhangnew](https://github.com/zhangnew), [@minrk](https://github.com/minrk))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/dockerspawner/graphs/contributors?from=2023-11-21&to=2025-02-12&type=c))
+
+@akhmerov ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aakhmerov+updated%3A2023-11-21..2025-02-12&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3AconsideRatio+updated%3A2023-11-21..2025-02-12&type=Issues)) | @haobibo ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ahaobibo+updated%3A2023-11-21..2025-02-12&type=Issues)) | @jannefleischer ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ajannefleischer+updated%3A2023-11-21..2025-02-12&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Amanics+updated%3A2023-11-21..2025-02-12&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Aminrk+updated%3A2023-11-21..2025-02-12&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Ayuvipanda+updated%3A2023-11-21..2025-02-12&type=Issues)) | @zhangnew ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fdockerspawner+involves%3Azhangnew+updated%3A2023-11-21..2025-02-12&type=Issues))
+
 ## 13
 
 ### [13.0] 2023-11-21
