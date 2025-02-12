@@ -34,17 +34,18 @@ class SystemUserSpawner(DockerSpawner):
         ),
     )
 
-    image_homedir_propagation = Unicode(
-        "rprivate",
+    homedir_bind_propagation = Unicode(
+        "",
         config=True,
         help=dedent(
             """
-            Mode for bind mount propagation. Possible values are
-            `rshared`,`shared`,`rprivate`, `private`, `rslave`, `slave`.
-            default is `rprivate`.
-            This is only interpreted by docker-py if patched  (see:
-            https://github.com/jannefleischer/docker-py/commit/786d55de465e72d0bb4b318272a2d020e43ff54a
-            ) and run on linux - no support for Docker Desktop.
+            Mode for bind mount propagation for home directory.
+
+            Requires docker-py 7.0.
+
+            See https://docs.docker.com/engine/storage/bind-mounts/#configure-bind-propagation
+
+            .. versionadded:: 13.1
             """
         ),
     )
@@ -133,23 +134,6 @@ class SystemUserSpawner(DockerSpawner):
         return mount_points
 
     @property
-    def homedirpropagation(self):
-        """
-        Setting for the propagation mode for home dir. Wrong values are defaulted to `rprivate`.
-        """
-        if self.image_homedir_propagation in (
-            'rshared',
-            'shared',
-            'rprivate',
-            'private',
-            'rslave',
-            'slave',
-        ):
-            return self.image_homedir_propagation
-        else:
-            return 'rprivate'
-
-    @property
     def volume_binds(self):
         """
         The second half of declaring a volume with docker-py happens when you
@@ -161,11 +145,12 @@ class SystemUserSpawner(DockerSpawner):
             }
         """
         volumes = super().volume_binds
-        volumes[self.host_homedir] = {
+        volumes[self.host_homedir] = home_volume = {
             'bind': self.homedir,
             'ro': False,
-            'propagation': self.homedirpropagation,
         }
+        if self.homedir_bind_propagation:
+            home_volume["propagation"] = self.homedir_bind_propagation
         return volumes
 
     def get_env(self):
