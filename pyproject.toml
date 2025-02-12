@@ -59,7 +59,7 @@ markers = [
 github_url = "https://github.com/jupyterhub/dockerspawner"
 
 [tool.tbump.version]
-current = "13.1.0.dev"
+current = "14.0.0"
 regex = '''
     (?P<major>\d+)
     \.
