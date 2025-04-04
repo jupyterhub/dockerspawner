@@ -1168,9 +1168,15 @@ class DockerSpawner(Spawner):
         _deep_merge(create_kwargs, extra_create_kwargs)
 
         # Make a list of mount objects if present, formatting strings but passing through everything else
-        mount_binds = [Mount(
-            **{k: self.format_volume_name(v, self) if isinstance(v, str) else v for k, v in mount.items()}
-        ) for mount in self.mounts]
+        mount_binds = [
+            Mount(
+                **{
+                    k: self.format_volume_name(v, self) if isinstance(v, str) else v
+                    for k, v in mount.items()
+                }
+            )
+            for mount in self.mounts
+        ]
 
         # build the dictionary of keyword arguments for host_config
 
