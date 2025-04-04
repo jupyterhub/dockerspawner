@@ -1169,7 +1169,7 @@ class DockerSpawner(Spawner):
 
         # Make a list of mount objects if present
         mount_binds = [Mount(
-            **{k: self.format_volume_name(v, self) for k, v in self.mounts}
+            **{k: self.format_volume_name(v, self) for k, v in self.mounts.items()}
         )]
 
         # build the dictionary of keyword arguments for host_config
