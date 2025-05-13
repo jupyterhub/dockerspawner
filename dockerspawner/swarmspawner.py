@@ -123,7 +123,7 @@ class SwarmSpawner(DockerSpawner):
         help="""
         Use this mount type for creating mounts of volume_binds.
         Check https://docs.docker.com/engine/storage/volumes/ for allowed mount types.
-        """
+        """,
     )
 
     @property
