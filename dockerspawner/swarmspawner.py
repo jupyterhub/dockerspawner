@@ -116,6 +116,16 @@ class SwarmSpawner(DockerSpawner):
             )
         return None
 
+    volume_binds_mount_type = Unicode(
+        default_value="bind",
+        allow_None=False,
+        config=True,
+        help="""
+        Use this mount type for creating mounts of volume_binds.
+        Check https://docs.docker.com/engine/storage/volumes/ for allowed mount types.
+        """
+    )
+
     @property
     def mounts(self):
         if len(self.volume_binds):
@@ -124,7 +134,7 @@ class SwarmSpawner(DockerSpawner):
                 Mount(
                     target=vol["bind"],
                     source=host_loc,
-                    type="bind",
+                    type=self.volume_binds_mount_type,
                     read_only=vol["mode"] == "ro",
                     driver_config=driver,
                 )
