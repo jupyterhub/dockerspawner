@@ -442,6 +442,7 @@ class DockerSpawner(Spawner):
     )
 
     mounts = List(
+        Dict(),
         config=True,
         help=dedent(
             """
@@ -894,24 +895,6 @@ class DockerSpawner(Spawner):
         read_only_volumes.update(self.read_only_volumes)
         return self._volumes_to_binds(read_only_volumes, binds, mode="ro")
 
-    @property
-    def mount_binds(self):
-        """
-        A different way of specifying docker volumes using more advanced spec.
-        Converts mounts list of dict to a list of docker.types.Mount
-        """
-
-        def _fmt(v):
-            return self.format_volume_name(v, self)
-
-        mounts = []
-        for mount in self.mounts:
-            args = dict(mount)
-            args["source"] = _fmt(mount["source"])
-            args["target"] = _fmt(mount["target"])
-            mounts.append(Mount(**args))
-        return mounts
-
     _escaped_name = None
 
     @property
@@ -1184,12 +1167,24 @@ class DockerSpawner(Spawner):
 
         _deep_merge(create_kwargs, extra_create_kwargs)
 
+        # Make a list of mount objects if present, formatting strings but passing through everything else
+        mount_binds = [
+            Mount(
+                **{
+                    k: self.format_volume_name(v, self) if isinstance(v, str) else v
+                    for k, v in mount.items()
+                }
+            )
+            for mount in self.mounts
+        ]
+
         # build the dictionary of keyword arguments for host_config
+
         host_config = dict(
             auto_remove=self.remove,
             binds=self.volume_binds,
             links=self.links,
-            mounts=self.mount_binds,
+            mounts=mount_binds,
         )
 
         if getattr(self, "mem_limit", None) is not None:
