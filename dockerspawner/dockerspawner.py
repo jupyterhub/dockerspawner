@@ -442,7 +442,7 @@ class DockerSpawner(Spawner):
     )
 
     mounts = List(
-        Dict,
+        Dict(),
         config=True,
         help=dedent(
             """
