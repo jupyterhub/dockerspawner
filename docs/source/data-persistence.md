@@ -54,7 +54,7 @@ If you have `jupyterhub >= 0.7`, you can set a memory limit for each user's cont
 c.Spawner.mem_limit = '2G'
 ```
 
-The value can either be an integer (bytes) or a string with a 'K', 'M', 'G' or 'T' prefix.
+The value can either be an integer (bytes) or a string with a 'K', 'M', 'G' or 'T' suffix.
 
 ## Resources
 
