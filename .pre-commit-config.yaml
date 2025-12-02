@@ -9,7 +9,7 @@
 repos:
   # Autoformat: Python code, syntax patterns are modernized
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.21.0
+    rev: v3.21.2
     hooks:
       - id: pyupgrade
         args:
@@ -32,13 +32,13 @@ repos:
 
   # Autoformat: Python
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 25.9.0
+    rev: 25.11.0
     hooks:
       - id: black
 
   # Autoformat: shell scripts
   - repo: https://github.com/lovesegfault/beautysh
-    rev: v6.4.1
+    rev: v6.4.2
     hooks:
       - id: beautysh
         additional_dependencies:
