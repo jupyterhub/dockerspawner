@@ -1,3 +1,64 @@
+[build-system]
+requires = [
+  "hatchling",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "dockerspawner"
+dynamic = [
+  "version",
+]
+description = "Dockerspawner: A custom spawner for JupyterHub using Docker"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+authors = [
+  { name = "Jupyter Development Team", email = "jupyter@googlegroups.com" },
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Operating System :: POSIX",
+  "Framework :: Jupyter",
+]
+keywords = [
+  "docker",
+  "jupyter",
+  "jupyterhub",
+]
+dependencies = [
+  "docker",
+  "escapism",
+  "jupyterhub>=4",
+]
+
+[project.urls]
+Documentation = "https://jupyterhub-dockerspawner.readthedocs.io"
+Source = "https://github.com/jupyterhub/dockerspawner"
+Issues = "https://github.com/jupyterhub/dockerspawner/issues"
+
+[project.optional-dependencies]
+test = [
+  "psutil",
+  "pytest",
+  "pytest-asyncio>=0.25",
+  "pytest-cov",
+]
+
+[project.entry-points."jupyterhub.spawners"]
+docker = "dockerspawner:DockerSpawner"
+docker-system-user = "dockerspawner:SystemUserSpawner"
+docker-swarm = "dockerspawner:SwarmSpawner"
+
+[tool.hatch.version]
+path = "dockerspawner/_version.py"
+
+
 # autoflake is used for autoformatting Python code
 #
 # ref: https://github.com/PyCQA/autoflake#readme
@@ -23,11 +84,6 @@ profile = "black"
 #
 [tool.black]
 skip-string-normalization = true
-target_version = [
-    "py39",
-    "py310",
-    "py311",
-]
 
 
 # pytest is used for running Python based tests
@@ -38,15 +94,17 @@ target_version = [
 addopts = "--verbose --color=yes --durations=10 --maxfail=1"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "module"
-testpaths = ["tests"]
+testpaths = [
+  "tests",
+]
 # These markers are registered to avoid warnings triggered by importing from
 # jupyterhub.tests.test_api.
 markers = [
-    "role",
-    "user",
-    "slow",
-    "group",
-    "services",
+  "role",
+  "user",
+  "slow",
+  "group",
+  "services",
 ]
 
 
