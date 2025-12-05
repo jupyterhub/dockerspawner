@@ -34,7 +34,7 @@ jobs:
           # jupyterhub 4 works with pytest-asyncio 0.25
           # but requires some deprecated features,
           # so don't let it upgrade further
-          - python-version: "3.9"
+          - python-version: "3.10"
             pip-install-spec: "jupyterhub==4.* sqlalchemy==1.* pytest-asyncio==0.25.*"
           - python-version: "3.11"
             pip-install-spec: "jupyterhub==4.* pytest-asyncio==0.25.*"
@@ -52,15 +52,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - uses: actions/setup-node@v6
         with:
-          node-version: "18"
+          node-version: "20"
 
       - name: setup docker swarm
         run: docker swarm init
 
       - name: Install Python dependencies
         run: |
-          pip install ${{ matrix.pip-install-spec }}
-          pip install -e "." -r dev-requirements.txt
+          pip install ${{ matrix.pip-install-spec }} -e ".[test]"
 
       - name: List Python dependencies
         run: |
