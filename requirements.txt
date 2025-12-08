@@ -1,3 +1,0 @@
-docker
-escapism
-jupyterhub>=4
