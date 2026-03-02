@@ -327,9 +327,7 @@ class DockerSpawner(Spawner):
         <select class="form-control" name="image" required autofocus>
         {options}
         </select>
-        """.format(
-            options=options
-        )
+        """.format(options=options)
 
     @default("options_from_form")
     def _default_options_from_form(self):
@@ -377,18 +375,15 @@ class DockerSpawner(Spawner):
     prefix = Unicode(
         "jupyter",
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Prefix for container names. See name_template for full container name for a particular
             user's server.
-            """
-        ),
+            """),
     )
 
     name_template = Unicode(
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Name of the container or service: with {username}, {imagename}, {prefix}, {servername} replacements.
             {raw_username} can be used for the original, not escaped username
             (may contain uppercase, special characters).
@@ -402,8 +397,7 @@ class DockerSpawner(Spawner):
             it is important that the separator between {username} and {servername}
             is not a character that can occur in an escaped {username},
             and also not the single escape character '-'.
-            """
-        ),
+            """),
     )
 
     @default('name_template')
@@ -420,8 +414,7 @@ class DockerSpawner(Spawner):
 
     volumes = Dict(
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Map from host file/directory to container (guest) file/directory
             mount point and (optionally) a mode. When specifying the
             guest mount point (bind) for the volume, you may use a
@@ -437,21 +430,18 @@ class DockerSpawner(Spawner):
             In this case, if you use {username} in either the host or guest
             file/directory path, it will be replaced with the current
             user's name.
-            """
-        ),
+            """),
     )
 
     mounts = List(
         Dict(),
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             List of dict with keys to match docker.types.Mount for more advanced
             configuration of mouted volumes.  As with volumes, if the default
             format_volume_name is in use, you can use {username} in the source or
             target paths, and it will be replaced with the current user's name.
-            """
-        ),
+            """),
     )
 
     move_certs_image = Unicode(
@@ -538,8 +528,7 @@ class DockerSpawner(Spawner):
 
     read_only_volumes = Dict(
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Map from host file/directory to container file/directory.
             Volumes specified here will be read-only in the container.
 
@@ -548,8 +537,7 @@ class DockerSpawner(Spawner):
             In this case, if you use {username} in either the host or guest
             file/directory path, it will be replaced with the current
             user's name.
-            """
-        ),
+            """),
     )
 
     format_volume_name = Any(
@@ -723,14 +711,12 @@ class DockerSpawner(Spawner):
     use_internal_ip = Bool(
         False,
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Enable the usage of the internal docker ip. This is useful if you are running
             jupyterhub (as a container) and the user containers within the same docker network.
             E.g. by mounting the docker socket of the host into the jupyterhub container.
             Default is ``True`` if using a docker network, ``False`` if bridge or host networking is used.
-            """
-        ),
+            """),
     )
 
     @default("use_internal_ip")
@@ -745,16 +731,14 @@ class DockerSpawner(Spawner):
     use_internal_hostname = Bool(
         False,
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Use the docker hostname for connecting.
 
             instead of an IP address.
             This should work in general when using docker networks,
             and must be used when internal_ssl is enabled.
             It is enabled by default if internal_ssl is enabled.
-            """
-        ),
+            """),
     )
 
     @default("use_internal_hostname")
@@ -765,29 +749,25 @@ class DockerSpawner(Spawner):
 
     links = Dict(
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Specify docker link mapping to add to the container, e.g.
 
                 links = {'jupyterhub': 'jupyterhub'}
 
             If the Hub is running in a Docker container,
             this can simplify routing because all traffic will be using docker hostnames.
-            """
-        ),
+            """),
     )
 
     network_name = Unicode(
         "bridge",
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Run the containers on this docker network.
             If it is an internal docker network, the Hub should be on the same network,
             as internal docker IP addresses will be used.
             For bridge networking, external ports will be bound.
-            """
-        ),
+            """),
     )
 
     post_start_cmd = UnicodeOrFalse(

@@ -87,22 +87,18 @@ class SwarmSpawner(DockerSpawner):
     volume_driver = Unicode(
         "",
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Use this driver for mounting the notebook volumes.
             Note that this driver must support multiple hosts in order for it to work across the swarm.
             For a list of possible drivers, see https://docs.docker.com/engine/extend/legacy_plugins/#volume-plugins
-            """
-        ),
+            """),
     )
 
     volume_driver_options = Dict(
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Configuration options for the multi-host volume driver.
-            """
-        ),
+            """),
     )
 
     # container-removal cannot be disabled for services
