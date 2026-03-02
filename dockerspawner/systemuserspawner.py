@@ -9,36 +9,31 @@ class SystemUserSpawner(DockerSpawner):
     host_homedir_format_string = Unicode(
         "/home/{username}",
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Format string for the path to the user's home directory on the host.
             The format string should include a `username` variable, which will
             be formatted with the user's username.
             
             If the string is empty or `None`, the user's home directory will
             be looked up via the `pwd` database.
-            """
-        ),
+            """),
     )
 
     image_homedir_format_string = Unicode(
         "/home/{username}",
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Format string for the path to the user's home directory
             inside the image.  The format string should include a
             `username` variable, which will be formatted with the
             user's username.
-            """
-        ),
+            """),
     )
 
     homedir_bind_propagation = Unicode(
         "",
         config=True,
-        help=dedent(
-            """
+        help=dedent("""
             Mode for bind mount propagation for home directory.
 
             Requires docker-py 7.0.
@@ -46,8 +41,7 @@ class SystemUserSpawner(DockerSpawner):
             See https://docs.docker.com/engine/storage/bind-mounts/#configure-bind-propagation
 
             .. versionadded:: 14
-            """
-        ),
+            """),
     )
 
     run_as_root = Bool(
@@ -67,8 +61,7 @@ class SystemUserSpawner(DockerSpawner):
 
     user_id = Integer(
         -1,
-        help=dedent(
-            """
+        help=dedent("""
             If system users are being used, then we need to know their user id
             in order to mount the home directory.
 
@@ -76,14 +69,12 @@ class SystemUserSpawner(DockerSpawner):
 
             1. stored in the state dict (authenticator can write here)
             2. lookup via pwd
-            """
-        ),
+            """),
     )
 
     group_id = Integer(
         -1,
-        help=dedent(
-            """
+        help=dedent("""
             If system users are being used, then we need to know their group id
             in order to mount the home directory with correct group permissions.
 
@@ -91,8 +82,7 @@ class SystemUserSpawner(DockerSpawner):
 
             1. stored in the state dict (authenticator can write here)
             2. lookup via pwd
-            """
-        ),
+            """),
     )
 
     @property

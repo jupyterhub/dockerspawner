@@ -396,15 +396,12 @@ def test_default_options_form():
     spawner.allowed_images = {"1.0": "jupyterhub/singleuser:1.0"}
     assert spawner._default_options_form() == ''
     spawner.allowed_images["1.1"] = "jupyterhub/singleuser:1.1"
-    assert (
-        spawner._default_options_form()
-        == """
+    assert spawner._default_options_form() == """
         <label for="image">Select an image:</label>
         <select class="form-control" name="image" required autofocus>
         ['<option value="1.0" >1.0</option>', '<option value="1.1" >1.1</option>']
         </select>
         """
-    )
 
 
 def test_options_from_form():
