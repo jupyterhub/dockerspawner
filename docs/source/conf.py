@@ -21,10 +21,10 @@ author = 'Jupyter Contributors'
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-import pkg_resources
+import importlib.metadata
 
 # The full version, including alpha/beta/rc tags.
-release = pkg_resources.get_distribution("dockerspawner").version
+release = importlib.metadata.version("dockerspawner")
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
 
