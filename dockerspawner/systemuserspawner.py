@@ -13,7 +13,7 @@ class SystemUserSpawner(DockerSpawner):
             Format string for the path to the user's home directory on the host.
             The format string should include a `username` variable, which will
             be formatted with the user's username.
-            
+
             If the string is empty or `None`, the user's home directory will
             be looked up via the `pwd` database.
             """),
