@@ -3,6 +3,7 @@
 [![Latest PyPI version](https://img.shields.io/pypi/v/dockerspawner?logo=pypi)](https://pypi.python.org/pypi/dockerspawner)
 [![Latest conda-forge version](https://img.shields.io/conda/vn/conda-forge/dockerspawner?logo=conda-forge)](https://anaconda.org/conda-forge/dockerspawner)
 [![GitHub Workflow Status - Test](https://img.shields.io/github/actions/workflow/status/jupyterhub/dockerspawner/test.yaml?logo=github&label=tests)](https://github.com/jupyterhub/dockerspawner/actions)
+[![Documentation Status](https://readthedocs.org/projects/jupyterhub-dockerspawner/badge/?version=latest)](https://jupyterhub-dockerspawner.readthedocs.io/en/latest/?badge=latest)
 [![Test coverage of code](https://codecov.io/gh/jupyterhub/dockerspawner/branch/main/graph/badge.svg)](https://codecov.io/gh/jupyterhub/dockerspawner)
 [![Issue tracking - GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/dockerspawner/issues)
 [![Help forum - Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
@@ -20,7 +21,7 @@ There are three basic types of spawners available for dockerspawner:
 - SystemUserSpawner: spawns single user notebook servers
   that correspond to system users.
 
-See the [DockerSpawner documentation](https://jupyterhub-dockerspawner.readthedocs.org/en/latest/)
+See the [DockerSpawner documentation](https://jupyterhub-dockerspawner.readthedocs.io/en/latest/)
 for more information about features and usage.
 
 ## Prerequisites

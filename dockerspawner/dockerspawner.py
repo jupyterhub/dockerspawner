@@ -1070,11 +1070,13 @@ class DockerSpawner(Spawner):
         [Callable(), ByteSpecification()],
         help="""
         Maximum number of bytes a single-user notebook server is allowed to use.
+        
         Allows the following suffixes:
           - K -> Kilobytes
           - M -> Megabytes
           - G -> Gigabytes
           - T -> Terabytes
+
         If the single user server tries to allocate more memory than this,
         it will fail. There is no guarantee that the single-user notebook server
         will be able to allocate this much memory - only that it can not
@@ -1087,6 +1089,7 @@ class DockerSpawner(Spawner):
             username = spawner.user.name
             ram_limits = {'alice': '4G', 'bob': '2G'}
             return ram_limits.get(username, '1G')
+            
         c.DockerSpawner.mem_limit = per_user_mem_limit
         """,
     ).tag(config=True)
@@ -1114,6 +1117,7 @@ class DockerSpawner(Spawner):
             username = spawner.user.name
             cpu_limits = {'alice': 2.5, 'bob': 2}
             return cpu_limits.get(username, 1)
+
         c.DockerSpawner.cpu_limit = per_user_cpu_limit
         """,
     ).tag(config=True)

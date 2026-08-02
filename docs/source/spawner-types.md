@@ -17,9 +17,9 @@ Three basic types of spawners are available for dockerspawner:
   spawn single user notebook servers that correspond to the system's
   users.
 
-[ln-spawner-docker]: #dockerspawner
-[ln-spawner-swarm]: #swarmspawner
-[ln-spawner-sysusr]: #systemuserspawner
+[ln-spawner-docker]: #dockerspawner.DockerSpawner
+[ln-spawner-swarm]: #dockerspawner.SwarmSpawner
+[ln-spawner-sysusr]: #dockerspawner.SystemUserSpawner
 
 In most cases, we recommend using DockerSpawner. Use cases where you
 may wish to use SystemUserSpawner are:
