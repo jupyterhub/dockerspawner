@@ -15,7 +15,7 @@ repos:
 
   # Autoformat: Python code
   - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.3
+    rev: v2.4.0
     hooks:
       - id: autoflake
         # args ref: https://github.com/PyCQA/autoflake#advanced-usage
@@ -24,19 +24,19 @@ repos:
 
   # Autoformat: Python
   - repo: https://github.com/pycqa/isort
-    rev: 8.0.1
+    rev: 9.0.1
     hooks:
       - id: isort
 
   # Autoformat: Python
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 26.1.0
+    rev: 26.5.1
     hooks:
       - id: black
 
   # Autoformat: shell scripts
   - repo: https://github.com/lovesegfault/beautysh
-    rev: v6.4.2
+    rev: v6.4.3
     hooks:
       - id: beautysh
         additional_dependencies:
@@ -44,7 +44,7 @@ repos:
 
   # Autoformat: markdown, yaml
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: v3.8.1
+    rev: v3.9.6
     hooks:
       - id: prettier
 
